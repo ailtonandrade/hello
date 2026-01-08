@@ -203,7 +203,7 @@ if __name__ == "__main__":
     print("🚀 Script de macros iniciado")
 
     while True:
-        wait_time = 5*60  # Espera 5 minutos para que um novo vídeo seja publicado
+        wait_time = 20*60  # Espera 5 minutos para que um novo vídeo seja publicado
 
         try:
             youtube_manager()
