@@ -45,7 +45,7 @@ def press_hotkey(*keys):
 
 def youtube_manager():
     # Instanciar gerenciadores
-    theme = "trade"  # Variável de tema para geração de título e descrição
+    theme = "pregacao+pastor"  # Variável de tema para geração de título e descrição
     title_description_generator = LocalTitleDescriptionGenerator()
     youtube_manager = YouTubeManager()
 
@@ -90,7 +90,13 @@ def youtube_manager():
         return
 
     # DOWNLOAD VIDEO
-    video_info = None
+    video_info = {
+        "filepath": "",
+        "generated_info": {
+            "title": "",
+            "description": ""
+        },
+    }
     try:
         video_info = youtube_manager.download_video(url, download_path="./downloads")
         if video_info:
@@ -126,61 +132,67 @@ def youtube_manager():
     wait(4)
 
     #ENCONTRAR VIDEO NA PASTA
-    click_image("botao-nova-pasta-windows.png", region=(0, 0, 1920, 1080), offset_x=-20, offset_y=-25)
-    wait(4)
-    video_folder_path = os.path.dirname(os.path.abspath(video_info['filepath']))
-    type_text(video_folder_path)
-    wait(6)
-    press_hotkey("enter")
-    wait(1)
-    press_hotkey("tab")
-    wait(1)
-    press_hotkey("tab")
-    wait(1)
-    press_hotkey("tab")
-    wait(1)
-    press_hotkey("tab")
-    wait(1)
-    press_hotkey("space")
-    wait(1)
-    press_hotkey("enter")
+    if video_info and "filepath" in video_info:
+        if not os.path.exists(video_info['filepath']):
+            print("Caminho do vídeo não encontrado:", video_info['filepath'])
+            return
+        click_image("botao-nova-pasta-windows.png", region=(0, 0, 1920, 1080), offset_x=-20, offset_y=-25)
+        wait(4)
+        video_folder_path = os.path.dirname(os.path.abspath(video_info['filepath']))
+        type_text(video_folder_path)
+        wait(6)
+        press_hotkey("enter")
+        wait(1)
+        press_hotkey("tab")
+        wait(1)
+        press_hotkey("tab")
+        wait(1)
+        press_hotkey("tab")
+        wait(1)
+        press_hotkey("tab")
+        wait(1)
+        press_hotkey("space")
+        wait(1)
+        press_hotkey("enter")
 
-    #INSERE TITULO E DESCRICAO
-    wait(15)
-    click_image("label-titulo-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(5)
-    press_hotkey("ctrl", "a")
-    wait(2)
-    press_hotkey("backspace")
-    wait(2)
-    if video_info and "generated_info" in video_info:
-        type_text(video_info["generated_info"]["title"])
-    
-    wait(5)
-    click_image("label-descricao-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(5)
-    if video_info and "generated_info" in video_info:
-        type_text(video_info["generated_info"]["description"])
-    wait(5)
+        #INSERE TITULO E DESCRICAO
+        wait(15)
+        click_image("label-titulo-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        wait(5)
+        press_hotkey("ctrl", "a")
+        wait(2)
+        press_hotkey("backspace")
+        wait(2)
+        if video_info and "generated_info" in video_info:
+            type_text(video_info["generated_info"]["title"])
+        
+        wait(5)
+        click_image("label-descricao-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        wait(5)
+        if video_info and "generated_info" in video_info:
+            type_text(video_info["generated_info"]["description"])
+        wait(5)
 
-    #POSTAR VIDEO
-    click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(2)
-    press_hotkey("space")
-    wait(1)
-    press_hotkey("down")
-    wait(1)
-    press_hotkey("down")
-    wait(1)
-    click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(2)
-    click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(2)
-    click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(2)
-    click_image("botao-publico-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(2)
-    click_image("botao-publicar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        #POSTAR VIDEO
+        click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        wait(2)
+        press_hotkey("space")
+        wait(1)
+        press_hotkey("down")
+        wait(1)
+        press_hotkey("down")
+        wait(1)
+        click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        wait(2)
+        click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        wait(2)
+        click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        wait(2)
+        click_image("botao-publico-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        wait(2)
+        click_image("botao-publicar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+    else:
+        print("Caminho do vídeo não disponível para upload.")
 
 def get_clipboard_text():
     try:
@@ -207,9 +219,19 @@ if __name__ == "__main__":
 
         try:
             youtube_manager()
-            print("Vídeo publicado com sucesso! Aguardando para fazer nova postagem")
-            wait(wait_time)
+            #print da contagem regressiva ate a nova postagem
+            while wait_time > 0:
+                mins, secs = divmod(wait_time, 60)
+                timeformat = '{:02d}:{:02d}'.format(mins, secs)
+                print(f"Próxima postagem em: {timeformat}", end='\r')
+                wait(1)
+                wait_time -= 1
         except Exception as e:
             print(f"❌ Erro geral: {e}")
-            print("Aguardando para fazer nova postagem")
-            wait(wait_time)
+            #print da contagem regressiva ate a nova postagem
+            while wait_time > 0:
+                mins, secs = divmod(wait_time, 60)
+                timeformat = '{:02d}:{:02d}'.format(mins, secs)
+                print(f"Próxima postagem em: {timeformat}", end='\r')
+                wait(1)
+                wait_time -= 1

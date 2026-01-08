@@ -97,6 +97,96 @@ class LocalTitleDescriptionGenerator:
                     "#dolarfuturo",
                     "#trade"
                 ]
+            },
+            "pregacao+pastor": {
+                "title_prefix": [
+                    "📖", "🔥", "🕊️", "✝️", "🙏", "✨", "⏳", "🌿", "🧠", "📜"
+                ],
+                "title_parts_a": [
+                    "Essa palavra é para você",
+                    "Deus quer falar com você",
+                    "Ouça isso com atenção",
+                    "Uma verdade bíblica",
+                    "Uma palavra direta do céu",
+                    "Essa mensagem muda tudo",
+                    "Poucos entendem essa passagem",
+                    "Isso está na Bíblia",
+                    "Essa revelação é profunda",
+                    "Uma pregação necessária",
+                    "Uma palavra de exortação",
+                    "Uma palavra de consolo",
+                    "Uma palavra de despertar",
+                    "Uma palavra para este tempo",
+                    "Uma verdade esquecida",
+                    "Uma mensagem urgente",
+                    "Uma lição espiritual",
+                    "Uma palavra para os últimos dias",
+                    "Uma reflexão bíblica",
+                    "Uma palavra que confronta"
+                ],
+                "title_parts_b": [
+                    "segundo a Palavra de Deus",
+                    "à luz das Escrituras",
+                    "baseada na Bíblia",
+                    "que poucos pregam",
+                    "que transforma vidas",
+                    "para os dias de hoje",
+                    "para fortalecer sua fé",
+                    "para quem tem ouvidos para ouvir",
+                    "para tempos difíceis",
+                    "para quem está cansado",
+                    "para quem está em dúvida",
+                    "para quem busca a verdade",
+                    "para quem quer crescer espiritualmente",
+                    "para quem anda com Deus",
+                    "para este tempo"
+                ],
+                "title_suffix": [
+                    "| reflexão bíblica",
+                    "| pregação curta",
+                    "| palavra de Deus",
+                    "| mensagem cristã",
+                    "| estudo bíblico",
+                    "| devocional",
+                    "| ensino bíblico"
+                ],
+                "description_opening": [
+                    "📖 A Palavra de Deus continua viva e eficaz.",
+                    "🔥 Essa mensagem é forte, mas necessária.",
+                    "🕊️ Que o Espírito Santo fale ao seu coração.",
+                    "🙏 Ouça com atenção e coração aberto.",
+                    "✨ Essa palavra pode mudar sua forma de ver as coisas."
+                ],
+                "description_body": [
+                    "Nesta mensagem refletimos sobre um ensinamento bíblico essencial para a vida cristã.",
+                    "A Bíblia nos mostra princípios que continuam válidos até hoje.",
+                    "Essa palavra nos chama ao arrependimento, à fé e à obediência.",
+                    "Aqui não há opinião humana, mas fundamento nas Escrituras.",
+                    "Uma reflexão para alinhar nossa vida à vontade de Deus.",
+                    "Essa mensagem confronta, exorta e edifica.",
+                    "A Palavra de Deus revela, corrige e transforma.",
+                    "Uma pregação simples, mas profunda.",
+                    "Tudo deve ser analisado à luz da Bíblia.",
+                    "Deus ainda fala por meio da Sua Palavra."
+                ],
+                "description_cta": [
+                    "Se essa palavra falou com você, compartilhe 🙏",
+                    "Deixe seu like para que essa mensagem alcance mais pessoas.",
+                    "Comente o que Deus falou ao seu coração.",
+                    "Salve esse vídeo para ouvir novamente.",
+                    "Envie essa mensagem para alguém que precisa ouvir."
+                ],
+                "hashtags": [
+                    "#biblia",
+                    "#palavradedeus",
+                    "#pregacao",
+                    "#mensagembiblica",
+                    "#fe",
+                    "#jesus",
+                    "#cristo",
+                    "#evangelho",
+                    "#devocional"
+                ]
             }
         }
 
