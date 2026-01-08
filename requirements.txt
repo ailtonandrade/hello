@@ -1,0 +1,8 @@
+pyautogui
+pillow
+pytubefix
+opencv-python
+numpy
+pyperclip
+psutil
+requests
