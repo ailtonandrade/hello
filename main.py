@@ -71,6 +71,10 @@ def youtube_manager():
         wait(2)
         press_hotkey("enter")
         wait(7)
+        click_image("botao-todos-youtube.png", region=(0, 0, 1920, 1080), offset_x=70, offset_y=10)
+        wait(3)
+        click_image("botao-shorts-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=50)
+        wait(3)
     except Exception as e:
         print(f"Erro ao acessar o YouTube: {e}")
         press_hotkey("alt", "f4")  # Fecha a janela do Chrome
@@ -78,8 +82,6 @@ def youtube_manager():
 
     # CAPTURA URL VIDEO
     try:
-        click_image("label-shorts.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=100)
-        wait(3)
         click_image("barra-url-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
         press_hotkey("ctrl", "c")
         url = get_clipboard_text()

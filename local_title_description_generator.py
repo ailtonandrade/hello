@@ -81,11 +81,11 @@ class LocalTitleDescriptionGenerator:
                     "Trade realista, sem filtros."
                 ],
                 "description_cta": [
-                    "Se isso te ajuda, deixa o like 👍",
-                    "Segue o canal pra mais trades reais.",
-                    "Comenta se você faria diferente.",
-                    "Salva esse vídeo pra estudar depois.",
-                    "Compartilha com quem opera trade."
+                    "Se isso te ajuda, deixa o like 👍 \n\n 📌 Conteúdo educacional. Não é recomendação financeira.\n\n",
+                    "Segue o canal pra mais trades reais. \n\n 📌 Conteúdo educacional. Não é recomendação financeira.\n\n",
+                    "Comenta se você faria diferente. \n\n 📌 Conteúdo educacional. Não é recomendação financeira.\n\n",
+                    "Salva esse vídeo pra estudar depois. \n\n 📌 Conteúdo educacional. Não é recomendação financeira.\n\n",
+                    "Compartilha com quem opera trade. \n\n 📌 Conteúdo educacional. Não é recomendação financeira.\n\n"
                 ],
                 "hashtags": [
                     "#daytrade",
@@ -230,7 +230,7 @@ class LocalTitleDescriptionGenerator:
             + " ".join(body)
             + f"\n\n{cta}\n\n"
             + f"⏱️ Gravado às {timestamp}\n\n"
-            + "📌 Conteúdo educacional. Não é recomendação financeira.\n\n"
+            + ""
             + hashtags
         )
 
