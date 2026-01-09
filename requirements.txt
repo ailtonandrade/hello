@@ -6,3 +6,4 @@ numpy
 pyperclip
 psutil
 requests
+moviepy

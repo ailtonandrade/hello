@@ -2,6 +2,7 @@ import os
 import random
 from pytubefix import YouTube
 from templates import title_templates, description_templates
+from video_editor import VideoEditor
 
 class YouTubeManager:
     def __init__(self):
@@ -77,6 +78,23 @@ class YouTubeManager:
         except Exception as e:
             print(f"Erro ao baixar o vídeo: {e}")
             return None
+
+    def process_downloaded_video(self, video_info, channel):
+        """
+        Processa o vídeo baixado editando-o (por exemplo, ajustando contraste, saturação e adicionando logo).
+
+        :param video_info: Dicionário com informações do vídeo baixado.
+        """
+        if not video_info or "filepath" not in video_info:
+            print("Informações do vídeo estão incompletas ou ausentes.")
+            return
+
+        video_path = video_info["filepath"]
+        folder_path = os.path.dirname(video_path)
+
+        editor = VideoEditor(video_path)
+        editor.process_video(logo_path="logo-canal-"+channel+".jpg", x_percent=0.5, y_percent=0.5, size_multiplier=1.0)
+        print(f"Vídeo processado e salvo: {video_path}")
 
 class LocalTitleDescriptionGenerator:
     def __init__(self):

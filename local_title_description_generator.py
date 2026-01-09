@@ -98,7 +98,7 @@ class LocalTitleDescriptionGenerator:
                     "#trade"
                 ]
             },
-            "pregacao+pastor": {
+            "pregacao+pastor+viral": {
                 "title_prefix": [
                     "📖", "🔥", "🕊️", "✝️", "🙏", "✨", "⏳", "🌿", "🧠", "📜"
                 ],

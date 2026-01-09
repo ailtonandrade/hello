@@ -45,7 +45,8 @@ def press_hotkey(*keys):
 
 def youtube_manager():
     # Instanciar gerenciadores
-    theme = "pregacao+pastor"  # Variável de tema para geração de título e descrição
+    channel = "parallelcuts"
+    theme = "pregacao+pastor+viral"  # Variável de tema para geração de título e descrição
     title_description_generator = LocalTitleDescriptionGenerator()
     youtube_manager = YouTubeManager()
 
@@ -53,7 +54,7 @@ def youtube_manager():
     try:
         wait(4)
         open_or_launch_window("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe")
-        wait(10)
+        wait(5)
         press_hotkey("win", "shift", "up")
         press_hotkey("win", "left")
         wait(2)
@@ -104,6 +105,9 @@ def youtube_manager():
         if video_info:
             print(f"Vídeo salvo em: {video_info['filepath']}\nObtendo informações do vídeo...")
 
+            # PROCESSA E EDITA VIDEO
+            youtube_manager.process_downloaded_video(video_info, channel)
+
             # OBTER INFOS DO VIDEO
             generated_info = title_description_generator.generate(theme)
             video_info["generated_info"] = generated_info
@@ -125,11 +129,11 @@ def youtube_manager():
 
     #ACESSA PARA POSTAR
     click_image("fav-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(8)
+    wait(4)
     click_image("botao-criar-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
     wait(2)
     click_image("botao-enviar-video-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(6)
+    wait(4)
     click_image("botao-selecionar-arquivos-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
     wait(4)
 
