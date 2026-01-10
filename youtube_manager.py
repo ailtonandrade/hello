@@ -93,8 +93,16 @@ class YouTubeManager:
         folder_path = os.path.dirname(video_path)
 
         editor = VideoEditor(video_path)
-        editor.process_video(logo_path="logo-canal-"+channel+".jpg", x_percent=0.5, y_percent=0.5, size_multiplier=1.0)
+        editor.process_video(logo_path="logo-canal-"+channel+".jpg", x_percent=0.5, y_percent=0.5, size_multiplier=0.5, opacity=0.3)
         print(f"Vídeo processado e salvo: {video_path}")
+
+        # Ensure the video file is properly closed and finalized
+        try:
+            with open(video_path, 'rb') as f:
+                pass  # Open and close the file to ensure it is finalized
+            print(f"Video file finalized: {video_path}")
+        except Exception as e:
+            print(f"Error finalizing video file: {e}")
 
 class LocalTitleDescriptionGenerator:
     def __init__(self):

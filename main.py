@@ -72,9 +72,9 @@ def youtube_manager():
         wait(2)
         press_hotkey("enter")
         wait(7)
-        click_image("botao-todos-youtube.png", region=(0, 0, 1920, 1080), offset_x=70, offset_y=10)
+        click_image("botao-todos-youtube.png", region=(0, 0, 1920, 1080), offset_x=200, offset_y=10)
         wait(3)
-        click_image("botao-shorts-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=50)
+        click_image("botao-unclick-shorts-youtube.png", region=(0, 0, 1920, 1080), offset_x=70, offset_y=100)
         wait(3)
     except Exception as e:
         print(f"Erro ao acessar o YouTube: {e}")
@@ -114,22 +114,22 @@ def youtube_manager():
 
             if generated_info["title"]:
                 print("Título gerado:", generated_info["title"])
-                type_text(generated_info["title"])
-                wait(5)
+                wait(1)
 
             if generated_info["description"]:
                 print("Descrição gerada:", generated_info["description"])
-                type_text(generated_info["description"])
-                wait(5)
+                wait(1)
 
     except Exception as e:
         print(f"Erro ao baixar ou processar o vídeo: {e}")
         press_hotkey("alt", "f4")  # Fecha a janela do Chrome
         return
+    # FECHA JANELA
+    press_hotkey("alt", "f4")
 
     #ACESSA PARA POSTAR
     click_image("fav-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(4)
+    wait(8)
     click_image("botao-criar-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
     wait(2)
     click_image("botao-enviar-video-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
