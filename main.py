@@ -46,7 +46,7 @@ def press_hotkey(*keys):
 def youtube_manager():
     # Instanciar gerenciadores
     channel = "parallelcuts"
-    theme = "pregacao+pastor+viral"  # Variável de tema para geração de título e descrição
+    theme = "pregacao+lagoinha+viral"  # Variável de tema para geração de título e descrição
     title_description_generator = LocalTitleDescriptionGenerator()
     youtube_manager = YouTubeManager()
 
@@ -146,7 +146,7 @@ def youtube_manager():
         wait(4)
         video_folder_path = os.path.dirname(os.path.abspath(video_info['filepath']))
         type_text(video_folder_path)
-        wait(6)
+        wait(2)
         press_hotkey("enter")
         wait(1)
         press_hotkey("tab")

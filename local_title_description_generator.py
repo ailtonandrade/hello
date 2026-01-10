@@ -98,7 +98,7 @@ class LocalTitleDescriptionGenerator:
                     "#trade"
                 ]
             },
-            "pregacao+pastor+viral": {
+            "pregacao+lagoinha+viral": {
                 "title_prefix": [
                     "📖", "🔥", "🕊️", "✝️", "🙏", "✨", "⏳", "🌿", "🧠", "📜"
                 ],
