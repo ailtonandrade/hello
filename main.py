@@ -46,7 +46,7 @@ def press_hotkey(*keys):
 def youtube_manager():
     # Instanciar gerenciadores
     channel = "parallelcuts"
-    theme = "pregacao+lagoinha+viral"  # Variável de tema para geração de título e descrição
+    theme = "pregacao+lagoinha+shorts+viral"  # Variável de tema para geração de título e descrição
     title_description_generator = LocalTitleDescriptionGenerator()
     youtube_manager = YouTubeManager()
 
@@ -124,8 +124,6 @@ def youtube_manager():
         print(f"Erro ao baixar ou processar o vídeo: {e}")
         press_hotkey("alt", "f4")  # Fecha a janela do Chrome
         return
-    # FECHA JANELA
-    press_hotkey("alt", "f4")
 
     #ACESSA PARA POSTAR
     click_image("fav-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)

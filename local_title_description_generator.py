@@ -98,7 +98,7 @@ class LocalTitleDescriptionGenerator:
                     "#trade"
                 ]
             },
-            "pregacao+lagoinha+viral": {
+            "pregacao+lagoinha+shorts+viral": {
                 "title_prefix": [
                     "📖", "🔥", "🕊️", "✝️", "🙏", "✨", "⏳", "🌿", "🧠", "📜"
                 ],
