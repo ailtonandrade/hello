@@ -80,20 +80,38 @@ class VideoEditor:
             if not os.path.exists(image_path):
                 print(f"Image file not found: {image_path}")
                 return
+
+            # Ensure the PNG has a transparent background
+            from PIL import Image
+            img = Image.open(image_path)
+            if img.mode != "RGBA":
+                print(f"Converting image to RGBA mode for transparency: {image_path}")
+                img = img.convert("RGBA")
+            temp_transparent_path = image_path.replace(".png", "_transparent.png")
+            img.save(temp_transparent_path)
+
             video_path = input_path if input_path else self.video_path
             clip = VideoFileClip(video_path)
-            img = ImageClip(image_path).set_duration(duration or clip.duration)
-            img = img.resize(size_multiplier).set_opacity(opacity)
-            # Permitir coordenadas percentuais (0-1) ou absolutas
+            img_clip = ImageClip(temp_transparent_path).set_duration(duration or clip.duration)
+            img_clip = img_clip.resize(size_multiplier).set_opacity(opacity)
+
+            # Allow percentual coordinates (0-1) or absolute
             video_width, video_height = clip.size
             pos_x = int(x * video_width) if isinstance(x, float) and 0 <= x <= 1 else x
             pos_y = int(y * video_height) if isinstance(y, float) and 0 <= y <= 1 else y
-            img = img.set_position((pos_x, pos_y))
-            final_clip = CompositeVideoClip([clip, img]).set_audio(clip.audio)
+            img_clip = img_clip.set_position((pos_x, pos_y))
+
+            final_clip = CompositeVideoClip([clip, img_clip]).set_audio(clip.audio)
             save_path = output_path if output_path else self.video_path
             final_clip.write_videofile(save_path, codec="libx264", audio_codec="aac", temp_audiofile="temp-audio-img.m4a", remove_temp=True)
+
             clip.close()
             final_clip.close()
+
+            # Clean up temporary transparent image
+            if os.path.exists(temp_transparent_path):
+                os.remove(temp_transparent_path)
+
             print(f"Image added and video saved: {save_path}")
         except Exception as e:
             print(f"Error adding image: {e}")
@@ -131,7 +149,7 @@ class VideoEditor:
             # 3. Adicionar imagens extras (ex: subscribe.png) em sequência
             if extra_images is None:
                 extra_images = [
-                    {"image_path": "subscribe.png", "x": 0.7, "y": 0.8, "size_multiplier": 0.2, "duration": None, "opacity": 0.8}
+                    {"image_path": "subscribe.png", "x": 0.2, "y": 0.8, "size_multiplier": 0.2, "duration": None, "opacity": 0.8}
                 ]
             for img in extra_images:
                 with tempfile.NamedTemporaryFile(suffix='.mp4', delete=False) as temp_next:

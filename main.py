@@ -46,7 +46,7 @@ def press_hotkey(*keys):
 def youtube_manager():
     # Instanciar gerenciadores
     channel = "parallelcuts"
-    theme = "pregacao+lagoinha+shorts+viral"  # Variável de tema para geração de título e descrição
+    theme = "pregacao"  # Variável de tema para geração de título e descrição
     title_description_generator = LocalTitleDescriptionGenerator()
     youtube_manager = YouTubeManager()
 
@@ -68,7 +68,7 @@ def youtube_manager():
         wait(4)
         click_image("barra-url-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
         time_now = time.strftime("%M%S", time.localtime())
-        type_text("youtube.com/results?search_query=" + theme + "+" + time_now)
+        type_text("youtube.com/results?search_query=" + theme + "&sp=EgQIAhAJ")
         wait(2)
         press_hotkey("enter")
         wait(7)
