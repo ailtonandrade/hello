@@ -93,7 +93,7 @@ class YouTubeManager:
         folder_path = os.path.dirname(video_path)
 
         editor = VideoEditor(video_path)
-        editor.process_video(logo_path="logo-canal-"+channel+".jpg", x_percent=0.5, y_percent=0.5, size_multiplier=0.5, opacity=0.3)
+        editor.process_video(logo_path="logo-canal-"+channel+".jpg", x_percent=0.5, y_percent=0.1, size_multiplier=0.5, opacity=0.2)
         print(f"Vídeo processado e salvo: {video_path}")
 
         # Ensure the video file is properly closed and finalized

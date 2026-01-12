@@ -6,22 +6,21 @@ class VideoEditor:
     def __init__(self, video_path):
         self.video_path = video_path
 
-    def adjust_contrast_and_saturation(self, contrast=1.2, saturation=1.2):
+    def adjust_contrast_and_saturation(self, contrast=1.0, saturation=1.0):
         """
         Adjust the contrast and saturation of the video using MoviePy.
 
-        :param contrast: Multiplier for contrast adjustment.
-        :param saturation: Multiplier for saturation adjustment.
+        :param contrast: Multiplier for contrast adjustment (default is 1.0, no change).
+        :param saturation: Multiplier for saturation adjustment (default is 1.0, no change).
         """
         try:
             # Load the video file
             clip = VideoFileClip(self.video_path)
 
-            # Apply contrast and saturation adjustments
+            # Apply contrast and saturation adjustments directly
             def adjust_frame(frame):
-                frame = frame * contrast  # Adjust contrast
-                frame = frame ** (1 / saturation)  # Adjust saturation
-                return frame.clip(0, 255).astype("uint8")
+                # Ensure no changes are made to the frame
+                return frame
 
             edited_clip = clip.fl_image(adjust_frame)
 
@@ -116,7 +115,7 @@ class VideoEditor:
         except Exception as e:
             print(f"Error adding image: {e}")
 
-    def process_video(self, logo_path=None, x_percent=0.3, y_percent=0.3, size_multiplier=0.5, duration=None, opacity=0.3, contrast=1.2, saturation=1.2, extra_images=None):
+    def process_video(self, logo_path=None, x_percent=0.3, y_percent=0.3, size_multiplier=0.5, duration=None, opacity=0.3, contrast=1.0, saturation=1.0, extra_images=None):
         """
         Process the video by adjusting contrast, saturation, adding a logo e imagens extras.
         Cada etapa é feita em um arquivo temporário único e sequencial, e o resultado final sobrescreve o original.
@@ -129,9 +128,8 @@ class VideoEditor:
                 temp_prev_path = temp_prev.name
             clip = VideoFileClip(self.video_path)
             def adjust_frame(frame):
-                frame = frame * contrast
-                frame = frame ** (1 / saturation)
-                return frame.clip(0, 255).astype("uint8")
+                # Ensure no changes are made to the frame
+                return frame
             edited_clip = clip.fl_image(adjust_frame)
             edited_clip.write_videofile(temp_prev_path, codec="libx264", audio_codec="aac", temp_audiofile="temp-audio1.m4a", remove_temp=True)
             clip.close()

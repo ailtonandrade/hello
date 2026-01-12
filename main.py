@@ -68,7 +68,7 @@ def youtube_manager():
         wait(4)
         click_image("barra-url-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
         time_now = time.strftime("%M%S", time.localtime())
-        type_text("youtube.com/results?search_query=" + theme + "&sp=EgQIAhAJ")
+        type_text("youtube.com/results?search_query=" + theme + "&sp=EgQIBRAJ")
         wait(2)
         press_hotkey("enter")
         wait(7)
@@ -129,11 +129,11 @@ def youtube_manager():
     click_image("fav-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
     wait(8)
     click_image("botao-criar-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(2)
+    wait(4)
     click_image("botao-enviar-video-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(4)
+    wait(6)
     click_image("botao-selecionar-arquivos-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(4)
+    wait(6)
 
     #ENCONTRAR VIDEO NA PASTA
     if video_info and "filepath" in video_info:
@@ -219,7 +219,7 @@ if __name__ == "__main__":
     print("🚀 Script de macros iniciado")
 
     while True:
-        wait_time = 20*60  # Espera 5 minutos para que um novo vídeo seja publicado
+        wait_time = 50*60  # Espera 1 hora para que um novo vídeo seja publicado
 
         try:
             youtube_manager()
