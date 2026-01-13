@@ -8,6 +8,97 @@ class LocalTitleDescriptionGenerator:
         self.recent_titles = deque(maxlen=30)
 
         self.templates = {
+            "brasileirao": {
+                "title_prefix": [
+                    "⚽", "🔥", "🚀", "😱", "🤯", "🎯", "👀", "📣", "🏆", "💥"
+                ],
+                "title_parts_a": [
+                    "Jogada absurda",
+                    "Gol inacreditável",
+                    "Partida insana",
+                    "Momento que mudou o jogo",
+                    "Erro bizarro",
+                    "Atuação perfeita",
+                    "Craque decidiu",
+                    "Lance que ninguém esperava",
+                    "Final dramático",
+                    "Virada histórica",
+                    "Clássico pegado",
+                    "Jogo tenso do começo ao fim",
+                    "Decisão polêmica",
+                    "Time irreconhecível",
+                    "Show de futebol",
+                    "Amasso total",
+                    "Noite mágica",
+                    "Defesa impossível",
+                    "Falha que custou caro",
+                    "Craque chamou a responsabilidade"
+                ],
+                "title_parts_b": [
+                    "no último minuto",
+                    "que parou o estádio",
+                    "em jogo decisivo",
+                    "no clássico",
+                    "na final",
+                    "na semifinal",
+                    "em mata-mata",
+                    "fora de casa",
+                    "com pressão máxima",
+                    "em noite de Libertadores",
+                    "em Champions League",
+                    "no Brasileirão",
+                    "em jogo valendo tudo",
+                    "contra rival direto",
+                    "com torcida enlouquecida"
+                ],
+                "title_suffix": [
+                    "| foi pênalti?",
+                    "| ninguém acreditou",
+                    "| que loucura",
+                    "| isso é futebol",
+                    "| decidiu sozinho",
+                    "| inacreditável",
+                    "| valeu a pena?",
+                    "| emoção pura"
+                ],
+                "description_opening": [
+                    "⚽ Que jogo foi esse.",
+                    "🔥 Futebol no seu estado mais puro.",
+                    "😱 Esse lance mudou tudo.",
+                    "👀 Repara nesse detalhe.",
+                    "🤯 Ninguém esperava esse final."
+                ],
+                "description_body": [
+                    "O jogo estava equilibrado até esse momento.",
+                    "Um lance que virou completamente o rumo da partida.",
+                    "A decisão aconteceu nos detalhes.",
+                    "Pressão total e resposta imediata.",
+                    "Erro e acerto separados por segundos.",
+                    "Quando a estrela do craque aparece.",
+                    "Clima de decisão do começo ao fim.",
+                    "Futebol é detalhe, e esse decidiu.",
+                    "Nada estava ganho até o apito final.",
+                    "Em jogo grande, aparece jogador grande."
+                ],
+                "description_cta": [
+                    "Foi pênalti ou não? Comenta aí 👇",
+                    "Você concorda com essa decisão? 👇",
+                    "Que nota você dá pra esse jogo? ⚽",
+                    "Salva esse lance pra rever depois 🔥",
+                    "Segue o canal pra mais futebol todo dia ⚽"
+                ],
+                "hashtags": [
+                    "#futebol",
+                    "#futebolbrasileiro",
+                    "#libertadores",
+                    "#championsleague",
+                    "#brasileirao",
+                    "#golaco",
+                    "#classico",
+                    "#soccer",
+                    "#futebolraiz"
+                ]
+            },
             "trade": {
                 "title_prefix": [
                     "🔥", "🚀", "⚡", "📉", "📈", "💥", "🎯", "🧠", "💰", "⏱️"

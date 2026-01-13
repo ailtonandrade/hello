@@ -6,18 +6,27 @@ import subprocess
 from youtube_manager import YouTubeManager
 from local_title_description_generator import LocalTitleDescriptionGenerator
 
-def click_image(image_path, confidence=0.8, region=None, offset_x=0, offset_y=0):
-    try:
-        location = pyautogui.locateOnScreen(image_path, confidence=confidence, region=region)
-        if location:
-            center_x = location.left + location.width // 2 + offset_x
-            center_y = location.top + location.height // 2 + offset_y
-            pyautogui.click(center_x, center_y)
-            print(f"Clicou em [{image_path}] em ({center_x}, {center_y})")
-        else:
-            print("Imagem não encontrada na tela.")
-    except Exception as e:
-        print(f"Erro ao procurar a imagem: {image_path}")
+def click_image(image_path, confidence=0.8, region=None, offset_x=0, offset_y=0, retries=3, delay=1):
+    attempt = 0
+    while attempt < retries:
+        try:
+            location = pyautogui.locateOnScreen(image_path, confidence=confidence, region=region)
+            if location:
+                center_x = location.left + location.width // 2 + offset_x
+                center_y = location.top + location.height // 2 + offset_y
+                pyautogui.click(center_x, center_y)
+                print(f"Clicou em [{image_path}] em ({center_x}, {center_y})")
+                return  # Se a imagem for clicada, sai da função
+            else:
+                wait(10)
+                print(f"Tentativa {attempt + 1}: Imagem não encontrada na tela.")
+        except Exception as e:
+            print(f"Tentativa {attempt + 1}: Erro ao procurar a imagem: {image_path} - {str(e)}")
+       
+        attempt += 1
+        time.sleep(delay)  # Espera antes de tentar novamente
+   
+    print(f"Falha ao encontrar ou clicar na imagem após {retries} tentativas.")
 
 def click_position(x, y):
     pyautogui.click(x, y)
@@ -43,18 +52,20 @@ def press_hotkey(*keys):
     pyautogui.hotkey(*keys)
     print(f"Hotkey pressionada: {' + '.join(keys)}")
 
-def youtube_manager():
+def scroll_down(amount):
+    pyautogui.scroll(-amount)
+    print(f"Rolou para baixo {amount} unidades")
+
+def youtube_manager(channel, theme):
     # Instanciar gerenciadores
-    channel = "parallelcuts"
-    theme = "pregacao"  # Variável de tema para geração de título e descrição
     title_description_generator = LocalTitleDescriptionGenerator()
     youtube_manager = YouTubeManager()
 
     # ABRE JANELA
     try:
-        wait(4)
+        wait(3)
         open_or_launch_window("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe")
-        wait(5)
+        wait(7)
         press_hotkey("win", "shift", "up")
         press_hotkey("win", "left")
         wait(2)
@@ -65,17 +76,15 @@ def youtube_manager():
     # ACESSA YOUTUBE
     try:
         click_image("fav-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
-        wait(4)
+        wait(3)
         click_image("barra-url-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
-        time_now = time.strftime("%M%S", time.localtime())
-        type_text("youtube.com/results?search_query=" + theme + "&sp=EgQIBRAJ")
-        wait(2)
+        type_text("youtube.com/results?search_query=" + theme + "&sp=EgQIAxAJ")
+        wait(3)
         press_hotkey("enter")
-        wait(7)
-        click_image("botao-todos-youtube.png", region=(0, 0, 1920, 1080), offset_x=200, offset_y=10)
-        wait(3)
-        click_image("botao-unclick-shorts-youtube.png", region=(0, 0, 1920, 1080), offset_x=70, offset_y=100)
-        wait(3)
+        wait(40)
+        click_image("botao-lupa-youtube.png", region=(0, 0, 1920, 1080), offset_x=-200, offset_y=200)
+        wait(20)
+        scroll_down(500)
     except Exception as e:
         print(f"Erro ao acessar o YouTube: {e}")
         press_hotkey("alt", "f4")  # Fecha a janela do Chrome
@@ -127,13 +136,13 @@ def youtube_manager():
 
     #ACESSA PARA POSTAR
     click_image("fav-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(8)
+    wait(18)
     click_image("botao-criar-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(4)
+    wait(14)
     click_image("botao-enviar-video-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(6)
+    wait(25)
     click_image("botao-selecionar-arquivos-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-    wait(6)
+    wait(25)
 
     #ENCONTRAR VIDEO NA PASTA
     if video_info and "filepath" in video_info:
@@ -141,22 +150,22 @@ def youtube_manager():
             print("Caminho do vídeo não encontrado:", video_info['filepath'])
             return
         click_image("botao-nova-pasta-windows.png", region=(0, 0, 1920, 1080), offset_x=-20, offset_y=-25)
-        wait(4)
+        wait(3)
         video_folder_path = os.path.dirname(os.path.abspath(video_info['filepath']))
         type_text(video_folder_path)
-        wait(2)
+        wait(3)
         press_hotkey("enter")
-        wait(1)
+        wait(11)
         press_hotkey("tab")
-        wait(1)
+        wait(3)
         press_hotkey("tab")
-        wait(1)
+        wait(3)
         press_hotkey("tab")
-        wait(1)
+        wait(3)
         press_hotkey("tab")
-        wait(1)
+        wait(3)
         press_hotkey("space")
-        wait(1)
+        wait(3)
         press_hotkey("enter")
 
         #INSERE TITULO E DESCRICAO
@@ -164,12 +173,12 @@ def youtube_manager():
         click_image("label-titulo-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
         wait(5)
         press_hotkey("ctrl", "a")
-        wait(2)
+        wait(3)
         press_hotkey("backspace")
         wait(2)
         if video_info and "generated_info" in video_info:
             type_text(video_info["generated_info"]["title"])
-        
+       
         wait(5)
         click_image("label-descricao-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
         wait(5)
@@ -178,23 +187,23 @@ def youtube_manager():
         wait(5)
 
         #POSTAR VIDEO
-        click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-        wait(2)
+        click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1920), offset_x=10, offset_y=10)
+        wait(5)
         press_hotkey("space")
-        wait(1)
+        wait(5)
         press_hotkey("down")
-        wait(1)
+        wait(5)
         press_hotkey("down")
-        wait(1)
-        click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-        wait(2)
-        click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-        wait(2)
-        click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-        wait(2)
-        click_image("botao-publico-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-        wait(2)
-        click_image("botao-publicar-publicando-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        wait(5)
+        click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1920), offset_x=10, offset_y=10)
+        wait(5)
+        click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1920), offset_x=10, offset_y=10)
+        wait(5)
+        click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1920), offset_x=10, offset_y=10)
+        wait(5)
+        click_image("botao-publico-publicando-youtube.png", region=(0, 0, 1920, 1920), offset_x=10, offset_y=10)
+        wait(5)
+        click_image("botao-publicar-publicando-youtube.png", region=(0, 0, 1920, 1920), offset_x=10, offset_y=10)
     else:
         print("Caminho do vídeo não disponível para upload.")
 
@@ -217,12 +226,16 @@ def open_or_launch_window(executable_path):
 
 if __name__ == "__main__":
     print("🚀 Script de macros iniciado")
-
+    #canais parallelcuts e tomteccortes
+    channel = "parallelcuts"
+    theme = "pregacao"  # Variável de tema para geração de título e descrição
+    minutos_cooldown = 2
+   
     while True:
-        wait_time = 50*60  # Espera 1 hora para que um novo vídeo seja publicado
+        wait_time = minutos_cooldown*60  # Espera 1 hora para que um novo vídeo seja publicado
 
         try:
-            youtube_manager()
+            youtube_manager(channel, theme)
             #print da contagem regressiva ate a nova postagem
             while wait_time > 0:
                 mins, secs = divmod(wait_time, 60)
@@ -239,3 +252,5 @@ if __name__ == "__main__":
                 print(f"Próxima postagem em: {timeformat}", end='\r')
                 wait(1)
                 wait_time -= 1
+
+            youtube_manager(channel, theme)
