@@ -3,8 +3,25 @@ import time
 import os
 import pyperclip
 import subprocess
+import random
+from moviepy.editor import concatenate_videoclips, CompositeVideoClip, AudioFileClip, VideoFileClip
+from moviepy.audio.AudioClip import concatenate_audioclips
 from youtube_manager import YouTubeManager
 from local_title_description_generator import LocalTitleDescriptionGenerator
+from video_editor import VideoEditor
+from moviepy.video.VideoClip import ColorClip, ImageClip
+from PIL import Image, ImageDraw, ImageFont
+import glob
+from video_generator import generate_bible_video
+from coquitts.voice_generator import generate_voice
+from youtube_api_uploader import upload_video_to_youtube
+
+# Define a global variable for screen orientation
+SCREEN_ORIENTATION = "MOBILE"  # Options: "DESKTOP" or "MOBILE"
+
+# Define global variables for channel and theme
+CHANNEL = "parallelcuts"  # Replace with your default channel
+THEME = "pregacao"  # Replace with your default theme
 
 def click_image(image_path, confidence=0.8, region=None, offset_x=0, offset_y=0, retries=3, delay=1):
     attempt = 0
@@ -56,10 +73,79 @@ def scroll_down(amount):
     pyautogui.scroll(-amount)
     print(f"Rolou para baixo {amount} unidades")
 
-def youtube_manager(channel, theme):
-    # Instanciar gerenciadores
-    title_description_generator = LocalTitleDescriptionGenerator()
-    youtube_manager = YouTubeManager()
+def load_files(folder, extensions):
+    return [os.path.join(folder, f) for f in os.listdir(folder) if f.endswith(extensions)]
+
+def adjust_video_aspect_ratio(video, aspect_ratio):
+    target_aspect_ratio = aspect_ratio[0] / aspect_ratio[1]
+    video_width, video_height = video.size
+    current_aspect_ratio = video_width / video_height
+
+    if current_aspect_ratio != target_aspect_ratio:
+        new_width = int(video_height * target_aspect_ratio)
+        new_height = int(video_width / target_aspect_ratio)
+
+        if current_aspect_ratio > target_aspect_ratio:
+            crop_width = (video_width - new_width) // 2
+            video = video.crop(x1=crop_width, y1=0, x2=video_width - crop_width, y2=video_height)
+        else:
+            crop_height = (video_height - new_height) // 2
+            video = video.crop(x1=0, y1=crop_height, x2=video_width, y2=video_height - crop_height)
+
+    return video
+
+def select_random_video(theme):
+    """
+    Seleciona um vídeo aleatório da pasta videos/{theme} com base no padrão {theme}001, {theme}002, etc.
+    """
+    video_files = glob.glob(f"videos/{theme}*.mp4")
+    if not video_files:
+        print(f"No videos found for theme: {theme}. Using a blank background.")
+        return None
+    return random.choice(video_files)
+
+def repeat_video_to_duration(video_path, duration):
+    """
+    Repete o vídeo para preencher a duração total especificada.
+    """
+    try:
+        clip = VideoFileClip(video_path)
+        clips = []
+        total_duration = 0
+        while total_duration < duration:
+            clips.append(clip)
+            total_duration += clip.duration
+        return concatenate_videoclips(clips).subclip(0, duration)
+    except Exception as e:
+        print(f"Error repeating video {video_path}: {e}")
+        return ColorClip(size=(1080, 1920), color=(0, 0, 0)).set_duration(duration)
+
+def get_video_size():
+    if SCREEN_ORIENTATION == "DESKTOP":
+        return (1920, 1080)
+    else:  # Default to MOBILE
+        return (1080, 1920)
+
+def youtube_manager():
+    try:
+        video_path = generate_bible_video(duration=30)
+        if not video_path:
+            print("Failed to generate video. No valid content available.")
+            return
+
+        # Define metadata for the video
+        title = "Bible Verse Video"
+        description = "Inspirational Bible verses brought to life."
+
+        # Upload the video using the YouTube API
+        response = upload_video_to_youtube(video_path, title, description)
+        if response:
+            print("Video uploaded successfully:", response)
+        else:
+            print("Failed to upload video.")
+
+    except Exception as e:
+        print(f"Error in YouTube manager: {e}")
 
     # ABRE JANELA
     try:
@@ -78,7 +164,7 @@ def youtube_manager(channel, theme):
         click_image("fav-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
         wait(3)
         click_image("barra-url-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
-        type_text("youtube.com/results?search_query=" + theme + "&sp=EgQIAxAJ")
+        type_text("youtube.com/results?search_query=" + THEME + "&sp=EgQIAxAJ")
         wait(3)
         press_hotkey("enter")
         wait(40)
@@ -110,15 +196,13 @@ def youtube_manager(channel, theme):
         },
     }
     try:
-        video_info = youtube_manager.download_video(url, download_path="./downloads")
+        # video_info = youtube_manager.download_video(url, download_path="./downloads")
+        video_info["filepath"] = video_path
         if video_info:
             print(f"Vídeo salvo em: {video_info['filepath']}\nObtendo informações do vídeo...")
 
-            # PROCESSA E EDITA VIDEO
-            youtube_manager.process_downloaded_video(video_info, channel)
-
             # OBTER INFOS DO VIDEO
-            generated_info = title_description_generator.generate(theme)
+            generated_info = title_description_generator.generate(THEME)
             video_info["generated_info"] = generated_info
 
             if generated_info["title"]:
@@ -128,6 +212,9 @@ def youtube_manager(channel, theme):
             if generated_info["description"]:
                 print("Descrição gerada:", generated_info["description"])
                 wait(1)
+
+            # PROCESSA E EDITA VIDEO
+            youtube_manager.process_downloaded_video(video_info, CHANNEL)
 
     except Exception as e:
         print(f"Erro ao baixar ou processar o vídeo: {e}")
@@ -178,7 +265,7 @@ def youtube_manager(channel, theme):
         wait(2)
         if video_info and "generated_info" in video_info:
             type_text(video_info["generated_info"]["title"])
-       
+   
         wait(5)
         click_image("label-descricao-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
         wait(5)
@@ -224,6 +311,24 @@ def open_or_launch_window(executable_path):
     except Exception as e:
         print(f"Erro ao abrir o programa: {e}")
 
+def add_voice_to_video(video, text, output_audio_path):
+    """
+    Generate voice from text and add it to the video.
+
+    Args:
+        video: The video clip to add the audio to.
+        text (str): The text to convert to speech.
+        output_audio_path (str): The path to save the generated audio file.
+
+    Returns:
+        Video clip with the added audio.
+    """
+    generate_voice(text, output_audio_path)
+
+    # Add the generated audio to the video
+    audio_clip = AudioFileClip(output_audio_path)
+    return video.set_audio(audio_clip)
+
 if __name__ == "__main__":
     print("🚀 Script de macros iniciado")
     #canais parallelcuts e tomteccortes
@@ -231,11 +336,15 @@ if __name__ == "__main__":
     theme = "pregacao"  # Variável de tema para geração de título e descrição
     minutos_cooldown = 2
    
+    # Ensure title_description_generator is defined
+    # Assuming LocalTitleDescriptionGenerator is the intended class
+    title_description_generator = LocalTitleDescriptionGenerator()
+
     while True:
         wait_time = minutos_cooldown*60  # Espera 1 hora para que um novo vídeo seja publicado
 
         try:
-            youtube_manager(channel, theme)
+            youtube_manager()
             #print da contagem regressiva ate a nova postagem
             while wait_time > 0:
                 mins, secs = divmod(wait_time, 60)
@@ -253,4 +362,4 @@ if __name__ == "__main__":
                 wait(1)
                 wait_time -= 1
 
-            youtube_manager(channel, theme)
+            youtube_manager()

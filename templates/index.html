@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamSaver - Your YouTube Downloader</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #004085;
+        }
+        .hidden {
+            display: none;
+        }
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1050;
+        }
+    </style>
+    <script>
+        function toggleDownloadButton() {
+            const select = document.querySelector("select[name='itag']");
+            const downloadButton = document.querySelector("button[name='download']");
+            if (select.value) {
+                downloadButton.classList.remove("hidden");
+            } else {
+                downloadButton.classList.add("hidden");
+            }
+        }
+
+        function showLoading() {
+            const loadingOverlay = document.getElementById("loading-overlay");
+            loadingOverlay.style.display = "flex";
+        }
+
+        function hideLoading() {
+            const loadingOverlay = document.getElementById("loading-overlay");
+            loadingOverlay.style.display = "none";
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const forms = document.querySelectorAll("form");
+            forms.forEach(form => {
+                form.addEventListener("submit", () => {
+                    showLoading();
+                });
+            });
+
+            hideLoading(); // Ensure loading is hidden on page load
+
+            window.addEventListener("pageshow", (event) => {
+                if (event.persisted) {
+                    hideLoading();
+                }
+            });
+
+            // Automatically hide loading after download completion
+            const downloadButton = document.querySelector("button[name='download']");
+            if (downloadButton) {
+                downloadButton.addEventListener("click", () => {
+                    setTimeout(hideLoading, 3000); // Adjust timeout as needed
+                });
+            }
+        });
+    </script>
+</head>
+<body>
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <div class="container text-center">
+        <h1 class="mb-4">StreamSaver</h1>
+        <p class="text-muted">Download YouTube videos and audio in your preferred format.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        <form method="POST" class="mb-3">
+            <div class="mb-3">
+                <input type="text" name="url" class="form-control" placeholder="Enter YouTube URL" value="{{ session.get('url', '') }}">
+            </div>
+            <div class="d-grid gap-2">
+                <button type="submit" name="fetch" class="btn btn-primary">Fetch Streams</button>
+                <button type="submit" name="clear" class="btn btn-secondary">Clear</button>
+            </div>
+        </form>
+
+        {% if streams or audio_streams %}
+        <form method="POST" action="/download">
+            <div class="mb-3">
+                <select name="itag" class="form-select" onchange="toggleDownloadButton()">
+                    <option value="">Select a stream</option>
+                    <optgroup label="Video Streams">
+                        {% for stream in streams %}
+                            <option value="{{ stream.itag }}">{{ stream.resolution }} (Video)</option>
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="Audio Streams">
+                        {% for stream in audio_streams %}
+                            <option value="{{ stream.itag }}">Audio Only</option>
+                        {% endfor %}
+                    </optgroup>
+                </select>
+            </div>
+            <div class="d-grid">
+                <button type="submit" name="download" class="btn btn-success hidden">Download</button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
