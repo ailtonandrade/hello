@@ -371,7 +371,7 @@ class VideoGenerator:
             
             # 5. Adicionar legendas
             if text and audio_duration < 120:
-                video = self.add_synchronized_subtitles(video, audio_path, x_pos=0.5, y_pos=0.8)
+                video = self.add_synchronized_subtitles(video, audio_path, x_pos=0.5, y_pos=0.5)
             
             # 6. Adicionar logo
             logo_path = f"images/logo-canal-{self.channel}.jpg"
@@ -399,58 +399,6 @@ class VideoGenerator:
         finally:
             if video:
                 video.close()
-
-    def save_with_amd_acceleration(self, video, output_path):
-        """AMD RX 580 usando ffmpeg-python - MUITO MAIS SIMPLES."""
-        try:
-            print("🎮 AMD RX 580 com ffmpeg-python...")
-            
-            # 1. Primeiro salvar o vídeo com MoviePy (normal)
-            import tempfile
-            temp_video = tempfile.NamedTemporaryFile(suffix='.mp4', delete=False)
-            temp_video.close()
-            
-            print("   Exportando vídeo base...")
-            video.write_videofile(
-                temp_video.name,
-                fps=24,
-                codec='libx264',
-                audio_codec='aac',
-                verbose=False,
-                preset='ultrafast'
-            )
-            
-            # 2. AGORA A MÁGICA: converter com AMD usando ffmpeg-python
-            print("   Convertendo para AMD h264_amf...")
-            
-            # Usar ffmpeg-python (muito mais fácil!)
-            stream = ffmpeg.input(temp_video.name)
-            
-            stream = ffmpeg.output(
-                stream,
-                output_path,
-                **{
-                    'c:v': 'h264_amf',      # GPU AMD!
-                    'c:a': 'copy',          # Copia áudio sem re-encode
-                    'b:v': '2M',            # Bitrate
-                    'preset': 'fast',
-                }
-            )
-            
-            # Executar
-            ffmpeg.run(stream, overwrite_output=True, quiet=True)
-            
-            # Limpar temp
-            import os
-            if os.path.exists(temp_video.name):
-                os.remove(temp_video.name)
-            
-            print("✅ AMD encoding concluído!")
-            return True
-            
-        except Exception as e:
-            print(f"❌ Erro: {e}")
-            return False
         
     def save_with_cpu(self, video, output_path):
         """Fallback para CPU."""
@@ -476,7 +424,7 @@ class VideoGenerator:
             )
 
             # quality for release
-            
+
             # video.write_videofile(
             #     output_path,
             #     fps=24,
