@@ -48,34 +48,68 @@ def add_text(video, text, config, duration, start_time):
     return CompositeVideoClip([video, text_clip])
 
 def add_logo(video, logo_path, x_percent, y_percent, size_multiplier, opacity):
+    if video is None:
+        print("⚠️ Vídeo é None, pulando adição de logo")
+        return None
+        
     if not os.path.exists(logo_path):
         print(f"Logo file not found: {logo_path}. Skipping logo addition.")
         return video
 
-    logo = ImageClip(logo_path).set_opacity(opacity)
-    logo = logo.resize(size_multiplier)
+    try:
+        logo = ImageClip(logo_path).set_opacity(opacity)
+        logo = logo.resize(size_multiplier)
 
-    video_width, video_height = video.size
-    logo_x = int(video_width * x_percent)
-    logo_y = int(video_height * y_percent)
+        video_width, video_height = video.size
+        logo_x = int(video_width * x_percent)
+        logo_y = int(video_height * y_percent)
 
-    logo = logo.set_position((logo_x, logo_y)).set_duration(video.duration)
-    return CompositeVideoClip([video, logo])
+        logo = logo.set_position((logo_x, logo_y)).set_duration(video.duration)
+        try:
+            result = CompositeVideoClip([video, logo])
+            if result is not None and hasattr(result, 'duration') and result.duration > 0:
+                return result
+            else:
+                print("⚠️ CompositeVideoClip falhou, retornando vídeo original")
+                return video
+        except Exception as e:
+            print(f"⚠️ Erro no CompositeVideoClip: {e}")
+            return video
+    except Exception as e:
+        print(f"⚠️ Erro ao adicionar logo: {e}")
+        return video
 
 def add_image(video, image_path, x, y, size_multiplier, opacity):
+    if video is None:
+        print("⚠️ Vídeo é None, pulando adição de imagem")
+        return None
+        
     if not os.path.exists(image_path):
         print(f"Image file not found: {image_path}. Skipping image addition.")
         return video
 
-    image = ImageClip(image_path).set_opacity(opacity)
-    image = image.resize(size_multiplier)
+    try:
+        image = ImageClip(image_path).set_opacity(opacity)
+        image = image.resize(size_multiplier)
 
-    video_width, video_height = video.size
-    image_x = int(video_width * x)
-    image_y = int(video_height * y)
+        video_width, video_height = video.size
+        image_x = int(video_width * x)
+        image_y = int(video_height * y)
 
-    image = image.set_position((image_x, image_y)).set_duration(video.duration)
-    return CompositeVideoClip([video, image])
+        image = image.set_position((image_x, image_y)).set_duration(video.duration)
+        try:
+            result = CompositeVideoClip([video, image])
+            if result is not None and hasattr(result, 'duration') and result.duration > 0:
+                return result
+            else:
+                print("⚠️ CompositeVideoClip falhou, retornando vídeo original")
+                return video
+        except Exception as e:
+            print(f"⚠️ Erro no CompositeVideoClip: {e}")
+            return video
+    except Exception as e:
+        print(f"⚠️ Erro ao adicionar imagem: {e}")
+        return video
 
 class VideoEditor:
     def __init__(self, video_path):

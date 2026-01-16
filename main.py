@@ -11,6 +11,7 @@ from local_title_description_generator import LocalTitleDescriptionGenerator
 # Define global variables for channel and theme
 CHANNEL = "parallelcuts"
 THEME = "pregacao"
+MAX_PERCENT_USAGE_CPU = 40  # Percentual máximo de uso de CPU
 
 # VoiceGenerator configuration
 VOICE_NAME = "pm_santa"  # Voice: pm_santa, pf_santa, pm_arctic, pf_arctic, etc.
@@ -21,6 +22,38 @@ VOICE_VOLUME = 1.0  # Volume multiplier: 0.5 (quiet) to 1.5 (loud)
 # VideoGenerator configuration
 SUBTITLE_WORDS_PER_LINE = 3  # Set to number of words per line, e.g., 3 for grouped words
 SUBTITLE_ONE_WORD_AT_A_TIME = False  # Set to False for grouped words, True for one word at a time (can cause performance issues)
+
+import psutil
+import os
+
+def limit_cpu_usage(max_percent=50):
+    """
+    Limita o uso do CPU para o processo atual.
+    
+    Args:
+        max_percent: Percentual máximo de CPU a ser usado (0-100)
+    """
+    try:
+        # Obtém o PID do processo atual
+        pid = os.getpid()
+        process = psutil.Process(pid)
+        
+        # Define a afinidade de CPU (quais núcleos podem ser usados)
+        num_cores = psutil.cpu_count(logical=True)
+        cores_to_use = max(1, int(num_cores * (max_percent / 100)))
+        
+        # Se tiver muitos núcleos, limita quantos podem ser usados
+        if num_cores > 2:
+            allowed_cores = list(range(0, cores_to_use))
+            process.cpu_affinity(allowed_cores)
+            print(f"🔒 Limitado a {len(allowed_cores)} núcleo(s) de CPU")
+        
+        # Define prioridade do processo (abaixo do normal)
+        process.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
+        print(f"📊 CPU limitada a aproximadamente {max_percent}%")
+        
+    except Exception as e:
+        print(f"⚠️ Não foi possível limitar CPU: {e}")
 
 def sanitize_text(text):
     """Sanitize text by removing unwanted characters"""
@@ -33,6 +66,9 @@ def sanitize_text(text):
     return ' '.join(sanitized.split())
 
 def main():
+
+    limit_cpu_usage(max_percent=MAX_PERCENT_USAGE_CPU)
+
     # Initialize generators
     voice_gen = VoiceGenerator(
         voice=VOICE_NAME,
@@ -40,7 +76,11 @@ def main():
         pitch=VOICE_PITCH,
         volume=VOICE_VOLUME
     )
-    video_gen = VideoGenerator(subtitle_words_per_line=SUBTITLE_WORDS_PER_LINE,subtitle_one_word_at_a_time=SUBTITLE_ONE_WORD_AT_A_TIME)
+    video_gen = VideoGenerator(
+            subtitle_words_per_line=SUBTITLE_WORDS_PER_LINE,
+            subtitle_one_word_at_a_time=SUBTITLE_ONE_WORD_AT_A_TIME,
+            video_style="cinematic"  # ADICIONAR ESTA LINHA - escolha: "cinematic", "instagram", "tiktok", "simple", "vintage", "modern"
+        )
     youtube_mgr = YouTubeManager()
     title_gen = LocalTitleDescriptionGenerator()
 
@@ -91,6 +131,9 @@ def main():
 
 def youtube_posting_cycle():
     """Main loop for YouTube posting automation"""
+
+    limit_cpu_usage(max_percent=MAX_PERCENT_USAGE_CPU)
+
     title_description_generator = LocalTitleDescriptionGenerator()
     youtube_manager = YouTubeManager()
     

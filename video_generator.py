@@ -1,15 +1,18 @@
 import os
+import gc
 import random
 import glob
 from moviepy.editor import concatenate_videoclips, VideoFileClip, ColorClip, AudioFileClip, CompositeVideoClip, ImageClip, CompositeAudioClip, concatenate_audioclips
 from video_editor import add_logo, add_image, add_text
 from PIL import Image, ImageDraw, ImageFont
 from faster_whisper import WhisperModel
+from effects_templates import VideoEffects
 
 class VideoGenerator:
     def __init__(self, theme="pregacao", screen_orientation="MOBILE", channel="parallelcuts", 
                  subtitle_font="arial.ttf", subtitle_font_size=50, subtitle_color="white", 
-                 subtitle_words_per_line=3, subtitle_one_word_at_a_time=False):
+                 subtitle_words_per_line=3, subtitle_one_word_at_a_time=False,
+                 video_style="simple"):
         self.theme = theme
         self.screen_orientation = screen_orientation
         self.channel = channel
@@ -18,6 +21,11 @@ class VideoGenerator:
         self.subtitle_color = subtitle_color
         self.subtitle_words_per_line = subtitle_words_per_line
         self.subtitle_one_word_at_a_time = subtitle_one_word_at_a_time
+        self.video_style = video_style
+    
+        # Inicializar gerenciador de efeitos
+        self.effects = VideoEffects()
+        self.effects.screen_orientation = screen_orientation  # Passar orientação
 
     def get_video_size(self):
         return (1920, 1080) if self.screen_orientation == "DESKTOP" else (1080, 1920)
@@ -30,15 +38,7 @@ class VideoGenerator:
         return random.choice(video_files)
 
     def create_video_sequence(self, duration):
-        """
-        Create a video sequence by taking 4 seconds from random videos until reaching the target duration.
-        
-        Args:
-            duration (float): Target duration in seconds.
-            
-        Returns:
-            VideoFileClip: Concatenated video sequence.
-        """
+
         video_files = glob.glob(f"videos/{self.theme}*.mp4")
         if not video_files:
             print(f"No videos found for theme: {self.theme}. Using a blank background.")
@@ -76,7 +76,14 @@ class VideoGenerator:
                 total_duration += blank_clip.duration
         
         # Concatenate all clips
-        final_video = concatenate_videoclips(clips)
+        try:
+            final_video = concatenate_videoclips(clips)
+            if final_video is None or not hasattr(final_video, 'duration') or final_video.duration <= 0:
+                print("⚠️ concatenate_videoclips retornou vídeo inválido, usando clip em branco")
+                final_video = ColorClip(size=self.get_video_size(), color=(0, 0, 0)).set_duration(duration)
+        except Exception as e:
+            print(f"⚠️ Erro ao concatenar clips: {e}, usando clip em branco")
+            final_video = ColorClip(size=self.get_video_size(), color=(0, 0, 0)).set_duration(duration)
         
         # Trim to exact duration if needed
         if final_video.duration > duration:
@@ -85,16 +92,7 @@ class VideoGenerator:
         return final_video
 
     def resize_and_crop(self, clip, target_size):
-        """
-        Resize and crop video clip to target dimensions, maintaining aspect ratio.
-        
-        Args:
-            clip: VideoFileClip to resize
-            target_size: Tuple (width, height) for target dimensions
-            
-        Returns:
-            Resized and cropped VideoFileClip
-        """
+
         target_width, target_height = target_size
         clip_width, clip_height = clip.size
         
@@ -103,30 +101,103 @@ class VideoGenerator:
         scale_height = target_height / clip_height
         scale = max(scale_width, scale_height)
         
-        # Resize clip
-        resized_clip = clip.resize(scale)
-        
-        # Crop to target dimensions (center crop)
-        current_width, current_height = resized_clip.size
-        crop_x = (current_width - target_width) // 2
-        crop_y = (current_height - target_height) // 2
-        
-        cropped_clip = resized_clip.crop(x1=crop_x, y1=crop_y, 
-                                       x2=crop_x + target_width, 
-                                       y2=crop_y + target_height)
-        
-        return cropped_clip
+        try:
+            # Resize clip
+            resized_clip = clip.resize(scale)
+            
+            # Crop to target dimensions (center crop)
+            current_width, current_height = resized_clip.size
+            crop_x = (current_width - target_width) // 2
+            crop_y = (current_height - target_height) // 2
+            
+            cropped_clip = resized_clip.crop(x1=crop_x, y1=crop_y, 
+                                           x2=crop_x + target_width, 
+                                           y2=crop_y + target_height)
+            
+            if cropped_clip is None or not hasattr(cropped_clip, 'size'):
+                raise ValueError("crop returned invalid clip")
+            
+            return cropped_clip
+        except Exception as e:
+            print(f"⚠️ Erro ao redimensionar/cortar clip: {e}, retornando clip original")
+            return clip
 
-    def generate_word_timestamps(self, audio_path):
+    def apply_video_style(self, video, text=""):
         """
-        Generate precise word timestamps using Whisper.
+        Aplica estilo de vídeo baseado na configuração.
         
         Args:
-            audio_path (str): Path to the audio file
+            video: VideoFileClip original
+            text: Texto para usar em templates
             
         Returns:
-            list: List of tuples (word, start_time, end_time)
+            VideoFileClip com efeitos aplicados
         """
+        print(f"🎨 Aplicando estilo: {self.video_style}")
+        
+        if self.video_style == "cinematic":
+            # Template cinematográfico
+            return self.effects.template_cinematic(
+                video, 
+                title="Versículo do Dia",
+                subtitle="Deus te abençoe! 🙏"
+            )
+            
+        elif self.video_style == "instagram":
+            # Template Instagram Stories
+            instagram_text = "Siga nosso canal!" if not text else text[:30] + "..."
+            return self.effects.template_instagram_story(
+                video,
+                text=instagram_text,
+                music_path=None  # Música já é adicionada separadamente
+            )
+            
+        elif self.video_style == "tiktok":
+            # Template TikTok
+            tiktok_caption = "Isso muda tudo! ✨" if not text else text[:40] + "..."
+            return self.effects.template_tiktok_video(
+                video,
+                caption=tiktok_caption,
+                effect="zoom"
+            )
+            
+        elif self.video_style == "simple":
+            # Estilo simples com efeitos básicos
+            video = self.effects.overlay_vignette(video, intensity=0.3)
+            video = self.effects.overlay_film_grain(video, intensity=0.01)
+            return video
+            
+        elif self.video_style == "vintage":
+            # Estilo vintage
+            video = self.effects.overlay_color_filter(video, "sepia", intensity=0.4)
+            video = self.effects.overlay_vignette(video, intensity=0.5)
+            video = self.effects.overlay_film_grain(video, intensity=0.03)
+            return video
+            
+        elif self.video_style == "modern":
+            # Estilo moderno
+            video = self.effects.overlay_color_filter(video, "cool", intensity=0.2)
+            # Adicionar texto flutuante se houver
+            if text:
+                words = text.split()[:5]
+                short_text = " ".join(words)
+                text_clip = self.effects.text_template_fade_in_out(
+                    short_text,
+                    duration=video.duration,
+                    font_size=40,
+                    font_color="#00FFFF",
+                    position=("center", 0.9)
+                )
+                video = CompositeVideoClip([video, text_clip])
+            return video
+            
+        else:
+            # Estilo padrão (sem efeitos especiais)
+            print(f"🎨 Estilo '{self.video_style}' não encontrado, usando padrão")
+            return video
+        
+    def generate_word_timestamps(self, audio_path):
+
         try:
             # Load Whisper model (using a smaller model for speed)
             model = WhisperModel("small", device="cpu", compute_type="int8")
@@ -154,15 +225,7 @@ class VideoGenerator:
             return self._estimate_word_timestamps(audio_path)
 
     def _estimate_word_timestamps(self, audio_path):
-        """
-        Fallback method to estimate word timestamps when Whisper fails.
-        
-        Args:
-            audio_path (str): Path to the audio file
-            
-        Returns:
-            list: List of tuples (word, start_time, end_time)
-        """
+
         try:
             # Get audio duration
             audio_clip = AudioFileClip(audio_path)
@@ -178,16 +241,7 @@ class VideoGenerator:
             return []
 
     def add_synchronized_subtitles(self, video, audio_path):
-        """
-        Add synchronized subtitles to the video using Whisper transcription.
-        
-        Args:
-            video: VideoFileClip to add subtitles to
-            audio_path (str): Path to the audio file
-            
-        Returns:
-            VideoFileClip with subtitles
-        """
+
         try:
             # Generate precise word timestamps using Whisper
             word_timestamps = self.generate_word_timestamps(audio_path)
@@ -377,9 +431,17 @@ class VideoGenerator:
                         print("💡 Considere usar modo agrupado (subtitle_one_word_at_a_time=False)")
                     
                     if valid_clips:
-                        final_video = CompositeVideoClip([video] + valid_clips)
-                        print(f"✅ Vídeo composto com {len(valid_clips)} legendas")
-                        return final_video
+                        try:
+                            final_video = CompositeVideoClip([video] + valid_clips)
+                            if final_video is not None and hasattr(final_video, 'duration') and final_video.duration > 0:
+                                print(f"✅ Vídeo composto com {len(valid_clips)} legendas")
+                                return final_video
+                            else:
+                                print("⚠️ CompositeVideoClip falhou, retornando vídeo original")
+                                return video
+                        except Exception as e:
+                            print(f"⚠️ Erro no CompositeVideoClip das legendas: {e}")
+                            return video
                     else:
                         print("⚠️ Nenhum clip de texto válido encontrado")
                         return video
@@ -396,30 +458,24 @@ class VideoGenerator:
             return video
 
     def add_song(self, video, volume=0.3):
-        """
-        Add background music to the video from the songs folder.
-        
-        Args:
-            video: VideoFileClip to add music to
-            volume (float): Volume level for the background music (0.0 to 1.0)
+
+        # IMPORTANTE: Sempre retornar o vídeo, mesmo que haja erro!
+        if video is None:
+            print("❌ add_song: vídeo é None, retornando None")
+            return None
             
-        Returns:
-            VideoFileClip with background music added
-        """
-        import glob
-        
-        # Find all pregacao songs in the songs folder
-        song_files = glob.glob("songs/pregacao*.mp3")
-        
-        if not song_files:
-            print("⚠️ Nenhum arquivo de música encontrado na pasta songs/")
-            return video
-        
-        # Select random song
-        selected_song = random.choice(song_files)
-        print(f"🎵 Adicionando música de fundo: {os.path.basename(selected_song)}")
-        
         try:
+            # Find all pregacao songs in the songs folder
+            song_files = glob.glob("songs/pregacao*.mp3")
+            
+            if not song_files:
+                print("⚠️ Nenhum arquivo de música encontrado na pasta songs/")
+                return video
+            
+            # Select random song
+            selected_song = random.choice(song_files)
+            print(f"🎵 Adicionando música de fundo: {os.path.basename(selected_song)}")
+            
             # Load the song
             if not os.path.exists(selected_song):
                 print(f"⚠️ Arquivo de música não encontrado: {selected_song}")
@@ -438,6 +494,17 @@ class VideoGenerator:
             # Set volume
             song_clip = song_clip.volumex(volume)
             
+            # APLICAR EFEITOS DE ÁUDIO BASEADO NO ESTILO (ADICIONAR ESTAS LINHAS)
+            if self.video_style == "cinematic":
+                # Para estilo cinematográfico, adicionar eco leve
+                song_clip = self.effects.audio_echo(song_clip, delay=0.1, decay=0.3)
+            elif self.video_style == "vintage":
+                # Para vintage, adicionar um pouco de ruído
+                from moviepy.audio.fx.all import audio_normalize
+                song_clip = audio_normalize(song_clip)
+            
+            song_clip = song_clip.volumex(volume)
+
             # If song is shorter than video, loop it
             video_duration = video.duration
             if song_clip.duration < video_duration:
@@ -458,32 +525,59 @@ class VideoGenerator:
             # Get existing audio
             existing_audio = video.audio
             
-            # Mix existing audio with background music
+            # Validate existing audio
             if existing_audio is not None:
-                # Composite the audio tracks
-                final_audio = CompositeAudioClip([existing_audio, song_clip])
-            else:
-                final_audio = song_clip
+                if not hasattr(existing_audio, 'duration') or existing_audio.duration <= 0:
+                    print("⚠️ Áudio existente inválido, ignorando")
+                    existing_audio = None
+            
+            # Validate song clip
+            if not hasattr(song_clip, 'duration') or song_clip.duration <= 0:
+                print("⚠️ Clip de música inválido, pulando adição de música")
+                song_clip.close()
+                return video
+            
+            # Mix existing audio with background music
+            try:
+                if existing_audio is not None:
+                    # Composite the audio tracks
+                    final_audio = CompositeAudioClip([existing_audio, song_clip])
+                else:
+                    final_audio = song_clip
+                
+                # Validate final audio
+                if final_audio is None or not hasattr(final_audio, 'duration') or final_audio.duration <= 0:
+                    print("⚠️ Áudio final inválido, mantendo áudio original")
+                    final_audio = existing_audio if existing_audio is not None else None
+                    if final_audio is None:
+                        return video
+                
+            except Exception as e:
+                print(f"⚠️ Erro ao compor áudio: {e}")
+                print("🔄 Mantendo áudio original")
+                return video
             
             # Set the mixed audio to the video
-            video = video.set_audio(final_audio)
-            
-            # Clean up
-            song_clip.close()
-            
-            print(f"✅ Música de fundo adicionada com sucesso")
-            return video
+            try:
+                video_with_audio = video.set_audio(final_audio)
+                if video_with_audio is not None:
+                    print(f"✅ Música de fundo adicionada com sucesso")
+                    return video_with_audio
+                else:
+                    print("⚠️ set_audio() retornou None, mantendo vídeo original")
+                    return video
+            except Exception as e:
+                print(f"⚠️ Erro ao definir áudio no vídeo: {e}")
+                print("🔄 Mantendo vídeo original")
+                return video
             
         except Exception as e:
             print(f"❌ Erro ao adicionar música: {e}")
+            # IMPORTANTE: SEMPRE retornar o vídeo original em caso de erro
             return video
 
     def _cleanup_temp_files(self):
-        """
-        Clean up temporary files created during video generation.
-        """
-        import glob
-        
+
         try:
             # Clean up temporary text image files
             temp_files = glob.glob("temp_text_*.png")
@@ -504,22 +598,24 @@ class VideoGenerator:
             print(f"⚠️ Erro geral na limpeza de arquivos temporários: {e}")
 
     def generate_video(self, audio_path, audio_duration, output_path, text=None):
-        """
-        Generate a video synchronized with the given audio.
 
-        Args:
-            audio_path (str): Path to the audio file.
-            audio_duration (float): Duration of the audio in seconds.
-            output_path (str): Path to save the generated video.
-            text (str, optional): Text to display as synchronized subtitles.
-        """
         print(f"🎬 Criando sequência de vídeo com duração {audio_duration:.2f} segundos...")
         
         # Create video sequence from random 4-second clips
         video = self.create_video_sequence(audio_duration)
         
+        # Validate video sequence
+        if video is None:
+            raise ValueError("Failed to create video sequence")
+        
+        if not hasattr(video, 'duration') or video.duration <= 0:
+            raise ValueError(f"Invalid video duration: {getattr(video, 'duration', 'None')}")
+            
+        print(f"✅ Sequência de vídeo criada: {video.duration:.2f}s")
+        
         # Add audio to video
         print(f"🎵 Carregando áudio: {audio_path}")
+        audio_clip = None
         try:
             if not os.path.exists(audio_path):
                 raise FileNotFoundError(f"Arquivo de áudio não encontrado: {audio_path}")
@@ -540,22 +636,65 @@ class VideoGenerator:
             print(f"❌ Erro ao carregar áudio: {e}")
             # Create silent audio as fallback
             print("🔄 Criando áudio silencioso como fallback")
-            audio_clip = AudioFileClip(audio_path)  # Try again, might work
-            
-        video = video.set_audio(audio_clip)
+            try:
+                audio_clip = AudioFileClip(audio_path)  # Try again, might work
+                if audio_clip and audio_clip.duration > 0:
+                    print(f"✅ Áudio de fallback carregado: {audio_clip.duration:.2f}s")
+                else:
+                    raise ValueError("Áudio de fallback inválido")
+            except Exception as e2:
+                print(f"❌ Erro no áudio de fallback: {e2}")
+                # Create truly silent audio
+                from moviepy.editor import AudioClip
+                import numpy as np
+                audio_clip = AudioClip(lambda t: np.zeros(2), duration=audio_duration)
+                print(f"🔇 Criado áudio silencioso de {audio_duration:.2f}s")
+        
+        # Set audio to video (audio_clip should never be None now)
+        if audio_clip is not None:
+            try:
+                video = video.set_audio(audio_clip)
+                print("✅ Áudio definido no vídeo com sucesso")
+            except Exception as e:
+                print(f"⚠️ Erro ao definir áudio no vídeo: {e}")
+        else:
+            print("⚠️ Nenhum áudio válido disponível")
 
-        # Add background music
-        video = self.add_song(video, volume=0.3)
+        # Add background music (VERIFICAR SE VÍDEO NÃO É NONE)
+        if video is not None:
+            video = self.add_song(video, volume=0.3)
+            if video is None:
+                raise ValueError("add_song() retornou None!")
+        else:
+            raise ValueError("Vídeo é None após adição de áudio")
+
+        # APLICAR ESTILO DE VÍDEO (ADICIONAR ESTAS LINHAS)
+        video = self.apply_video_style(video, text)
 
         # Add logo
         logo_path = f"images/logo-canal-{self.channel}.jpg"
+        
+        # Add logo
+        logo_path = f"images/logo-canal-{self.channel}.jpg"
         if os.path.exists(logo_path):
-            video = add_logo(video, logo_path, x_percent=0.45, y_percent=0.02, size_multiplier=0.8, opacity=0.7)
+            try:
+                video = add_logo(video, logo_path, x_percent=0.45, y_percent=0.02, size_multiplier=0.8, opacity=0.7)
+                print("✅ Logo adicionado com sucesso")
+            except Exception as e:
+                print(f"⚠️ Erro ao adicionar logo: {e}")
+        else:
+            print(f"⚠️ Logo não encontrado: {logo_path}")
 
         # Add subscribe image
         subscribe_image_path = "images/subscribe.png"
         if os.path.exists(subscribe_image_path):
-            video = add_image(video, subscribe_image_path, x=0.2, y=0.7, size_multiplier=0.8, opacity=0.6)
+            try:
+                video = add_image(video, subscribe_image_path, x=0.2, y=0.7, size_multiplier=0.8, opacity=0.6)
+                print("✅ Imagem de inscrição adicionada com sucesso")
+            except Exception as e:
+                print(f"⚠️ Erro ao adicionar imagem de inscrição: {e}")
+        else:
+            print(f"⚠️ Imagem de inscrição não encontrada: {subscribe_image_path}")
 
         # Add synchronized subtitles if text is provided
         if text:
@@ -571,6 +710,24 @@ class VideoGenerator:
         if video is None:
             raise ValueError("Video object is None - cannot write video file")
 
+        # Additional validation
+        try:
+            # Check if video has required attributes
+            if not hasattr(video, 'duration') or video.duration <= 0:
+                raise ValueError(f"Video duration invalid: {getattr(video, 'duration', 'None')}")
+            
+            if not hasattr(video, 'size') or not video.size:
+                raise ValueError(f"Video size invalid: {getattr(video, 'size', 'None')}")
+                
+            # Try to get a frame to ensure video is valid
+            test_frame = video.get_frame(0)
+            if test_frame is None:
+                raise ValueError("Cannot get video frame - video may be corrupted")
+                
+        except Exception as e:
+            print(f"❌ Validação do vídeo falhou: {e}")
+            raise ValueError(f"Video validation failed: {e}")
+
         # Debug video properties
         print(f"🔍 Debug vídeo - Duração: {video.duration:.2f}s, Tamanho: {video.size}, FPS: {video.fps}")
         
@@ -584,7 +741,6 @@ class VideoGenerator:
         print(f"🎬 Escrevendo vídeo final: {output_path}")
         
         # Force garbage collection and close any pending processes
-        import gc
         gc.collect()
         
         # Ensure output directory exists
@@ -593,7 +749,7 @@ class VideoGenerator:
             os.makedirs(output_dir, exist_ok=True)
         
         try:
-            # Try with different settings to avoid ffmpeg issues
+            # Write with safe settings
             video.write_videofile(
                 output_path, 
                 codec="libx264", 
@@ -604,23 +760,18 @@ class VideoGenerator:
                 temp_audiofile=None,
                 remove_temp=True,
                 write_logfile=False,
-                threads=1  # Use single thread to avoid conflicts
+                threads=1
             )
             print(f"✅ Video saved: {output_path}")
+            
         except Exception as e:
             print(f"❌ Erro ao escrever vídeo: {e}")
             print("🔄 Tentando método alternativo...")
             try:
-                # Force close any pending clips
-                try:
-                    video.close()
-                except:
-                    pass
-                
-                # Fallback method with different codec and settings
-                fallback_path = output_path.replace('.mp4', '_fallback.mp4')
+                # Try different codec
+                temp_path = output_path.replace('.mp4', '_temp.mp4')
                 video.write_videofile(
-                    fallback_path, 
+                    temp_path, 
                     codec="mpeg4", 
                     fps=24, 
                     verbose=False, 
@@ -628,17 +779,25 @@ class VideoGenerator:
                     audio_codec="mp3",
                     threads=1
                 )
-                print(f"✅ Video saved (fallback): {fallback_path}")
-                # Rename fallback to original name
-                if os.path.exists(fallback_path):
-                    os.rename(fallback_path, output_path)
+                
+                if os.path.exists(temp_path):
+                    os.replace(temp_path, output_path)
+                    print(f"✅ Video saved (fallback method): {output_path}")
+                else:
+                    raise ValueError("Fallback method failed to create file")
+                    
             except Exception as e2:
                 print(f"❌ Erro no método alternativo: {e2}")
                 raise e  # Raise original error
         
-        # Clean up clips
-        video.close()
-        audio_clip.close()
+        finally:
+            # Clean up clips
+            try:
+                video.close()
+                if audio_clip:
+                    audio_clip.close()
+            except:
+                pass
         
         # Verify output file was created successfully
         if os.path.exists(output_path):
@@ -655,14 +814,7 @@ class VideoGenerator:
         return output_path
 
     def create_final_video(self, texts, output_video_path, output_folder=None):
-        """
-        Main function to create the final video with audio generation.
-        
-        Args:
-            texts (list): List of text segments.
-            output_video_path (str): Path to save the final video.
-            output_folder (str, optional): Folder to save temporary files.
-        """
+
         from voice_generator import VoiceGenerator
         
         try:
