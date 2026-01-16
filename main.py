@@ -11,14 +11,8 @@ CHANNEL = "parallelcuts"
 THEME = "pregacao"
 VOICE_NAME = "pm_santa"
 VOICE_SPEED = 0.6
-
-def sanitize_text(text):
-    """Limpa texto."""
-    text = text.replace("\n", " ").replace("\r", " ").strip()
-    text = re.sub(r'^\s*(\d+)\s+', '', text)
-    text = re.sub(r'\.\s*(\d+)\s+', '.', text)
-    return """
-        Irmãos e irmãs, [hoje](/ˈtʊ.deɪ/) vamos meditar na poderosa [palavra](/ˈwɝːd/) do [Senhor](/ˈsɛ.njɔʁ/)!
+FORCE_TEXT = """
+    Irmãos e irmãs, [hoje](/ˈtʊ.deɪ/) vamos meditar na poderosa [palavra](/ˈwɝːd/) do [Senhor](/ˈsɛ.njɔʁ/)!
 
     O [apóstolo](/əˈpɑːs.təl/) [Paulo](/ˈpɔː.loʊ/) nos diz na [carta](/ˈkɑɹ.tə/) aos [Romanos](/ɹoʊˈmænz/):
 
@@ -58,6 +52,16 @@ def sanitize_text(text):
 
     [Aleluia](/a.leˈluj.ɐ/)! [Amém](/aˈmẽj̃/]!
     """
+
+def sanitize_text(text, force_text=None):
+
+    if force_text:
+        return force_text
+    
+    text = text.replace("\n", " ").replace("\r", " ").strip()
+    text = re.sub(r'^\s*(\d+)\s+', '', text)
+    text = re.sub(r'\.\s*(\d+)\s+', '.', text)
+    
     return ' '.join(text.split())
 
 def select_random_verses(verses, count=2):
@@ -93,7 +97,7 @@ def main():
     # Selecionar versículos
     selected_verses = select_random_verses(verses, 2)
     full_text = " ".join(selected_verses)
-    full_text = sanitize_text(full_text)
+    full_text = sanitize_text(full_text, FORCE_TEXT)
     print(f"📝 Texto: {full_text[:100]}...")
     
     # Criar pasta de saída
