@@ -140,7 +140,7 @@ class VideoEffects:
             draw = ImageDraw.Draw(img)
             
             try:
-                font = ImageFont.truetype("arial.ttf", font_size)
+                font = ImageFont.truetype("lilita.ttf", font_size)
             except:
                 font = ImageFont.load_default()
             
@@ -178,7 +178,7 @@ class VideoEffects:
             draw = ImageDraw.Draw(img)
             
             try:
-                font = ImageFont.truetype("arial.ttf", font_size)
+                font = ImageFont.truetype("lilita.ttf", font_size)
             except:
                 font = ImageFont.load_default()
             
@@ -234,7 +234,7 @@ class VideoEffects:
             draw = ImageDraw.Draw(img)
             
             try:
-                font = ImageFont.truetype("arial.ttf", font_size)
+                font = ImageFont.truetype("lilita.ttf", font_size)
             except:
                 font = ImageFont.load_default()
             

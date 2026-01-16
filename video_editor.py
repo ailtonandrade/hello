@@ -5,7 +5,7 @@ import tempfile
 from PIL import Image, ImageDraw, ImageFont
 
 def add_text(video, text, config, duration, start_time):
-    font_path = os.path.join('images', 'arial.ttf')
+    font_path = os.path.join('images', 'lilita.ttf')
     font = ImageFont.truetype(font_path, config["font_size"])
 
     img = Image.new("RGBA", video.size, color=(0, 0, 0, 0))  # Transparent background

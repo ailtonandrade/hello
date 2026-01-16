@@ -15,13 +15,14 @@ MAX_PERCENT_USAGE_CPU = 40  # Percentual máximo de uso de CPU
 
 # VoiceGenerator configuration
 VOICE_NAME = "pm_santa"  # Voice: pm_santa, pf_santa, pm_arctic, pf_arctic, etc.
-VOICE_SPEED = 1.0  # Speed multiplier: 0.5 (slow) to 2.0 (fast)
-VOICE_PITCH = 1.0  # Pitch multiplier: 0.8 (lower) to 1.2 (higher)
-VOICE_VOLUME = 1.0  # Volume multiplier: 0.5 (quiet) to 1.5 (loud)
+VOICE_SPEED = 0.7  # Speed multiplier: 0.5 (slow) to 2.0 (fast)
+VOICE_PITCH = 0.9  # Pitch multiplier: 0.8 (lower) to 1.2 (higher)
+VOICE_VOLUME = 1.1  # Volume multiplier: 0.5 (quiet) to 1.5 (loud)
 
 # VideoGenerator configuration
-SUBTITLE_WORDS_PER_LINE = 3  # Set to number of words per line, e.g., 3 for grouped words
+SUBTITLE_WORDS_PER_LINE = 6  # Set to number of words per line, e.g., 3 for grouped words
 SUBTITLE_ONE_WORD_AT_A_TIME = False  # Set to False for grouped words, True for one word at a time (can cause performance issues)
+SUBTITLE_FONT_SIZE = 70  # Font size for subtitles
 
 import psutil
 import os
@@ -79,6 +80,7 @@ def main():
     video_gen = VideoGenerator(
             subtitle_words_per_line=SUBTITLE_WORDS_PER_LINE,
             subtitle_one_word_at_a_time=SUBTITLE_ONE_WORD_AT_A_TIME,
+            subtitle_font_size=SUBTITLE_FONT_SIZE,
             video_style="cinematic"  # ADICIONAR ESTA LINHA - escolha: "cinematic", "instagram", "tiktok", "simple", "vintage", "modern"
         )
     youtube_mgr = YouTubeManager()
