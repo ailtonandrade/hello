@@ -105,7 +105,7 @@ class VideoGenerator:
             print(f"❌ Erro na transcrição: {e}")
             return []
 
-    def create_subtitle_clip(self, segment, video_size, x_pos=0.5, y_pos=0.8):
+    def create_subtitle_clips(self, segment, video_size, x_pos=0.5, y_pos=0.8):
         """Legenda posicionável como o logo."""
         try:
             img = Image.new("RGBA", video_size, (0, 0, 0, 0))
