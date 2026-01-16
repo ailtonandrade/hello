@@ -9,7 +9,7 @@ from faster_whisper import WhisperModel
 class VideoGenerator:
     def __init__(self, theme="pregacao", screen_orientation="MOBILE", channel="parallelcuts", 
                  subtitle_font="arial.ttf", subtitle_font_size=50, subtitle_color="white", 
-                 subtitle_words_per_line=1):
+                 subtitle_words_per_line=3, subtitle_one_word_at_a_time=False):
         self.theme = theme
         self.screen_orientation = screen_orientation
         self.channel = channel
@@ -17,6 +17,7 @@ class VideoGenerator:
         self.subtitle_font_size = subtitle_font_size
         self.subtitle_color = subtitle_color
         self.subtitle_words_per_line = subtitle_words_per_line
+        self.subtitle_one_word_at_a_time = subtitle_one_word_at_a_time
 
     def get_video_size(self):
         return (1920, 1080) if self.screen_orientation == "DESKTOP" else (1080, 1920)
@@ -187,128 +188,211 @@ class VideoGenerator:
         Returns:
             VideoFileClip with subtitles
         """
-        # Generate precise word timestamps using Whisper
-        word_timestamps = self.generate_word_timestamps(audio_path)
-        
-        if not word_timestamps:
-            print("⚠️ Não foi possível gerar timestamps das palavras")
-            return video
-        
-        # Group words into subtitle segments
-        subtitle_segments = []
-        current_segment = []
-        current_start = 0
-        
-        for word, start_time, end_time in word_timestamps:
-            current_segment.append(word)
+        try:
+            # Generate precise word timestamps using Whisper
+            word_timestamps = self.generate_word_timestamps(audio_path)
             
-            if len(current_segment) == 1:
-                current_start = start_time
+            if not word_timestamps:
+                print("⚠️ Não foi possível gerar timestamps das palavras")
+                return video
             
-            if len(current_segment) >= self.subtitle_words_per_line:
-                # Create subtitle segment
-                subtitle_text = " ".join(current_segment)
-                duration = end_time - current_start
+            # Group words into subtitle segments (improved grouping)
+            subtitle_segments = []
+            
+            if self.subtitle_one_word_at_a_time:
+                # One word at a time mode
+                for word, start_time, end_time in word_timestamps:
+                    subtitle_segments.append({
+                        'text': word,
+                        'start_time': start_time,
+                        'duration': end_time - start_time
+                    })
+                print(f"📝 Modo uma palavra por vez: {len(subtitle_segments)} segmentos criados")
                 
-                subtitle_segments.append({
-                    'text': subtitle_text,
-                    'start_time': current_start,
-                    'duration': duration
-                })
-                
+                # Warning for too many segments
+                if len(subtitle_segments) > 100:
+                    print("⚠️ Muitos segmentos de legenda detectados (>50). Isso pode causar problemas de performance.")
+                    print("💡 Considere usar modo agrupado definindo subtitle_one_word_at_a_time=False")
+            else:
+                # Grouped words mode
                 current_segment = []
-                current_start = end_time
-        
-        # Add remaining words
-        if current_segment:
-            # Get the end time from the last word
-            last_end_time = word_timestamps[-1][2] if word_timestamps else current_start + 1.0
-            subtitle_text = " ".join(current_segment)
-            duration = last_end_time - current_start
-            
-            subtitle_segments.append({
-                'text': subtitle_text,
-                'start_time': current_start,
-                'duration': duration
-            })
-        
-        print(f"📝 Criando {len(subtitle_segments)} segmentos de legenda")
-        
-        # Create text clips for each segment
-        text_clips = []
-        
-        for segment in subtitle_segments:
-            # Create text configuration
-            config = {
-                "font_size": self.subtitle_font_size,
-                "font_color": self.subtitle_color,
-                "padding_x": 20,
-                "padding_y": 20,
-                "line_spacing": 10
-            }
-            
-            # Create text image
-            font_path = os.path.join('images', self.subtitle_font)
-            try:
-                font = ImageFont.truetype(font_path, config["font_size"])
-            except:
-                # Fallback to default font
-                font = ImageFont.load_default()
-            
-            img = Image.new("RGBA", video.size, color=(0, 0, 0, 0))  # Transparent background
-            draw = ImageDraw.Draw(img)
-
-            max_width = video.size[0] - config["padding_x"] * 2
-            lines = []
-            words = segment['text'].split()
-            current_line = ""
-
-            for word in words:
-                test_line = f"{current_line} {word}".strip()
-                try:
-                    text_bbox = draw.textbbox((0, 0), test_line, font=font)
-                    text_width = text_bbox[2] - text_bbox[0]
-                except:
-                    text_width = len(test_line) * config["font_size"] * 0.6
-
-                if text_width <= max_width:
-                    current_line = test_line
-                else:
-                    lines.append(current_line)
-                    current_line = word
-
-            if current_line:
-                lines.append(current_line)
-
-            try:
-                line_height = draw.textbbox((0, 0), "A", font=font)[3] - draw.textbbox((0, 0), "A", font=font)[1]
-            except:
-                line_height = config["font_size"]
-            
-            total_text_height = line_height * len(lines) + config["line_spacing"] * (len(lines) - 1)
-
-            y_offset = (img.height - total_text_height) // 2
-            for line in lines:
-                try:
-                    text_bbox = draw.textbbox((0, 0), line, font=font)
-                    text_width = text_bbox[2] - text_bbox[0]
-                except:
-                    text_width = len(line) * config["font_size"] * 0.6
+                current_start = 0
+                max_segment_duration = 3.0  # Maximum duration for each subtitle segment
                 
-                x_position = (img.width - text_width) // 2
-                draw.text((x_position, y_offset), line, fill=config["font_color"], font=font)
-                y_offset += line_height + config["line_spacing"]
+                for i, (word, start_time, end_time) in enumerate(word_timestamps):
+                    current_segment.append(word)
+                    
+                    if len(current_segment) == 1:
+                        current_start = start_time
+                    
+                    # Check if we should create a new segment
+                    should_create_segment = False
+                    
+                    # Create segment if we have enough words per line
+                    if len(current_segment) >= self.subtitle_words_per_line:
+                        should_create_segment = True
+                    
+                    # Create segment if duration is too long
+                    elif end_time - current_start > max_segment_duration:
+                        should_create_segment = True
+                    
+                    # Create segment if this is the last word
+                    elif i == len(word_timestamps) - 1:
+                        should_create_segment = True
+                    
+                    if should_create_segment and current_segment:
+                        # Create subtitle segment
+                        subtitle_text = " ".join(current_segment)
+                        duration = end_time - current_start
+                        
+                        subtitle_segments.append({
+                            'text': subtitle_text,
+                            'start_time': current_start,
+                            'duration': duration
+                        })
+                        
+                        current_segment = []
+                        current_start = end_time
+                
+                # Add remaining words if any
+                if current_segment:
+                    last_end_time = word_timestamps[-1][2] if word_timestamps else current_start + 1.0
+                    subtitle_text = " ".join(current_segment)
+                    duration = last_end_time - current_start
+                    
+                    subtitle_segments.append({
+                        'text': subtitle_text,
+                        'start_time': current_start,
+                        'duration': duration
+                    })
+                
+                print(f"📝 Modo palavras agrupadas: {len(subtitle_segments)} segmentos criados")
+            
+            print(f"📝 Criando {len(subtitle_segments)} segmentos de legenda")
+            
+            # Create text clips for each segment
+            text_clips = []
+            
+            for i, segment in enumerate(subtitle_segments):
+                try:
+                    # Validate segment data
+                    if not segment.get('text') or segment.get('duration', 0) <= 0:
+                        print(f"⚠️ Segmento {i} inválido: texto='{segment.get('text')}', duração={segment.get('duration')}")
+                        continue
+                    
+                    # Create text configuration
+                    config = {
+                        "font_size": self.subtitle_font_size,
+                        "font_color": self.subtitle_color,
+                        "padding_x": 20,
+                        "padding_y": 20,
+                        "line_spacing": 10
+                    }
+                    
+                    # Create text image
+                    font_path = os.path.join('images', self.subtitle_font)
+                    try:
+                        font = ImageFont.truetype(font_path, config["font_size"])
+                    except:
+                        # Fallback to default font
+                        font = ImageFont.load_default()
+                    
+                    img = Image.new("RGBA", video.size, color=(0, 0, 0, 0))  # Transparent background
+                    draw = ImageDraw.Draw(img)
 
-            temp_image_path = f"temp_text_{segment['start_time']}.png"
-            img.save(temp_image_path, "PNG")
+                    max_width = video.size[0] - config["padding_x"] * 2
+                    lines = []
+                    words = segment['text'].split()
+                    current_line = ""
 
-            text_clip = ImageClip(temp_image_path, transparent=True).set_duration(segment['duration']).set_start(segment['start_time'])
-            text_clips.append(text_clip)
-        
-        # Composite video with all text clips
-        if text_clips:
-            return CompositeVideoClip([video] + text_clips)
-        else:
+                    for word in words:
+                        test_line = f"{current_line} {word}".strip()
+                        try:
+                            text_bbox = draw.textbbox((0, 0), test_line, font=font)
+                            text_width = text_bbox[2] - text_bbox[0]
+                        except:
+                            text_width = len(test_line) * config["font_size"] * 0.6
+
+                        if text_width <= max_width:
+                            current_line = test_line
+                        else:
+                            lines.append(current_line)
+                            current_line = word
+
+                    if current_line:
+                        lines.append(current_line)
+
+                    try:
+                        line_height = draw.textbbox((0, 0), "A", font=font)[3] - draw.textbbox((0, 0), "A", font=font)[1]
+                    except:
+                        line_height = config["font_size"]
+                    
+                    total_text_height = line_height * len(lines) + config["line_spacing"] * (len(lines) - 1)
+
+                    y_offset = (img.height - total_text_height) // 2
+                    for line in lines:
+                        try:
+                            text_bbox = draw.textbbox((0, 0), line, font=font)
+                            text_width = text_bbox[2] - text_bbox[0]
+                        except:
+                            text_width = len(line) * config["font_size"] * 0.6
+                        
+                        x_position = (img.width - text_width) // 2
+                        draw.text((x_position, y_offset), line, fill=config["font_color"], font=font)
+                        y_offset += line_height + config["line_spacing"]
+
+                    temp_image_path = f"temp_text_{segment['start_time']:.3f}.png"
+                    img.save(temp_image_path, "PNG")
+
+                    # Create text clip with validation
+                    duration = max(segment['duration'], 0.1)  # Minimum 0.1 seconds
+                    text_clip = ImageClip(temp_image_path, transparent=True).set_duration(duration).set_start(segment['start_time'])
+                    
+                    # Validate text clip
+                    if text_clip.duration > 0 and text_clip.start >= 0:
+                        text_clips.append(text_clip)
+                    else:
+                        print(f"⚠️ Clip de texto inválido descartado: duração={text_clip.duration}, início={text_clip.start}")
+                        os.remove(temp_image_path)  # Clean up invalid file
+                    
+                except Exception as e:
+                    print(f"⚠️ Erro ao criar clip de texto para segmento {i}: {e}")
+                    continue
+            
+            # Composite video with all text clips
+            if text_clips:
+                try:
+                    # Validate all text clips before composition
+                    valid_clips = []
+                    for i, clip in enumerate(text_clips):
+                        if clip and hasattr(clip, 'duration') and clip.duration > 0:
+                            valid_clips.append(clip)
+                        else:
+                            print(f"⚠️ Clip de texto {i} inválido descartado")
+                    
+                    print(f"📊 Usando {len(valid_clips)} clips de texto válidos de {len(text_clips)} criados")
+                    
+                    if len(valid_clips) > 50:
+                        print("⚠️ Muitos clips de texto detectados. Isso pode causar problemas de performance.")
+                        print("💡 Considere usar modo agrupado (subtitle_one_word_at_a_time=False)")
+                    
+                    if valid_clips:
+                        final_video = CompositeVideoClip([video] + valid_clips)
+                        print(f"✅ Vídeo composto com {len(valid_clips)} legendas")
+                        return final_video
+                    else:
+                        print("⚠️ Nenhum clip de texto válido encontrado")
+                        return video
+                        
+                except Exception as e:
+                    print(f"⚠️ Erro ao compor vídeo com legendas: {e}")
+                    print("🔄 Retornando vídeo sem legendas")
+                    return video
+            else:
+                return video
+                
+        except Exception as e:
+            print(f"⚠️ Erro geral ao adicionar legendas: {e}")
             return video
 
     def add_song(self, video, volume=0.3):
@@ -337,7 +421,23 @@ class VideoGenerator:
         
         try:
             # Load the song
+            if not os.path.exists(selected_song):
+                print(f"⚠️ Arquivo de música não encontrado: {selected_song}")
+                return video
+            
             song_clip = AudioFileClip(selected_song)
+            
+            # Validate song clip
+            if song_clip.duration <= 0:
+                print(f"⚠️ Música com duração inválida: {song_clip.duration}")
+                song_clip.close()
+                return video
+            
+            print(f"✅ Música carregada - Duração: {song_clip.duration:.2f}s")
+            
+        except Exception as e:
+            print(f"❌ Erro ao carregar música: {e}")
+            return video
             
             # Set volume
             song_clip = song_clip.volumex(volume)
@@ -386,14 +486,24 @@ class VideoGenerator:
         """
         import glob
         
-        # Clean up temporary text image files
-        temp_files = glob.glob("temp_text_*.png")
-        for temp_file in temp_files:
-            try:
-                os.remove(temp_file)
-                print(f"🗑️ Arquivo temporário removido: {temp_file}")
-            except Exception as e:
-                print(f"⚠️ Erro ao remover arquivo temporário {temp_file}: {e}")
+        try:
+            # Clean up temporary text image files
+            temp_files = glob.glob("temp_text_*.png")
+            removed_count = 0
+            
+            for temp_file in temp_files:
+                try:
+                    if os.path.exists(temp_file):
+                        os.remove(temp_file)
+                        removed_count += 1
+                except Exception as e:
+                    print(f"⚠️ Erro ao remover arquivo temporário {temp_file}: {e}")
+            
+            if removed_count > 0:
+                print(f"🗑️ {removed_count} arquivos temporários removidos")
+                
+        except Exception as e:
+            print(f"⚠️ Erro geral na limpeza de arquivos temporários: {e}")
 
     def generate_video(self, audio_path, audio_duration, output_path, text=None):
         """
@@ -411,7 +521,29 @@ class VideoGenerator:
         video = self.create_video_sequence(audio_duration)
         
         # Add audio to video
-        audio_clip = AudioFileClip(audio_path)
+        print(f"🎵 Carregando áudio: {audio_path}")
+        try:
+            if not os.path.exists(audio_path):
+                raise FileNotFoundError(f"Arquivo de áudio não encontrado: {audio_path}")
+            
+            file_size = os.path.getsize(audio_path)
+            if file_size < 100:  # Arquivo muito pequeno
+                raise ValueError(f"Arquivo de áudio muito pequeno: {file_size} bytes")
+            
+            audio_clip = AudioFileClip(audio_path)
+            
+            # Validate audio clip
+            if audio_clip.duration <= 0:
+                raise ValueError(f"Duração do áudio inválida: {audio_clip.duration}")
+            
+            print(f"✅ Áudio carregado - Duração: {audio_clip.duration:.2f}s")
+            
+        except Exception as e:
+            print(f"❌ Erro ao carregar áudio: {e}")
+            # Create silent audio as fallback
+            print("🔄 Criando áudio silencioso como fallback")
+            audio_clip = AudioFileClip(audio_path)  # Try again, might work
+            
         video = video.set_audio(audio_clip)
 
         # Add background music
@@ -430,15 +562,94 @@ class VideoGenerator:
         # Add synchronized subtitles if text is provided
         if text:
             print("📝 Adicionando legendas sincronizadas...")
-            video = self.add_synchronized_subtitles(video, audio_path)
+            try:
+                video = self.add_synchronized_subtitles(video, audio_path)
+                print(f"✅ Legendas adicionadas com sucesso")
+            except Exception as e:
+                print(f"⚠️ Erro ao adicionar legendas: {e}")
+                # Continue without subtitles
+
+        # Validate video before writing
+        if video is None:
+            raise ValueError("Video object is None - cannot write video file")
+
+        # Debug video properties
+        print(f"🔍 Debug vídeo - Duração: {video.duration:.2f}s, Tamanho: {video.size}, FPS: {video.fps}")
+        
+        # Ensure video has valid audio
+        if hasattr(video, 'audio') and video.audio is not None:
+            print(f"🔍 Debug áudio - Duração: {video.audio.duration:.2f}s")
+        else:
+            print("⚠️ Vídeo não tem áudio válido")
 
         # Write final video
-        video.write_videofile(output_path, codec="libx264", fps=24)
-        print(f"Video saved: {output_path}")
+        print(f"🎬 Escrevendo vídeo final: {output_path}")
+        
+        # Force garbage collection and close any pending processes
+        import gc
+        gc.collect()
+        
+        # Ensure output directory exists
+        output_dir = os.path.dirname(output_path)
+        if output_dir and not os.path.exists(output_dir):
+            os.makedirs(output_dir, exist_ok=True)
+        
+        try:
+            # Try with different settings to avoid ffmpeg issues
+            video.write_videofile(
+                output_path, 
+                codec="libx264", 
+                fps=24, 
+                verbose=False, 
+                logger=None,
+                audio_codec="aac",
+                temp_audiofile=None,
+                remove_temp=True,
+                write_logfile=False,
+                threads=1  # Use single thread to avoid conflicts
+            )
+            print(f"✅ Video saved: {output_path}")
+        except Exception as e:
+            print(f"❌ Erro ao escrever vídeo: {e}")
+            print("🔄 Tentando método alternativo...")
+            try:
+                # Force close any pending clips
+                try:
+                    video.close()
+                except:
+                    pass
+                
+                # Fallback method with different codec and settings
+                fallback_path = output_path.replace('.mp4', '_fallback.mp4')
+                video.write_videofile(
+                    fallback_path, 
+                    codec="mpeg4", 
+                    fps=24, 
+                    verbose=False, 
+                    logger=None,
+                    audio_codec="mp3",
+                    threads=1
+                )
+                print(f"✅ Video saved (fallback): {fallback_path}")
+                # Rename fallback to original name
+                if os.path.exists(fallback_path):
+                    os.rename(fallback_path, output_path)
+            except Exception as e2:
+                print(f"❌ Erro no método alternativo: {e2}")
+                raise e  # Raise original error
         
         # Clean up clips
         video.close()
         audio_clip.close()
+        
+        # Verify output file was created successfully
+        if os.path.exists(output_path):
+            file_size = os.path.getsize(output_path)
+            print(f"✅ Arquivo de vídeo criado: {file_size} bytes")
+            if file_size < 1000:  # Less than 1KB is probably corrupted
+                print("⚠️ Arquivo de vídeo muito pequeno - pode estar corrompido")
+        else:
+            print("❌ Arquivo de vídeo não foi criado!")
         
         # Clean up temporary text files
         self._cleanup_temp_files()

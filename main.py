@@ -11,10 +11,14 @@ from local_title_description_generator import LocalTitleDescriptionGenerator
 CHANNEL = "parallelcuts"
 THEME = "pregacao"
 
+# VideoGenerator configuration
+SUBTITLE_WORDS_PER_LINE = 3  # Set to number of words per line, e.g., 3 for grouped words
+SUBTITLE_ONE_WORD_AT_A_TIME = False  # Set to False for grouped words, True for one word at a time (can cause performance issues)
+
 def main():
     # Initialize generators
     voice_gen = VoiceGenerator()
-    video_gen = VideoGenerator()
+    video_gen = VideoGenerator(subtitle_words_per_line=SUBTITLE_WORDS_PER_LINE,subtitle_one_word_at_a_time=SUBTITLE_ONE_WORD_AT_A_TIME)
     youtube_mgr = YouTubeManager()
     title_gen = LocalTitleDescriptionGenerator()
 
