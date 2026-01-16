@@ -11,3 +11,5 @@ requests
 moviepy
 psutil
 whisper
+scipy
+soundfile

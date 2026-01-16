@@ -5,177 +5,129 @@ import random
 from datetime import datetime
 from voice_generator import VoiceGenerator
 from video_generator import VideoGenerator
-from youtube_manager import YouTubeManager
-from local_title_description_generator import LocalTitleDescriptionGenerator
 
-# Define global variables for channel and theme
+# Configurações fixas
 CHANNEL = "parallelcuts"
 THEME = "pregacao"
-MAX_PERCENT_USAGE_CPU = 40  # Percentual máximo de uso de CPU
-
-# VoiceGenerator configuration
-VOICE_NAME = "pm_santa"  # Voice: pm_santa, pf_santa, pm_arctic, pf_arctic, etc.
-VOICE_SPEED = 0.7  # Speed multiplier: 0.5 (slow) to 2.0 (fast)
-VOICE_PITCH = 0.9  # Pitch multiplier: 0.8 (lower) to 1.2 (higher)
-VOICE_VOLUME = 1.1  # Volume multiplier: 0.5 (quiet) to 1.5 (loud)
-
-# VideoGenerator configuration
-SUBTITLE_WORDS_PER_LINE = 6  # Set to number of words per line, e.g., 3 for grouped words
-SUBTITLE_ONE_WORD_AT_A_TIME = False  # Set to False for grouped words, True for one word at a time (can cause performance issues)
-SUBTITLE_FONT_SIZE = 70  # Font size for subtitles
-
-import psutil
-import os
-
-def limit_cpu_usage(max_percent=50):
-    """
-    Limita o uso do CPU para o processo atual.
-    
-    Args:
-        max_percent: Percentual máximo de CPU a ser usado (0-100)
-    """
-    try:
-        # Obtém o PID do processo atual
-        pid = os.getpid()
-        process = psutil.Process(pid)
-        
-        # Define a afinidade de CPU (quais núcleos podem ser usados)
-        num_cores = psutil.cpu_count(logical=True)
-        cores_to_use = max(1, int(num_cores * (max_percent / 100)))
-        
-        # Se tiver muitos núcleos, limita quantos podem ser usados
-        if num_cores > 2:
-            allowed_cores = list(range(0, cores_to_use))
-            process.cpu_affinity(allowed_cores)
-            print(f"🔒 Limitado a {len(allowed_cores)} núcleo(s) de CPU")
-        
-        # Define prioridade do processo (abaixo do normal)
-        process.nice(psutil.BELOW_NORMAL_PRIORITY_CLASS)
-        print(f"📊 CPU limitada a aproximadamente {max_percent}%")
-        
-    except Exception as e:
-        print(f"⚠️ Não foi possível limitar CPU: {e}")
+VOICE_NAME = "pm_santa"
+VOICE_SPEED = 0.6
 
 def sanitize_text(text):
-    """Sanitize text by removing unwanted characters"""
-    sanitized = text.replace("\n", " ").replace("\r", " ").strip()
+    """Limpa texto."""
+    text = text.replace("\n", " ").replace("\r", " ").strip()
+    text = re.sub(r'^\s*(\d+)\s+', '', text)
+    text = re.sub(r'\.\s*(\d+)\s+', '.', text)
+    return ' '.join(text.split())
 
-    # Remove verse numbers at the beginning and after periods
-    sanitized = re.sub(r'^\s*(\d+)\s+', '', sanitized)  # Remove numbers at start
-    sanitized = re.sub(r'\.\s*(\d+)\s+', '.', sanitized)  # Remove numbers after periods, keep the period
+def select_random_verses(verses, count=2):
+    """Seleciona versículos consecutivos."""
+    if len(verses) < count:
+        return verses
+    start_index = random.randint(0, len(verses) - count)
+    return verses[start_index:start_index + count]
 
-    return ' '.join(sanitized.split())
+def create_output_folder():
+    """Cria pasta de saída."""
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    output_folder = os.path.join("output", timestamp)
+    os.makedirs(output_folder, exist_ok=True)
+    return output_folder
 
 def main():
-
-    limit_cpu_usage(max_percent=MAX_PERCENT_USAGE_CPU)
-
-    # Initialize generators
-    voice_gen = VoiceGenerator(
-        voice=VOICE_NAME,
-        speed=VOICE_SPEED,
-        pitch=VOICE_PITCH,
-        volume=VOICE_VOLUME
-    )
-    video_gen = VideoGenerator(
-            subtitle_words_per_line=SUBTITLE_WORDS_PER_LINE,
-            subtitle_one_word_at_a_time=SUBTITLE_ONE_WORD_AT_A_TIME,
-            subtitle_font_size=SUBTITLE_FONT_SIZE,
-            video_style="cinematic"  # ADICIONAR ESTA LINHA - escolha: "cinematic", "instagram", "tiktok", "simple", "vintage", "modern"
-        )
-    youtube_mgr = YouTubeManager()
-    title_gen = LocalTitleDescriptionGenerator()
-
-    # Read full text from bible.txt
-    with open("bible.txt", "r", encoding="utf-8") as file:
-        verses = [line.strip() for line in file.readlines() if line.strip()]
-
-    if len(verses) < 2:
-        print("❌ Arquivo bible.txt precisa ter pelo menos 2 versículos!")
+    """Gera vídeo completo."""
+    print("🎬 INICIANDO GERAÇÃO DE VÍDEO")
+    
+    # Carregar versículos
+    try:
+        with open("bible.txt", "r", encoding="utf-8") as file:
+            verses = [line.strip() for line in file.readlines() if line.strip()]
+        
+        if len(verses) < 2:
+            print("❌ bible.txt precisa ter pelo menos 2 versículos!")
+            return
+    except Exception as e:
+        print(f"❌ Erro ao ler bible.txt: {e}")
         return
-
-    # Select 2 random consecutive verses
-    start_index = random.randint(0, len(verses) - 2)
-    selected_verses = verses[start_index:start_index + 2]
+    
+    # Selecionar versículos
+    selected_verses = select_random_verses(verses, 2)
     full_text = " ".join(selected_verses)
     full_text = sanitize_text(full_text)
-    print(f"📖 Selecionados versículos {start_index + 1} a {start_index + 2}:")
-    for i, verse in enumerate(selected_verses, 1):
-        print(f"   {i}. {verse[:80]}{'...' if len(verse) > 80 else ''}")
-
-    # Create output folder with current date and time
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    output_folder = os.path.join("output_data_geracao_completa", timestamp)
-    os.makedirs(output_folder, exist_ok=True)
-    print(f"📁 Pasta de saída criada: {output_folder}")
-
-    print(f"📝 Processando texto completo ({len(full_text)} caracteres)...")
-
-    # Generate audio for the complete text
-    audio_path = os.path.join(output_folder, "audio_completo.wav")
-    print("🎤 Gerando áudio com TTS Kokoro...")
+    print(f"📝 Texto: {full_text[:100]}...")
+    
+    # Criar pasta de saída
+    output_folder = create_output_folder()
+    
+    # Gerar áudio
+    voice_gen = VoiceGenerator(voice=VOICE_NAME, speed=VOICE_SPEED)
+    audio_path = os.path.join(output_folder, "audio.wav")
+    
+    print("🎤 Gerando áudio...")
     audio_duration = voice_gen.generate_audio(full_text, audio_path)
-
+    
     if audio_duration == 0:
         print("❌ Falha ao gerar áudio")
         return
-
-    print(f"✅ Áudio gerado com sucesso! Duração: {audio_duration:.2f} segundos")
-
-    # Generate video with the audio duration
-    video_path = os.path.join(output_folder, "video_final.mp4")
-    print(f"🎬 Gerando vídeo com duração de {audio_duration:.2f} segundos...")
-    video_gen.generate_video(audio_path, audio_duration, video_path, text=full_text)
-
-    print(f"✅ Vídeo completo gerado: {video_path}")
-    print(f"📦 Todos os arquivos estão em: {output_folder}\n")
-
-
-def youtube_posting_cycle():
-    """Main loop for YouTube posting automation"""
-
-    limit_cpu_usage(max_percent=MAX_PERCENT_USAGE_CPU)
-
-    title_description_generator = LocalTitleDescriptionGenerator()
-    youtube_manager = YouTubeManager()
     
-    minutos_cooldown = 2
-    wait_time = minutos_cooldown * 60  # in seconds
+    # Gerar vídeo
+    video_gen = VideoGenerator(
+        theme=THEME,
+        channel=CHANNEL,
+        screen_orientation="MOBILE",
+        subtitle_font="lilita.ttf",
+        subtitle_font_size=30,
+        subtitle_words_per_line=6,
+        video_style="simple",
+        optimize_memory=True
+    )
+    
+    print(f"🎬 Gerando vídeo ({audio_duration:.1f}s)...")
+    video_path = os.path.join(output_folder, "video.mp4")
     
     try:
-        # Generate and post video
-        youtube_manager.automate_youtube_posting(
-            theme=THEME,
-            channel=CHANNEL,
-            title_description_generator=title_description_generator
-        )
+        video_gen.generate_video(audio_path, audio_duration, video_path, full_text)
         
-        # Countdown for next post
-        while wait_time > 0:
-            mins, secs = divmod(wait_time, 60)
-            timeformat = '{:02d}:{:02d}'.format(mins, secs)
-            print(f"Próxima postagem em: {timeformat}", end='\r')
-            time.sleep(1)
-            wait_time -= 1
+        if os.path.exists(video_path):
+            size_mb = os.path.getsize(video_path) / (1024 * 1024)
+            print(f"\n✅ VÍDEO GERADO COM SUCESSO!")
+            print(f"📍 Local: {video_path}")
+            print(f"⏱️  Duração: {audio_duration:.1f}s")
+            print(f"📦 Tamanho: {size_mb:.1f} MB")
+        else:
+            print("❌ Vídeo não criado")
             
     except Exception as e:
-        print(f"❌ Erro geral no ciclo de postagem: {e}")
-        # Continue with cooldown even on error
-        while wait_time > 0:
-            mins, secs = divmod(wait_time, 60)
-            timeformat = '{:02d}:{:02d}'.format(mins, secs)
-            print(f"Próxima postagem em: {timeformat}", end='\r')
-            time.sleep(1)
-            wait_time -= 1
+        print(f"❌ Erro: {e}")
+
+def cleanup_temp_files():
+    """Remove arquivos temporários."""
+
+    import glob
+
+    patterns = ["temp_text_*", "TEMP_MPY_*", "temp-audio.*", "temp_*.mp4", "temp_*.wav"]
+    
+    for pattern in patterns:
+        for file in glob.glob(pattern):
+            try:
+                os.remove(file)
+                print(f"🧹 {os.path.basename(file)}")
+            except:
+                pass
+    
+    
+    cleanup_temp_files()
+    main()
+    
+    print("🧹 Limpando após execução...")
+    cleanup_temp_files()
 
 if __name__ == "__main__":
-    print("🚀 Script de macros iniciado")
-    
-    # Choose which function to run
-    option = "1"
-    if option == "1":
+    try:
         main()
-    elif option == "2":
-        youtube_posting_cycle()
-    else:
-        print("Opção inválida")
+        pass
+    except Exception as e:
+        print(f"❌ Erro: {e}")
+    finally:
+        # Limpar arquivos temporários após terminar
+        cleanup_temp_files()
+        print("🧹 Limpeza concluída")
