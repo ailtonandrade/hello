@@ -100,19 +100,31 @@ def main():
         print(f"❌ Erro: {e}")
 
 def cleanup_temp_files():
-    """Remove arquivos temporários."""
-
+    """Limpeza simples e direta."""
+    import os
     import glob
-
-    patterns = ["temp_text_*", "TEMP_MPY_*", "temp-audio.*", "temp_*.mp4", "temp_*.wav"]
     
+    patterns = [
+        "temp_text_*",
+        "TEMP_MPY_*", 
+        "temp-audio.*",
+        "temp_*.mp4",
+        "temp_*.wav",
+        "temp_*.mp3",
+    ]
+    
+    removed = 0
     for pattern in patterns:
         for file in glob.glob(pattern):
             try:
-                os.remove(file)
-                print(f"🧹 {os.path.basename(file)}")
+                if os.path.isfile(file):
+                    os.remove(file)
+                    removed += 1
             except:
                 pass
+    
+    print(f"🧹 Limpeza realizada nos arquivos temporários")
+    return removed
     
     
     cleanup_temp_files()

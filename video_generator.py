@@ -407,139 +407,117 @@ class VideoGenerator:
                 video.close()
 
     def save_with_amd_acceleration(self, video, output_path):
-        """Salva vídeo usando FFmpeg puro com AMD RX 580."""
-        if not output_path:
-            print("❌ output_path é None")
-            return False
-        
+        """AMD para vídeo, CPU para áudio (mais rápido)."""
         import subprocess
         import tempfile
-        import shutil
         
         temp_video = None
         temp_audio = None
         
         try:
-            print("🎮 FFmpeg puro com AMD RX 580...")
+            print("🎮 AMD (vídeo) + CPU (áudio)")
             
-            # 1. Primeiro salvar vídeo sem áudio (CPU rápido)
-            temp_video = tempfile.NamedTemporaryFile(suffix='.mp4', delete=False)
-            temp_video.close()
-            
-            print("   Passo 1: Exportando vídeo (CPU rápido)...")
-            video.write_videofile(
-                temp_video.name,
-                fps=24,
-                codec='libx264',
-                audio=False,  # Sem áudio
-                verbose=False,
-                preset='ultrafast',
-                threads=4,
-                ffmpeg_params=['-crf', '30']  # Qualidade média, mais rápido
-            )
-            
-            # 2. Exportar áudio separadamente se existir
+            # 1. Exportar SOMENTE ÁUDIO com CPU (rápido)
             has_audio = hasattr(video, 'audio') and video.audio is not None
+            
             if has_audio:
                 temp_audio = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
                 temp_audio.close()
                 
-                print("   Passo 2: Exportando áudio...")
+                print("   Exportando áudio (CPU rápido)...")
                 video.audio.write_audiofile(
                     temp_audio.name,
                     fps=44100,
                     verbose=False,
-                    ffmpeg_params=['-q:a', '2']  # Qualidade média
+                    ffmpeg_params=['-q:a', '4']  # Qualidade menor = mais rápido
                 )
             
-            # 3. FFmpeg com AMD para encoding final
-            print("   Passo 3: Encoding com AMD h264_amf...")
+            # 2. Encoding de vídeo DIRETO com AMD
+            print("   Encoding vídeo com AMD RX 580...")
             
-            # Construir comando FFmpeg
+            # Comando FFmpeg com pipe de vídeo
             ffmpeg_cmd = [
                 'ffmpeg',
-                '-i', temp_video.name,  # Input vídeo
+                '-f', 'rawvideo',
+                '-vcodec', 'rawvideo',
+                '-s', f'{video.size[0]}x{video.size[1]}',
+                '-pix_fmt', 'rgb24',
+                '-r', '24',
+                '-i', '-',  # Vídeo do pipe
             ]
             
             # Adicionar áudio se existir
             if has_audio and os.path.exists(temp_audio.name):
                 ffmpeg_cmd.extend(['-i', temp_audio.name])
             
-            # Parâmetros AMD H.264
+            # Parâmetros AMD
             ffmpeg_cmd.extend([
-                '-c:v', 'h264_amf',        # Codec AMD
-                '-quality', 'balanced',     # Qualidade
-                '-b:v', '2M',              # Bitrate vídeo
-                '-maxrate', '2.5M',
-                '-bufsize', '5M',
-                '-profile:v', 'high',
-                '-level', '4.2',
-                '-pix_fmt', 'yuv420p',
+                '-c:v', 'h264_amf',
+                '-quality', 'speed',        # MÁXIMA VELOCIDADE
+                '-rc', 'cqp',               # Constant QP (mais rápido)
+                '-qp_i', '28',
+                '-qp_p', '30',
+                '-qp_b', '32',
+                '-b:v', '2M',
             ])
             
             # Configurar áudio
             if has_audio and os.path.exists(temp_audio.name):
                 ffmpeg_cmd.extend([
                     '-c:a', 'aac',
-                    '-b:a', '128k',
-                    '-ar', '44100',
-                    '-ac', '2',
+                    '-b:a', '96k',          # Áudio baixa qualidade = mais rápido
                 ])
-            else:
-                ffmpeg_cmd.extend(['-an'])  # Sem áudio
             
-            # Output final
+            # Output
             ffmpeg_cmd.extend([
-                '-y',  # Sobrescrever
+                '-y',
                 output_path
             ])
             
-            print(f"   Comando: {' '.join(ffmpeg_cmd)}")
+            print(f"   Comando: ffmpeg [pipe vídeo] -> AMD")
             
             # Executar FFmpeg
-            result = subprocess.run(
+            process = subprocess.Popen(
                 ffmpeg_cmd,
-                capture_output=True,
-                text=True,
-                encoding='utf-8',
-                errors='ignore'
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
             )
             
-            if result.returncode == 0:
-                print("✅ AMD encoding concluído!")
+            # Enviar frames
+            duration = video.duration
+            fps = 24
+            total_frames = int(duration * fps)
+            
+            for i in range(total_frames):
+                frame = video.get_frame(i / fps)
+                process.stdin.write(frame.tobytes())
                 
-                # Verificar tamanho do arquivo
-                if os.path.exists(output_path):
-                    size_mb = os.path.getsize(output_path) / (1024 * 1024)
-                    print(f"   📦 Tamanho: {size_mb:.1f} MB")
-                
+                # Progresso
+                if i % (fps * 2) == 0:  # A cada 2 segundos
+                    print(f"   🎬 AMD encoding: {i}/{total_frames} frames", end='\r')
+            
+            process.stdin.close()
+            stdout, stderr = process.communicate()
+            
+            if process.returncode == 0:
+                print(f"\n✅ AMD RX 580 FINALIZOU!")
                 return True
             else:
-                print(f"❌ FFmpeg AMD falhou (código {result.returncode})")
-                
-                # Mostrar erro
-                error_lines = result.stderr.split('\n')
-                for line in error_lines[-10:]:  # Últimas 10 linhas
-                    if line.strip():
-                        print(f"   ⚠️ {line}")
-                
+                print(f"\n❌ AMD falhou: {stderr.decode()[:200]}")
                 return False
                 
         except Exception as e:
-            print(f"❌ Erro no processo AMD: {e}")
-            import traceback
-            traceback.print_exc()
+            print(f"❌ Erro: {e}")
             return False
-            
         finally:
-            # Limpar arquivos temporários
-            try:
-                if temp_video and os.path.exists(temp_video.name):
-                    os.remove(temp_video.name)
-                if temp_audio and os.path.exists(temp_audio.name):
-                    os.remove(temp_audio.name)
-            except:
-                pass
+            # Limpar temps
+            for temp_file in [temp_video, temp_audio]:
+                if temp_file and os.path.exists(temp_file.name):
+                    try:
+                        os.remove(temp_file.name)
+                    except:
+                        pass
         
     def save_with_cpu(self, video, output_path):
         """Fallback para CPU."""
