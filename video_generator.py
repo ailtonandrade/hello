@@ -407,31 +407,42 @@ class VideoGenerator:
 
     def save_with_amd_acceleration(self, video, output_path):
         """Salva vídeo usando AMD RX 580."""
+        if not output_path:
+            print("❌ output_path é None em save_with_amd_acceleration")
+            return False
+        
         try:
             print("🎮 Usando AMD RX 580 para encoding...")
             
+            # Verificar se o vídeo tem áudio
+            has_audio = hasattr(video, 'audio') and video.audio is not None
+            
             ffmpeg_params = [
-                '-hwaccel', 'auto',           # Auto-detecta hardware
-                '-hwaccel_device', '0',       # Dispositivo 0 (sua GPU)
-                '-c:v', 'h264_amf',           # Codec AMD H.264
-                '-quality', 'balanced',       # Qualidade balanceada
-                '-rc', 'cbr',                 # Rate control: Constant Bitrate
-                '-b:v', '2M',                 # Bitrate 2 Mbps
-                '-preset', 'speed',           # Prioriza velocidade
-                '-pix_fmt', 'yuv420p',        # Formato de pixel compatível
-                '-profile:v', 'high',         # Perfil High para melhor qualidade
-                '-level', '4.2',              # Level 4.2 para 1080p
+                '-hwaccel', 'auto',
+                '-hwaccel_device', '0',
+                '-c:v', 'h264_amf',
+                '-quality', 'balanced',
+                '-rc', 'cbr',
+                '-b:v', '2M',
+                '-pix_fmt', 'yuv420p',
             ]
             
+            print(f"📊 Configurações AMD:")
+            print(f"   Codec: h264_amf")
+            print(f"   Bitrate: 2M")
+            print(f"   Tem áudio: {has_audio}")
+            print(f"   Saída: {output_path}")
+            
+            # Salvar o vídeo
             video.write_videofile(
                 output_path,
                 fps=24,
-                codec='h264_amf',             # Especifica codec AMD
-                audio_codec='aac',
+                codec='h264_amf',
+                audio_codec='aac' if has_audio else None,
                 verbose=False,
-                threads=4,                    # Threads da CPU para ajudar
-                preset=None,                  # Não usar preset do libx264
-                ffmpeg_params=ffmpeg_params
+                threads=4,
+                ffmpeg_params=ffmpeg_params,
+                logger=None  # Desativa logs do MoviePy
             )
             
             print("✅ Vídeo salvo com aceleração AMD")
@@ -439,7 +450,12 @@ class VideoGenerator:
             
         except Exception as e:
             print(f"⚠️ Erro com AMD: {e}")
-            print("🔄 Tentando fallback com CPU...")
+            print(f"📋 Tipo do erro: {type(e).__name__}")
+            
+            # Log mais detalhado para debug
+            import traceback
+            traceback.print_exc()
+            
             return False
         
     def save_with_cpu(self, video, output_path):
