@@ -474,7 +474,29 @@ class VideoGenerator:
                     '-sc_threshold', '0',  # Desativa detecção de cena
                 ]
             )
+
+            # quality for release
             
+            # video.write_videofile(
+            #     output_path,
+            #     fps=24,
+            #     codec='libx264',
+            #     audio_codec='aac',
+            #     verbose=False,
+            #     threads=6,
+            #     preset='medium',          # ⬅️ BALANCEADO (rapidez + qualidade)
+            #     ffmpeg_params=[
+            #         '-crf', '23',         # Qualidade BOM para internet (23-28 é ideal)
+            #         '-profile:v', 'high', # Perfil High para melhor compressão
+            #         '-level', '4.0',      # Nível compatível com maioria dos players
+            #         '-pix_fmt', 'yuv420p', # Formato universal
+            #         '-movflags', '+faststart',  # Otimizado para streaming
+            #         '-maxrate', '2500k',  # Bitrate máximo
+            #         '-bufsize', '5000k',  # Buffer size
+            #         '-g', '48',           # GOP ideal para streaming
+            #     ]
+            # )
+                        
             return True
         except Exception as e:
             print(f"❌ Erro com CPU: {e}")
