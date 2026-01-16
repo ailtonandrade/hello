@@ -105,8 +105,8 @@ class VideoGenerator:
             print(f"❌ Erro na transcrição: {e}")
             return []
 
-    def create_subtitle_clips(self, segment, video_size, x_pos=0.5, y_pos=0.8):
-        """Legenda posicionável como o logo."""
+    def _create_subtitle_clip(self, segment, video_size, x_pos=0.5, y_pos=0.8):
+        """Cria UMA legenda individual - corrigido."""
         try:
             img = Image.new("RGBA", video_size, (0, 0, 0, 0))
             draw = ImageDraw.Draw(img)
@@ -151,6 +151,45 @@ class VideoGenerator:
         except Exception as e:
             print(f"⚠️ Erro na legenda: {e}")
             return None
+
+
+    def create_subtitle_clips(self, words, video_size, x_pos=0.5, y_pos=0.8):
+        """Cria VÁRIAS legendas sincronizadas - corrigido."""
+        if not words:
+            return []
+        
+        clips = []
+        current_line = []
+        current_start = 0
+        
+        for i, word in enumerate(words):
+            current_line.append(word["text"])
+            
+            if len(current_line) == 1:
+                current_start = word["start"]
+            
+            should_create = (
+                len(current_line) >= self.subtitle_words_per_line or
+                i == len(words) - 1 or
+                word["end"] - current_start > 3.0
+            )
+            
+            if should_create and current_line:
+                segment = {
+                    "text": " ".join(current_line),
+                    "start": current_start,
+                    "duration": word["end"] - current_start
+                }
+                
+                # CORREÇÃO: Agora passa o segment (dicionário)
+                clip = self._create_subtitle_clip(segment, video_size, x_pos, y_pos)
+                if clip:
+                    clips.append(clip)
+                
+                current_line = []
+                current_start = word["end"]
+        
+        return clips
 
     def add_synchronized_subtitles(self, video, audio_path, x_pos=0.5, y_pos=0.8):
         """Adiciona legendas sincronizadas com a fala."""
@@ -349,10 +388,7 @@ class VideoGenerator:
             if output_dir and not os.path.exists(output_dir):
                 os.makedirs(output_dir, exist_ok=True)
             
-            # Tentar AMD primeiro
-            if not self.save_with_amd_acceleration(video, output_path):
-                # Se AMD falhar, usar CPU
-                self.save_with_cpu(video, output_path)
+            self.save_with_cpu(video, output_path)
             
             print(f"✅ Vídeo salvo: {output_path}")
             return output_path
@@ -423,14 +459,22 @@ class VideoGenerator:
             
             video.write_videofile(
                 output_path,
-                fps=24,
+                fps=24,                    # Mantém 24fps (reduzir causa problemas)
                 codec='libx264',
                 audio_codec='aac',
                 verbose=False,
-                threads=6,                    # Usa mais threads
-                preset='fast',                # Preset rápido
-                ffmpeg_params=['-crf', '23']  # Quality factor
+                threads=8,                 # MÁXIMO de threads
+                preset='ultrafast',        # ⬅️ MAIS RÁPIDO
+                ffmpeg_params=[
+                    '-crf', '30',          # Qualidade mais baixa = mais rápido
+                    '-tune', 'fastdecode', # Otimizado para velocidade
+                    '-movflags', '+faststart',  # Para streaming rápido
+                    '-g', '48',            # GOP menor = mais rápido
+                    '-keyint_min', '24',   # Keyframes mais frequentes
+                    '-sc_threshold', '0',  # Desativa detecção de cena
+                ]
             )
+            
             return True
         except Exception as e:
             print(f"❌ Erro com CPU: {e}")
