@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "faster-whisper>=1.2.1",
+    "ffmpeg-python>=0.2.0",
     "flask>=3.1.2",
     "kokoro>=0.9.4",
     "moviepy==1.0.3",

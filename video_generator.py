@@ -105,47 +105,8 @@ class VideoGenerator:
             print(f"❌ Erro na transcrição: {e}")
             return []
 
-    def create_subtitle_clips(self, words, video_size):
-        """Cria clips de legenda sincronizados."""
-        if not words:
-            return []
-        
-        clips = []
-        current_line = []
-        current_start = 0
-        
-        for i, word in enumerate(words):
-            current_line.append(word["text"])
-            
-            if len(current_line) == 1:
-                current_start = word["start"]
-            
-            # Verifica se deve criar uma nova linha
-            should_create = (
-                len(current_line) >= self.subtitle_words_per_line or
-                i == len(words) - 1 or
-                word["end"] - current_start > 3.0
-            )
-            
-            if should_create and current_line:
-                segment = {
-                    "text": " ".join(current_line),
-                    "start": current_start,
-                    "duration": word["end"] - current_start
-                }
-                
-                # Cria clip da legenda
-                clip = self._create_subtitle_clip(segment, video_size)
-                if clip:
-                    clips.append(clip)
-                
-                current_line = []
-                current_start = word["end"]
-        
-        return clips
-
-    def _create_subtitle_clip(self, segment, video_size):
-        """Legenda com efeito de sombra."""
+    def create_subtitle_clip(self, segment, video_size, x_pos=0.5, y_pos=0.8):
+        """Legenda posicionável como o logo."""
         try:
             img = Image.new("RGBA", video_size, (0, 0, 0, 0))
             draw = ImageDraw.Draw(img)
@@ -160,15 +121,23 @@ class VideoGenerator:
             text_width = text_bbox[2] - text_bbox[0]
             text_height = text_bbox[3] - text_bbox[1]
             
-            x = (video_size[0] - text_width) // 2
-            y = video_size[1] - text_height - 100
+            # Usar posições relativas (0.0 a 1.0) como no add_image
+            if isinstance(x_pos, float):
+                x = int(video_size[0] * x_pos - text_width / 2)  # Centralizado no x_pos
+            else:
+                x = x_pos
             
-            # Sombra
-            shadow_offset = 3
-            draw.text((x+shadow_offset, y+shadow_offset), segment["text"], 
+            if isinstance(y_pos, float):
+                y = int(video_size[1] * y_pos - text_height / 2)  # Centralizado no y_pos
+            else:
+                y = y_pos
+            
+            # Sombra para melhor visibilidade
+            shadow_offset = 2
+            draw.text((x + shadow_offset, y + shadow_offset), segment["text"], 
                     fill=(0, 0, 0, 150), font=font)
             
-            # Texto principal
+            # Texto principal branco
             draw.text((x, y), segment["text"], fill=(255, 255, 255, 255), font=font)
             
             img_array = np.array(img)
@@ -183,7 +152,7 @@ class VideoGenerator:
             print(f"⚠️ Erro na legenda: {e}")
             return None
 
-    def add_synchronized_subtitles(self, video, audio_path):
+    def add_synchronized_subtitles(self, video, audio_path, x_pos=0.5, y_pos=0.8):
         """Adiciona legendas sincronizadas com a fala."""
         if not audio_path or not os.path.exists(audio_path):
             return video
@@ -197,7 +166,7 @@ class VideoGenerator:
         
         # Criar clips de legenda
         print(f"🎬 Criando {len(words)} legendas...")
-        subtitle_clips = self.create_subtitle_clips(words, video.size)
+        subtitle_clips = self.create_subtitle_clips(words, video.size, x_pos=x_pos, y_pos=y_pos)
         
         if not subtitle_clips:
             return video
@@ -363,7 +332,7 @@ class VideoGenerator:
             
             # 5. Adicionar legendas
             if text and audio_duration < 120:
-                video = self.add_synchronized_subtitles(video, audio_path)
+                video = self.add_synchronized_subtitles(video, audio_path, x_pos=0.5, y_pos=0.8)
             
             # 6. Adicionar logo
             logo_path = f"images/logo-canal-{self.channel}.jpg"
@@ -396,128 +365,55 @@ class VideoGenerator:
                 video.close()
 
     def save_with_amd_acceleration(self, video, output_path):
-        """AMD RX 580 para TUDO - vídeo e áudio."""
-        import subprocess
-        import tempfile
-        
+        """AMD RX 580 usando ffmpeg-python - MUITO MAIS SIMPLES."""
         try:
-            print("🚀🚀🚀 AMD RX 580 - TUDO NA GPU! 🚀🚀🚀")
+            print("🎮 AMD RX 580 com ffmpeg-python...")
             
-            # 1. Exportar SOMENTE ÁUDIO (CPU rápido, mas necessário)
-            audio_temp = None
-            if hasattr(video, 'audio') and video.audio is not None:
-                audio_temp = tempfile.NamedTemporaryFile(suffix='.mp3', delete=False)
-                audio_temp.close()
-                
-                print("🔊 Exportando áudio (única parte CPU)...")
-                video.audio.write_audiofile(
-                    audio_temp.name,
-                    fps=44100,
-                    verbose=False
-                )
+            # 1. Primeiro salvar o vídeo com MoviePy (normal)
+            import tempfile
+            temp_video = tempfile.NamedTemporaryFile(suffix='.mp4', delete=False)
+            temp_video.close()
             
-            # 2. AGORA VEM A GPU PESADA!
-            print("🎮 INICIANDO ENCODING AMD RX 580...")
-            
-            # Comando FFmpeg que usa GPU para TUDO que puder
-            cmd = [
-                'ffmpeg',
-                '-hwaccel', 'auto',          # Usa GPU para DECODE
-                '-hwaccel_device', '0',      # GPU 0 (sua RX 580)
-                
-                # Input de vídeo RAW via pipe
-                '-f', 'rawvideo',
-                '-vcodec', 'rawvideo',
-                '-s', f'{video.size[0]}x{video.size[1]}',
-                '-pix_fmt', 'rgb24',
-                '-r', '24',
-                '-i', '-',                   # Vídeo vem do stdin
-            ]
-            
-            # Adicionar áudio se existir
-            if audio_temp and os.path.exists(audio_temp.name):
-                cmd.extend(['-i', audio_temp.name])
-            
-            # PARÂMETROS AMD - GPU PARA ENCODING!
-            cmd.extend([
-                '-c:v', 'h264_amf',          # ⬅️⬅️⬅️ GPU ENCODING!
-                '-quality', 'balanced',
-                '-b:v', '3M',
-                '-preset', 'fast',
-            ])
-            
-            # Configurar áudio
-            if audio_temp and os.path.exists(audio_temp.name):
-                cmd.extend([
-                    '-c:a', 'aac',
-                    '-b:a', '192k',
-                ])
-            
-            # Output
-            cmd.extend(['-y', output_path])
-            
-            print(f"🔥 Comando GPU: {' '.join(cmd[:15])}...")
-            
-            # Iniciar FFmpeg
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=10**8
+            print("   Exportando vídeo base...")
+            video.write_videofile(
+                temp_video.name,
+                fps=24,
+                codec='libx264',
+                audio_codec='aac',
+                verbose=False,
+                preset='ultrafast'
             )
             
-            # 3. ENVIAR FRAMES DIRETO PARA GPU
-            total_frames = int(video.duration * 24)
-            print(f"🎬 Enviando {total_frames} frames para AMD RX 580...")
+            # 2. AGORA A MÁGICA: converter com AMD usando ffmpeg-python
+            print("   Convertendo para AMD h264_amf...")
             
-            for i in range(total_frames):
-                try:
-                    frame = video.get_frame(i / 24)
-                    process.stdin.write(frame.tobytes())
-                    
-                    if i % 48 == 0:  # Progresso a cada 2 segundos
-                        percent = (i / total_frames) * 100
-                        print(f"📊 GPU: {percent:.1f}%", end='\r')
-                except Exception as e:
-                    print(f"⚠️ Frame {i} erro: {e}")
-                    continue
+            # Usar ffmpeg-python (muito mais fácil!)
+            stream = ffmpeg.input(temp_video.name)
             
-            # Fechar e esperar
-            process.stdin.close()
+            stream = ffmpeg.output(
+                stream,
+                output_path,
+                **{
+                    'c:v': 'h264_amf',      # GPU AMD!
+                    'c:a': 'copy',          # Copia áudio sem re-encode
+                    'b:v': '2M',            # Bitrate
+                    'preset': 'fast',
+                }
+            )
             
-            # Monitorar logs da GPU
-            for line in process.stderr:
-                if 'amf' in line.lower():
-                    print(f"🔥 GPU ativa: {line.strip()[:60]}")
-                if 'frame=' in line:
-                    print(f"🎬 {line.strip()}", end='\r')
+            # Executar
+            ffmpeg.run(stream, overwrite_output=True, quiet=True)
             
-            process.wait()
+            # Limpar temp
+            import os
+            if os.path.exists(temp_video.name):
+                os.remove(temp_video.name)
             
-            # Limpar temporários
-            if audio_temp and os.path.exists(audio_temp.name):
-                os.remove(audio_temp.name)
+            print("✅ AMD encoding concluído!")
+            return True
             
-            if process.returncode == 0:
-                print("\n✅✅✅ GPU FINALIZOU TUDO! ✅✅✅")
-                return True
-            else:
-                print(f"\n❌ GPU falhou: código {process.returncode}")
-                return False
-                
         except Exception as e:
-            print(f"❌ Erro GPU total: {e}")
-            import traceback
-            traceback.print_exc()
-            
-            # Limpar se falhar
-            if 'audio_temp' in locals() and audio_temp and os.path.exists(audio_temp.name):
-                try:
-                    os.remove(audio_temp.name)
-                except:
-                    pass
-            
+            print(f"❌ Erro: {e}")
             return False
         
     def save_with_cpu(self, video, output_path):
@@ -572,26 +468,3 @@ class VideoEffects:
             return np.clip(frame.dot(sepia_filter.T) * intensity + frame * (1 - intensity), 0, 255).astype('uint8')
         
         return clip.fl_image(apply_sepia_filter)
-    
-    def create_text_overlay(self, text, duration, font_size=60, color="white"):
-        """Cria overlay de texto simples."""
-        img = Image.new("RGBA", (720, 1280), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(img)
-        
-        try:
-            font = ImageFont.truetype("lilita.ttf", font_size)
-        except:
-            font = ImageFont.load_default()
-        
-        text_bbox = draw.textbbox((0, 0), text, font=font)
-        text_width = text_bbox[2] - text_bbox[0]
-        text_height = text_bbox[3] - text_bbox[1]
-        
-        x = (720 - text_width) // 2
-        y = 1280 - text_height - 100
-        
-        draw.text((x, y), text, fill=color, font=font)
-        
-        img_array = np.array(img)
-        text_clip = ImageClip(img_array, transparent=True, duration=duration)
-        return text_clip.fadein(0.5).fadeout(0.5)
