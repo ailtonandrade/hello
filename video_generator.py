@@ -435,10 +435,6 @@ class VideoGenerator:
             
             print(f"✅ Música carregada - Duração: {song_clip.duration:.2f}s")
             
-        except Exception as e:
-            print(f"❌ Erro ao carregar música: {e}")
-            return video
-            
             # Set volume
             song_clip = song_clip.volumex(volume)
             
@@ -475,10 +471,12 @@ class VideoGenerator:
             # Clean up
             song_clip.close()
             
+            print(f"✅ Música de fundo adicionada com sucesso")
+            return video
+            
         except Exception as e:
             print(f"❌ Erro ao adicionar música: {e}")
-        
-        return video
+            return video
 
     def _cleanup_temp_files(self):
         """
