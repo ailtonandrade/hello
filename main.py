@@ -125,13 +125,6 @@ def cleanup_temp_files():
     
     print(f"🧹 Limpeza realizada nos arquivos temporários")
     return removed
-    
-    
-    cleanup_temp_files()
-    main()
-    
-    print("🧹 Limpando após execução...")
-    cleanup_temp_files()
 
 if __name__ == "__main__":
     try:
