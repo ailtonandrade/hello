@@ -13,6 +13,8 @@ VOICE_NAME = "pm_santa"
 VOICE_SPEED = 0.6
 SUBTITLE_WORDS_PER_LINE = 3
 SUBTITLE_FONT_SIZE = 45
+SCREEN_ORIENTATION = "MOBILE"
+SUBTITLE_FONT = "lilita.ttf"
 FORCE_TEXT = """
     Irmãos e irmãs, [hoje] vamos meditar na poderosa [palavra] do [Senhor]!
     O [apóstolo] [Paulo] nos diz na [carta] aos [Romanos]:
@@ -86,8 +88,8 @@ def main():
     video_gen = VideoGenerator(
         theme=THEME,
         channel=CHANNEL,
-        screen_orientation="MOBILE",
-        subtitle_font="lilita.ttf",
+        screen_orientation=SCREEN_ORIENTATION,
+        subtitle_font=SUBTITLE_FONT,
         subtitle_font_size=SUBTITLE_FONT_SIZE,
         subtitle_words_per_line=SUBTITLE_WORDS_PER_LINE,
         video_style="simple",
@@ -119,7 +121,8 @@ def cleanup_temp_files():
     
     patterns = [
         "temp_text_*",
-        "TEMP_MPY_*", 
+        "tmpss_*", 
+        "video_finalTEMP_MPY_*", 
         "temp-audio.*",
         "temp_*.mp4",
         "temp_*.wav",
