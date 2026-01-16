@@ -1,8 +1,11 @@
 import os
 import gc
+import subprocess
+import shutil
 import random
 import glob
 import numpy as np
+
 from moviepy.editor import (
     concatenate_videoclips, VideoFileClip, ColorClip, 
     AudioFileClip, CompositeVideoClip, ImageClip,
@@ -388,7 +391,7 @@ class VideoGenerator:
             if output_dir and not os.path.exists(output_dir):
                 os.makedirs(output_dir, exist_ok=True)
             
-            self.save_with_cpu(video, output_path)
+            self.save_with_gpu_amf(video, output_path)
             
             print(f"✅ Vídeo salvo: {output_path}")
             return output_path
@@ -399,7 +402,71 @@ class VideoGenerator:
         finally:
             if video:
                 video.close()
-        
+
+    def save_with_gpu_amf(self, video, output_path):
+        """
+        Render profissional:
+        - MoviePy gera frames
+        - FFmpeg usa GPU AMD (AMF)
+        - Áudio externo audio.wav é muxado
+        - Saída final: video.mp4
+        """
+        frames_dir = "frames_tmp"
+        audio_path = "audio.wav"   # já existe na pasta
+        fps = 24
+
+        try:
+            print("🎞️ Gerando frames com MoviePy (CPU)...")
+
+            # 1️⃣ cria pasta temporária
+            if os.path.exists(frames_dir):
+                shutil.rmtree(frames_dir)
+            os.makedirs(frames_dir)
+
+            # 2️⃣ exporta frames
+            video.write_images_sequence(
+                os.path.join(frames_dir, "frame_%05d.png"),
+                fps=fps
+            )
+
+            print("🔥 Renderizando vídeo com GPU AMD (AMF) + áudio.wav...")
+
+            # 3️⃣ ffmpeg GPU + mux de áudio
+            cmd = [
+                "ffmpeg", "-y",
+                "-framerate", str(fps),
+                "-i", os.path.join(frames_dir, "frame_%05d.png"),
+                "-i", audio_path,
+                "-c:v", "h264_amf",
+                "-quality", "quality",
+                "-usage", "transcoding",
+                "-profile:v", "high",
+                "-pix_fmt", "yuv420p",
+                "-g", "48",
+                "-keyint_min", "24",
+                "-sc_threshold", "0",
+                "-c:a", "aac",
+                "-b:a", "192k",
+                "-movflags", "+faststart",
+                "-shortest",
+                output_path
+            ]
+
+            subprocess.run(cmd, check=True)
+
+            print("✅ Vídeo final gerado com GPU AMD:", output_path)
+            return True
+
+        except Exception as e:
+            print(f"❌ Erro no pipeline GPU AMF: {e}")
+            return False
+
+        finally:
+            # 4️⃣ cleanup
+            if os.path.exists(frames_dir):
+                shutil.rmtree(frames_dir)
+
+
     def save_with_cpu(self, video, output_path):
         """Fallback para CPU."""
         try:

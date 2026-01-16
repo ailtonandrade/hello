@@ -11,47 +11,15 @@ CHANNEL = "parallelcuts"
 THEME = "pregacao"
 VOICE_NAME = "pm_santa"
 VOICE_SPEED = 0.6
+SUBTITLE_WORDS_PER_LINE = 3
+SUBTITLE_FONT_SIZE = 45
 FORCE_TEXT = """
-    Irmãos e irmãs, [hoje](/ˈtʊ.deɪ/) vamos meditar na poderosa [palavra](/ˈwɝːd/) do [Senhor](/ˈsɛ.njɔʁ/)!
-
-    O [apóstolo](/əˈpɑːs.təl/) [Paulo](/ˈpɔː.loʊ/) nos diz na [carta](/ˈkɑɹ.tə/) aos [Romanos](/ɹoʊˈmænz/):
-
-    "Porque [todos](/ˈtɔː.dʊs/) pecaram e carecem da [glória](/ˈɡlɔ.ɾi.ɐ/) de [Deus](/ˈdeʊs/)"… [Romanos](/ɹoʊˈmænz/) [3](/ˈnʌmbər/):[23](/ˈnʌmbər/)…
-
-    [Percebam](/pɛʁˈse.bɐ̃ʊs/) a [gravidade](/ɡɾa.viˈda.d͡ʒi/) desta [declaração](/de.kla.ɾaˈsɐ̃w̃/): [TODOS](/ˈtɔː.dʊs/) [pecaram](/peˈka.ɾɐ̃w̃/)!
-
-    Não há [exceção](/ek.seˈsɐ̃w̃/)… Não há [escapatoria](/es.ka.paˈtɔ.ɾi.ɐ/)… [CADA](/ˈka.dɐ/) um de [nós](/ˈnɔs/)…
-
-    [Mas](/ˈmas/)… [OH](/ˈoʊ/)… [ouvam](/ˈo.vɐ̃w̃/) a [boa](/ˈbo.ɐ/) [notícia](/noˈt͡ʃi.si.ɐ/)!
-
-    O [versículo](/vɛʁˈsi.ku.lu/) [24](/ˈnʌmbər/) [continua](/kõˈt͡ʃi.nu.ɐ/):
-
-    "[Sendo](/ˈsẽ.du/) justificados [gratuitamente](/ɡɾa.twi.taˈmẽ.t͡ʃi/) por sua [graça](/ˈɡɾa.sɐ/)…"
-
-    [QUE](/ˈke/) [PALAVRA](/ˈpa.la.vɾɐ/) [PODEROSA](/po.deˈɾo.zɐ/)!
-
-    [Graça](/ˈɡɾa.sɐ/)… [G-R-A-Ç-A](/ˈɡɾa.sɐ/)… O [favor](/faˈvoʁ/) [imerecido](/i.me.ɾeˈsi.du/) de [Deus](/ˈdeʊs/)!
-
-    [Você](/voˈse/) [já](/ˈʒa/) [experimentou](/es.pe.ɾiˈmẽ.tu/) esta [graça](/ˈɡɾa.sɐ/)?…
-
-    [Olhe](/ˈɔ.ʎi/) para [Jesus](/ʒeˈzus/)… [O](/ˈo/) [Cordeiro](/koʁˈde.jɾu/) de [Deus](/ˈdeʊs/) que [tira](/ˈt͡ʃi.ɾɐ/) o [pecado](/peˈsi.du/) do [mundo](/ˈmũ.du/)…
-
-    [Ele](/ˈe.li/) [disse](/ˈd͡ʒi.si/): "[Vinde](/ˈvĩ.d͡ʒi/) a [mim](/ˈmĩ/)… [todos](/ˈtɔː.dʊs/) os que [estais](/esˈtajs/) [cansados](/kɐ̃ˈsa.dʊs/) e [sobrecarregados](/so.bɾe.ka.ʁeˈɡa.dʊs/)…"
-
-    [HOJE](/ˈo.ʒi/) é o [dia](/ˈd͡ʒi.ɐ/) da [salvação](/saw.vaˈsɐ̃w̃/)!
-
-    [HOJE](/ˈo.ʒi/) é o [momento](/moˈmẽ.tu/) de [crer](/ˈkɾeʁ/)!
-
-    [Abra](/ˈa.bɾɐ/) seu [coração](/ko.ɾaˈsɐ̃w̃/)… [ACEITE](/aˈsej.t͡ʃi/) [Cristo](/ˈkɾis.tu/)… [SEJA](/ˈse.ʒɐ/) [TRANSFORMADO](/tɾɐ̃s.foʁˈma.du/)!
-
-    [Porque](/ˈpoʁ.ke/)… [em](/ˈẽ/) [verdade](/veʁˈda.d͡ʒi/)… [em](/ˈẽ/) [verdade](/veʁˈda.d͡ʒi/) vos [digo](/ˈd͡ʒi.ɡu/):
-
-    "[Qualquer](/kwawˈkɛʁ/) que [está](/esˈta/) [em](/ˈẽ/) [Cristo](/ˈkɾis.tu/)… [nova](/ˈnɔ.vɐ/) [criatura](/kɾi.aˈtu.ɾɐ/) é…"
-
-    [Glória](/ˈɡlɔ.ɾi.ɐ/) a [Deus](/ˈdeʊs/)!
-
-    [Aleluia](/a.leˈluj.ɐ/)! [Amém](/aˈmẽj̃/]!
+    Irmãos e irmãs, [hoje] vamos meditar na poderosa [palavra] do [Senhor]!
+    O [apóstolo] [Paulo] nos diz na [carta] aos [Romanos]:
+    Essa [mensagem] foi escrita para fortalecer a [fé] dos que creem.
+    Que o [Espírito] nos conduz e nos direciona a ser como [Cristo].
     """
+
 
 def sanitize_text(text, force_text=None):
 
@@ -120,8 +88,8 @@ def main():
         channel=CHANNEL,
         screen_orientation="MOBILE",
         subtitle_font="lilita.ttf",
-        subtitle_font_size=30,
-        subtitle_words_per_line=6,
+        subtitle_font_size=SUBTITLE_FONT_SIZE,
+        subtitle_words_per_line=SUBTITLE_WORDS_PER_LINE,
         video_style="simple",
         optimize_memory=True
     )
