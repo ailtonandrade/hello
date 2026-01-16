@@ -1,142 +1,315 @@
 import os
 import random
 import glob
-from moviepy.editor import concatenate_videoclips, CompositeVideoClip, AudioFileClip, VideoFileClip
-from moviepy.audio.AudioClip import concatenate_audioclips
-from moviepy.video.VideoClip import ColorClip, ImageClip
-from PIL import Image, ImageDraw, ImageFont
-from video_editor import add_text, add_logo, add_image
+from moviepy.editor import concatenate_videoclips, VideoFileClip, ColorClip, AudioFileClip
+from video_editor import add_logo, add_image, add_text
 
-# Define a global variable for screen orientation
-SCREEN_ORIENTATION = "MOBILE"  # Options: "DESKTOP" or "MOBILE"
+class VideoGenerator:
+    def __init__(self, theme="pregacao", screen_orientation="MOBILE", channel="parallelcuts", 
+                 subtitle_font="arial.ttf", subtitle_font_size=50, subtitle_color="white", 
+                 subtitle_words_per_line=3):
+        self.theme = theme
+        self.screen_orientation = screen_orientation
+        self.channel = channel
+        self.subtitle_font = subtitle_font
+        self.subtitle_font_size = subtitle_font_size
+        self.subtitle_color = subtitle_color
+        self.subtitle_words_per_line = subtitle_words_per_line
 
-# Utility functions
+    def get_video_size(self):
+        return (1920, 1080) if self.screen_orientation == "DESKTOP" else (1080, 1920)
 
-def load_files(folder, extensions):
-    return [os.path.join(folder, f) for f in os.listdir(folder) if f.endswith(extensions)]
+    def select_random_video(self):
+        video_files = glob.glob(f"videos/{self.theme}*.mp4")
+        if not video_files:
+            print(f"No videos found for theme: {self.theme}. Using a blank background.")
+            return None
+        return random.choice(video_files)
 
-def select_random_video(theme):
-    video_files = glob.glob(f"videos/{theme}*.mp4")
-    if not video_files:
-        print(f"No videos found for theme: {theme}. Using a blank background.")
-        return None
-    return random.choice(video_files)
-
-def repeat_video_to_duration(video_path, duration):
-    try:
-        clip = VideoFileClip(video_path)
+    def create_video_sequence(self, duration):
+        """
+        Create a video sequence by taking 4 seconds from random videos until reaching the target duration.
+        
+        Args:
+            duration (float): Target duration in seconds.
+            
+        Returns:
+            VideoFileClip: Concatenated video sequence.
+        """
+        video_files = glob.glob(f"videos/{self.theme}*.mp4")
+        if not video_files:
+            print(f"No videos found for theme: {self.theme}. Using a blank background.")
+            return ColorClip(size=self.get_video_size(), color=(0, 0, 0)).set_duration(duration)
+        
         clips = []
         total_duration = 0
+        target_size = self.get_video_size()
+        
         while total_duration < duration:
-            clips.append(clip)
-            total_duration += clip.duration
-        return concatenate_videoclips(clips).subclip(0, duration)
-    except Exception as e:
-        print(f"Error repeating video {video_path}: {e}")
-        return ColorClip(size=(1080, 1920), color=(0, 0, 0)).set_duration(duration)
+            # Select random video
+            video_path = random.choice(video_files)
+            
+            try:
+                clip = VideoFileClip(video_path)
+                
+                # Resize/crop to target dimensions
+                clip = self.resize_and_crop(clip, target_size)
+                
+                # Take 4 seconds from random position in the video
+                clip_duration = min(4.0, duration - total_duration)
+                start_time = random.uniform(0, max(0, clip.duration - clip_duration))
+                clip_segment = clip.subclip(start_time, start_time + clip_duration)
+                
+                clips.append(clip_segment)
+                total_duration += clip_duration
+                
+                clip.close()
+                
+            except Exception as e:
+                print(f"Error processing video {video_path}: {e}")
+                # Use blank clip as fallback
+                blank_clip = ColorClip(size=target_size, color=(0, 0, 0)).set_duration(min(4.0, duration - total_duration))
+                clips.append(blank_clip)
+                total_duration += blank_clip.duration
+        
+        # Concatenate all clips
+        final_video = concatenate_videoclips(clips)
+        
+        # Trim to exact duration if needed
+        if final_video.duration > duration:
+            final_video = final_video.subclip(0, duration)
+        
+        return final_video
 
-def get_video_size():
-    if SCREEN_ORIENTATION == "DESKTOP":
-        return (1920, 1080)
-    else:  # Default to MOBILE
-        return (1080, 1920)
+    def resize_and_crop(self, clip, target_size):
+        """
+        Resize and crop video clip to target dimensions, maintaining aspect ratio.
+        
+        Args:
+            clip: VideoFileClip to resize
+            target_size: Tuple (width, height) for target dimensions
+            
+        Returns:
+            Resized and cropped VideoFileClip
+        """
+        target_width, target_height = target_size
+        clip_width, clip_height = clip.size
+        
+        # Calculate scaling factor to fit target dimensions
+        scale_width = target_width / clip_width
+        scale_height = target_height / clip_height
+        scale = max(scale_width, scale_height)
+        
+        # Resize clip
+        resized_clip = clip.resize(scale)
+        
+        # Crop to target dimensions (center crop)
+        current_width, current_height = resized_clip.size
+        crop_x = (current_width - target_width) // 2
+        crop_y = (current_height - target_height) // 2
+        
+        cropped_clip = resized_clip.crop(x1=crop_x, y1=crop_y, 
+                                       x2=crop_x + target_width, 
+                                       y2=crop_y + target_height)
+        
+        return cropped_clip
 
-# Define global variables for channel and theme
-CHANNEL = "parallelcuts"  # Replace with your default channel
-THEME = "pregacao"  # Replace with your default theme
+    def generate_word_timestamps(self, text, audio_duration):
+        """
+        Generate timestamps for each word in the text based on audio duration.
+        
+        Args:
+            text (str): The text to synchronize
+            audio_duration (float): Total duration of the audio
+            
+        Returns:
+            list: List of tuples (word, start_time, end_time)
+        """
+        words = text.split()
+        if not words:
+            return []
+        
+        # Calculate time per word (simple approach)
+        time_per_word = audio_duration / len(words)
+        
+        timestamps = []
+        current_time = 0
+        
+        for word in words:
+            start_time = current_time
+            end_time = current_time + time_per_word
+            timestamps.append((word, start_time, end_time))
+            current_time = end_time
+        
+        return timestamps
 
+    def add_synchronized_subtitles(self, video, text, audio_duration):
+        """
+        Add synchronized subtitles to the video.
+        
+        Args:
+            video: VideoFileClip to add subtitles to
+            text (str): Text to display as subtitles
+            audio_duration (float): Duration of the audio
+            
+        Returns:
+            VideoFileClip with subtitles
+        """
+        timestamps = self.generate_word_timestamps(text, audio_duration)
+        
+        if not timestamps:
+            return video
+        
+        # Group words into subtitle segments
+        subtitle_segments = []
+        current_segment = []
+        current_start = 0
+        current_end = 0
+        
+        for word, start_time, end_time in timestamps:
+            current_segment.append(word)
+            
+            if len(current_segment) == 1:
+                current_start = start_time
+            
+            if len(current_segment) >= self.subtitle_words_per_line:
+                # Create subtitle segment
+                subtitle_text = " ".join(current_segment)
+                duration = end_time - current_start
+                
+                subtitle_segments.append({
+                    'text': subtitle_text,
+                    'start_time': current_start,
+                    'duration': duration
+                })
+                
+                current_segment = []
+                current_start = end_time
+        
+        # Add remaining words
+        if current_segment:
+            subtitle_text = " ".join(current_segment)
+            duration = audio_duration - current_start
+            
+            subtitle_segments.append({
+                'text': subtitle_text,
+                'start_time': current_start,
+                'duration': duration
+            })
+        
+        # Add subtitle clips to video
+        subtitle_clips = []
+        
+        for segment in subtitle_segments:
+            # Create text configuration
+            config = {
+                "font_size": self.subtitle_font_size,
+                "font_color": self.subtitle_color,
+                "padding_x": 20,
+                "padding_y": 20,
+                "line_spacing": 10
+            }
+            
+            # Add subtitle using the existing add_text function
+            video_with_subtitle = add_text(
+                video, 
+                segment['text'], 
+                config, 
+                segment['duration'], 
+                segment['start_time']
+            )
+            
+            subtitle_clips.append(video_with_subtitle)
+        
+        # If no subtitles were added, return original video
+        if not subtitle_clips:
+            return video
+        
+        # Composite all subtitle clips
+        final_video = video
+        for subtitle_clip in subtitle_clips:
+            final_video = CompositeVideoClip([final_video, subtitle_clip])
+        
+        return final_video
 
-def generate_bible_video(duration=30):
-    # Configurações centralizadas
-    config = {
-        "font_size": 67,
-        "font_color": "yellow",
-        "font_bold": True,
-        "text_capslock": True,
-        "line_spacing": 10,
-        "padding_x": 170,  # Padding horizontal
-        "padding_y": 50,  # Padding vertical
-        "video_aspect_ratio": (9, 16),
-    }
+def generate_video(self, audio_path, audio_duration, output_path, text=None):
+        """
+        Generate a video synchronized with the given audio.
 
-    # Caminhos para logo e imagem de subscribe
-    logo_path = os.path.join('images', f'logo-canal-{CHANNEL}.jpg')  # Substituir pelo caminho real do logo
-    subscribe_image_path = os.path.join('images', 'subscribe.png')  # Substituir pelo caminho real da imagem de subscribe
+        Args:
+            audio_path (str): Path to the audio file.
+            audio_duration (float): Duration of the audio in seconds.
+            output_path (str): Path to save the generated video.
+            text (str, optional): Text to display as synchronized subtitles.
+        """
+        print(f"🎬 Criando sequência de vídeo com duração {audio_duration:.2f} segundos...")
+        
+        # Create video sequence from random 4-second clips
+        video = self.create_video_sequence(audio_duration)
+        
+        # Add audio to video
+        audio_clip = AudioFileClip(audio_path)
+        video = video.set_audio(audio_clip)
 
-    # Selecionar vídeo de fundo
-    background_video_path = select_random_video(THEME)
-    video_size = get_video_size()
+        # Add logo
+        logo_path = f"images/logo-canal-{self.channel}.jpg"
+        if os.path.exists(logo_path):
+            video = add_logo(video, logo_path, x_percent=0.45, y_percent=0.02, size_multiplier=0.8, opacity=0.7)
 
-    if background_video_path:
-        final_video = repeat_video_to_duration(background_video_path, duration)
-        final_video = final_video.resize(video_size)  # Resize to match the orientation
-    else:
-        final_video = ColorClip(size=video_size, color=(0, 0, 0)).set_duration(duration)
+        # Add subscribe image
+        subscribe_image_path = "images/subscribe.png"
+        if os.path.exists(subscribe_image_path):
+            video = add_image(video, subscribe_image_path, x=0.2, y=0.7, size_multiplier=0.8, opacity=0.6)
 
-    # Carregar versículos da Bíblia
-    with open("bible.txt", "r", encoding="utf-8") as bible_file:
-        verses = [line.strip() for line in bible_file if line.strip()]
+        # Add synchronized subtitles if text is provided
+        if text:
+            print("📝 Adicionando legendas sincronizadas...")
+            video = self.add_synchronized_subtitles(video, text, audio_duration)
 
-    # Selecionar versículos para exibição
-    if len(verses) < 3:
-        print("Not enough verses available. Using all available verses.")
-        verses_to_display = verses
-    else:
-        start_index = random.randint(0, len(verses) - 3)
-        verses_to_display = verses[start_index:start_index + 3]
+        # Write final video
+        video.write_videofile(output_path, codec="libx264", fps=24)
+        print(f"Video saved: {output_path}")
+        
+        # Clean up clips
+        video.close()
+        audio_clip.close()
+        
+        return output_path
 
-    # Adicionar texto ao vídeo
-    for i, verse in enumerate(verses_to_display):
-        final_video = add_text(
-            video=final_video,
-            text=verse,
-            config=config,
-            duration=duration / len(verses_to_display),
-            start_time=i * (duration / len(verses_to_display))
-        )
-
-    # Adicionar logo
-    final_video = add_logo(
-        video=final_video,  # Passando o objeto de vídeo diretamente
-        logo_path=logo_path,
-        x_percent=0.45,  # Posição horizontal (5% da largura)
-        y_percent=0.02,  # Posição vertical (5% da altura)
-        size_multiplier=0.8,  # Tamanho relativo ao vídeo
-        opacity=0.7  # Opacidade do logo
-    )
-
-    # Adicionar imagem de subscribe
-    final_video = add_image(
-        video=final_video,  # Passando o objeto de vídeo diretamente
-        image_path=subscribe_image_path,
-        x=0.2,  # Posição horizontal (80% da largura)
-        y=0.7,  # Posição vertical (80% da altura)
-        size_multiplier=0.8,  # Tamanho relativo ao vídeo
-        opacity=0.6  # Opacidade da imagem
-    )
-
-    # Adicionar áudio
-    audio_files = load_files("audios", ".mp3")
-    audio_clips = []
-    total_audio_duration = 0
-    for audio_file in audio_files:
-        if total_audio_duration >= duration:
-            break
+    def create_final_video(self, texts, output_video_path, output_folder=None):
+        """
+        Main function to create the final video with audio generation.
+        
+        Args:
+            texts (list): List of text segments.
+            output_video_path (str): Path to save the final video.
+            output_folder (str, optional): Folder to save temporary files.
+        """
+        from voice_generator import VoiceGenerator
+        
         try:
-            audio_clip = AudioFileClip(audio_file)
-            audio_clips.append(audio_clip)
-            total_audio_duration += audio_clip.duration
+            # Generate audio from texts
+            voice_gen = VoiceGenerator()
+            full_text = " ".join(texts)
+            
+            # Save temporary audio in output folder if provided
+            if output_folder:
+                audio_path = os.path.join(output_folder, "temp_audio.wav")
+            else:
+                audio_path = "temp_audio.wav"
+                
+            audio_duration = voice_gen.generate_audio(full_text, audio_path)
+            
+            if audio_duration == 0:
+                print("Failed to generate audio.")
+                return
+
+            # Generate video with the audio
+            self.generate_video(audio_path, audio_duration, output_video_path)
+            
+            # Clean up temporary audio file
+            if os.path.exists(audio_path):
+                os.remove(audio_path)
+                
         except Exception as e:
-            print(f"Error loading audio file {audio_file}: {e}")
-
-    if audio_clips:
-        final_audio = concatenate_audioclips(audio_clips).subclip(0, duration)
-        final_video = final_video.set_audio(final_audio)
-
-    # Salvar vídeo final
-    output_dir = "output_data_geraca_completa"
-    os.makedirs(output_dir, exist_ok=True)
-    output_path = f"{output_dir}/{THEME}_final_video.mp4"
-    final_video.write_videofile(output_path, codec="libx264", audio_codec="aac", fps=24)
-
-    return output_path
+            print(f"An error occurred while creating the video: {e}")

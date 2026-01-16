@@ -1,125 +1,216 @@
+import pyautogui
+import time
 import os
-import random
-from pytubefix import YouTube
-from templates import title_templates, description_templates
-from video_editor import VideoEditor
+import pyperclip
+import subprocess
 
 class YouTubeManager:
-    def __init__(self):
-        pass
+    def __init__(self, screen_orientation="MOBILE"):
+        self.screen_orientation = screen_orientation
 
-    def download_video(self, url, download_path="./downloads"):
-        """
-        Baixa um vídeo do YouTube para o diretório especificado, criando uma subpasta com base no título do vídeo.
-
-        :param url: URL do vídeo do YouTube.
-        :param download_path: Caminho para salvar o vídeo baixado.
-        :return: Dicionário com informações do vídeo baixado ou None se o download falhar.
-        """
-        # Remover parâmetros adicionais da URL
-        if "&" in url:
-            url = url.split("&")[0]
-            print(f"URL limpa: {url}")
-
-        if not os.path.exists(download_path):
-            os.makedirs(download_path)
-
-        try:
-            # Obter informações do vídeo
-            yt = YouTube(url)
-            title = yt.title
-
-            # Tentar encontrar streams em 1080p, 720p ou a melhor disponível
-            streams_1080p = yt.streams.filter(res="1080p", progressive=True, file_extension='mp4')
-            streams_720p = yt.streams.filter(res="720p", progressive=True, file_extension='mp4')
-            best_stream = None
-
-            if streams_1080p:
-                best_stream = streams_1080p.first()
-                print("Encontrado stream em 1080p.")
-            elif streams_720p:
-                best_stream = streams_720p.first()
-                print("Encontrado stream em 720p.")
-            else:
-                best_stream = yt.streams.filter(progressive=True, file_extension='mp4').order_by('resolution').desc().first()
-                if best_stream:
-                    print(f"Nenhum stream em 1080p ou 720p. Baixando a melhor resolução disponível: {best_stream.resolution}.")
+    def click_image(self, image_path, confidence=0.8, region=None, offset_x=0, offset_y=0, retries=3, delay=1):
+        attempt = 0
+        while attempt < retries:
+            try:
+                location = pyautogui.locateOnScreen(image_path, confidence=confidence, region=region)
+                if location:
+                    center_x = location.left + location.width // 2 + offset_x
+                    center_y = location.top + location.height // 2 + offset_y
+                    pyautogui.click(center_x, center_y)
+                    print(f"Clicou em [{image_path}] em ({center_x}, {center_y})")
+                    return True
                 else:
-                    print("Nenhum stream disponível para download.")
-                    return None
+                    time.sleep(10)
+                    print(f"Tentativa {attempt + 1}: Imagem não encontrada na tela.")
+            except Exception as e:
+                print(f"Tentativa {attempt + 1}: Erro ao procurar a imagem: {image_path} - {str(e)}")
+           
+            attempt += 1
+            time.sleep(delay)
+       
+        print(f"Falha ao encontrar ou clicar na imagem após {retries} tentativas.")
+        return False
 
-            # Criar subpasta com os 10 primeiros caracteres do título (sem espaços ou caracteres especiais)
-            sanitized_title = ''.join(c for c in title[:20] if c.isalnum())
-            subfolder = os.path.join(download_path, sanitized_title)
-            if not os.path.exists(subfolder):
-                os.makedirs(subfolder)
-
-            # Nome do arquivo com título e resolução
-            resolution = best_stream.resolution
-            filename = f"{sanitized_title}_{resolution}.mp4"
-            filepath = os.path.join(subfolder, filename)
-
-            # Baixar o vídeo
-            print(f"Baixando vídeo de {url} para {filepath}...")
-            best_stream.download(output_path=subfolder, filename=filename)
-            print("Download concluído!")
-
-            # Obter tamanho do arquivo
-            file_size = os.path.getsize(filepath) if os.path.exists(filepath) else None
-
-            # Retornar informações do vídeo
-            return {
-                "title": title,
-                "filepath": filepath,
-                "extension": "mp4",
-                "size": file_size
-            }
-
+    def type_text(self, text, interval=0.1):
+        try:
+            pyperclip.copy(text)
+            print(f"Texto copiado para a área de transferência: {text}")
+            pyautogui.hotkey("ctrl", "v")
+            print(f"Texto colado: {text}")
+            return True
         except Exception as e:
-            print(f"Erro ao baixar o vídeo: {e}")
+            print(f"Erro ao digitar texto: {e}")
+            return False
+
+    def wait(self, seconds):
+        time.sleep(seconds)
+        print(f"Aguardou {seconds} segundos")
+
+    def press_hotkey(self, *keys):
+        pyautogui.hotkey(*keys)
+        print(f"Hotkey pressionada: {' + '.join(keys)}")
+
+    def scroll_down(self, amount):
+        pyautogui.scroll(-amount)
+        print(f"Rolou para baixo {amount} unidades")
+
+    def get_clipboard_text(self):
+        try:
+            text = pyperclip.paste()
+            print(f"Texto capturado da área de transferência: {text}")
+            return text
+        except Exception as e:
+            print(f"Erro ao capturar texto da área de transferência: {e}")
             return None
 
-    def process_downloaded_video(self, video_info, channel):
-        """
-        Processa o vídeo baixado editando-o (por exemplo, ajustando contraste, saturação e adicionando logo).
+    def open_or_launch_window(self, executable_path):
+        try:
+            subprocess.Popen(executable_path, shell=True)
+            print(f"Abrindo uma nova janela do programa: {executable_path}")
+            return True
+        except Exception as e:
+            print(f"Erro ao abrir o programa: {e}")
+            return False
 
-        :param video_info: Dicionário com informações do vídeo baixado.
+    def automate_youtube_posting(self, theme, channel, title_description_generator, video_path=None, output_folder=None):
         """
-        if not video_info or "filepath" not in video_info:
-            print("Informações do vídeo estão incompletas ou ausentes.")
+        Automate the YouTube posting process.
+        
+        Args:
+            theme (str): Theme for the video.
+            channel (str): Channel name.
+            title_description_generator: Generator for title and description.
+            video_path (str, optional): Path to video file. If None, will use default.
+            output_folder (str, optional): Output folder for generated files.
+        """
+        try:
+            # ABRE JANELA
+            self.wait(3)
+            self.open_or_launch_window("C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe")
+            self.wait(7)
+            self.press_hotkey("win", "shift", "up")
+            self.press_hotkey("win", "left")
+            self.wait(2)
+        except Exception as e:
+            print(f"Erro ao abrir o Chrome: {e}")
             return
 
-        video_path = video_info["filepath"]
-        folder_path = os.path.dirname(video_path)
-
-        editor = VideoEditor(video_path)
-        editor.process_video(logo_path="logo-canal-"+channel+".jpg", x_percent=0.5, y_percent=0.1, size_multiplier=0.5, opacity=0.2)
-        print(f"Vídeo processado e salvo: {video_path}")
-
-        # Ensure the video file is properly closed and finalized
+        # ACESSA YOUTUBE
         try:
-            with open(video_path, 'rb') as f:
-                pass  # Open and close the file to ensure it is finalized
-            print(f"Video file finalized: {video_path}")
+            self.click_image("fav-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
+            self.wait(3)
+            self.click_image("barra-url-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
+            self.type_text("youtube.com/results?search_query=" + theme + "&sp=EgQIAxAJ")
+            self.wait(3)
+            self.press_hotkey("enter")
+            self.wait(40)
+            self.click_image("botao-lupa-youtube.png", region=(0, 0, 1920, 1080), offset_x=-200, offset_y=200)
+            self.wait(20)
+            self.scroll_down(500)
         except Exception as e:
-            print(f"Error finalizing video file: {e}")
+            print(f"Erro ao acessar o YouTube: {e}")
+            self.press_hotkey("alt", "f4")
+            return
 
-class LocalTitleDescriptionGenerator:
-    def __init__(self):
-        # Modelos de título e descrição importados do arquivo templates.py
-        self.title_templates = title_templates
-        self.description_templates = description_templates
+        # CAPTURA URL VIDEO
+        try:
+            self.click_image("barra-url-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
+            self.press_hotkey("ctrl", "c")
+            url = self.get_clipboard_text()
+            print(f"URL copiada: {url}")
+        except Exception as e:
+            print(f"Erro ao capturar URL do vídeo: {e}")
+            self.press_hotkey("alt", "f4")
+            return
 
-    def generate(self, theme):
-        """
-        Gera um título e uma descrição com base no tema fornecido.
-
-        :param theme: Tema para gerar o título e a descrição.
-        :return: Dicionário com título e descrição gerados.
-        """
-        title = random.choice(self.title_templates).format(theme)
-        description = random.choice(self.description_templates).format(theme)
-        return {
-            "title": title,
-            "description": description
+        # Generate video info if not provided
+        video_info = {
+            "filepath": video_path,
+            "generated_info": title_description_generator.generate(theme) if title_description_generator else {}
         }
+
+        # ACESSA PARA POSTAR
+        self.click_image("fav-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        self.wait(18)
+        self.click_image("botao-criar-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        self.wait(14)
+        self.click_image("botao-enviar-video-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        self.wait(25)
+        
+        # Upload process...
+        self._upload_video(video_info)
+
+    def _upload_video(self, video_info):
+        """Internal method to handle video upload."""
+        if not video_info or "filepath" not in video_info or not os.path.exists(video_info['filepath']):
+            print("Caminho do vídeo não encontrado.")
+            return
+
+        self.click_image("botao-selecionar-arquivos-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        self.wait(25)
+        
+        # Navigate to video folder
+        self.click_image("botao-nova-pasta-windows.png", region=(0, 0, 1920, 1080), offset_x=-20, offset_y=-25)
+        self.wait(3)
+        
+        video_folder_path = os.path.dirname(os.path.abspath(video_info['filepath']))
+        self.type_text(video_folder_path)
+        self.wait(3)
+        self.press_hotkey("enter")
+        self.wait(11)
+        
+        # Select video file
+        for _ in range(4):
+            self.press_hotkey("tab")
+            self.wait(3)
+        self.press_hotkey("space")
+        self.wait(3)
+        self.press_hotkey("enter")
+
+        # Fill title and description
+        self._fill_video_info(video_info)
+        
+        # Complete upload process
+        self._complete_upload()
+
+    def _fill_video_info(self, video_info):
+        """Fill video title and description."""
+        self.wait(15)
+        self.click_image("label-titulo-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        self.wait(5)
+        self.press_hotkey("ctrl", "a")
+        self.wait(3)
+        self.press_hotkey("backspace")
+        self.wait(2)
+        
+        if "generated_info" in video_info and "title" in video_info["generated_info"]:
+            self.type_text(video_info["generated_info"]["title"])
+       
+        self.wait(5)
+        self.click_image("label-descricao-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
+        self.wait(5)
+        
+        if "generated_info" in video_info and "description" in video_info["generated_info"]:
+            self.type_text(video_info["generated_info"]["description"])
+        self.wait(5)
+
+    def _complete_upload(self):
+        """Complete the YouTube upload process."""
+        self.click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1920), offset_x=10, offset_y=10)
+        self.wait(5)
+        self.press_hotkey("space")
+        self.wait(5)
+        self.press_hotkey("down")
+        self.wait(5)
+        self.press_hotkey("down")
+        self.wait(5)
+        
+        # Click through remaining steps
+        for _ in range(3):
+            self.click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1920), offset_x=10, offset_y=10)
+            self.wait(5)
+        
+        self.click_image("botao-publico-publicando-youtube.png", region=(0, 0, 1920, 1920), offset_x=10, offset_y=10)
+        self.wait(5)
+        self.click_image("botao-publicar-publicando-youtube.png", region=(0, 0, 1920, 1920), offset_x=10, offset_y=10)
+        print("Vídeo publicado com sucesso!")

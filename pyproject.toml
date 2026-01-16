@@ -1,0 +1,19 @@
+[project]
+name = "hello"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "kokoro>=0.9.4",
+    "moviepy==1.0.3",
+    "numpy>=2.4.1",
+    "opencv-python>=4.11.0.86",
+    "pillow>=11.3.0",
+    "psutil>=7.2.1",
+    "pyautogui>=0.9.54",
+    "pyperclip>=1.11.0",
+    "pytubefix>=10.3.6",
+    "requests>=2.32.5",
+    "soundfile>=0.13.1",
+]
