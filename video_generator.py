@@ -1,13 +1,15 @@
 import os
 import random
 import glob
-from moviepy.editor import concatenate_videoclips, VideoFileClip, ColorClip, AudioFileClip
+from moviepy.editor import concatenate_videoclips, VideoFileClip, ColorClip, AudioFileClip, CompositeVideoClip, ImageClip, CompositeAudioClip, concatenate_audioclips
 from video_editor import add_logo, add_image, add_text
+from PIL import Image, ImageDraw, ImageFont
+from faster_whisper import WhisperModel
 
 class VideoGenerator:
     def __init__(self, theme="pregacao", screen_orientation="MOBILE", channel="parallelcuts", 
                  subtitle_font="arial.ttf", subtitle_font_size=50, subtitle_color="white", 
-                 subtitle_words_per_line=3):
+                 subtitle_words_per_line=1):
         self.theme = theme
         self.screen_orientation = screen_orientation
         self.channel = channel
@@ -114,59 +116,90 @@ class VideoGenerator:
         
         return cropped_clip
 
-    def generate_word_timestamps(self, text, audio_duration):
+    def generate_word_timestamps(self, audio_path):
         """
-        Generate timestamps for each word in the text based on audio duration.
+        Generate precise word timestamps using Whisper.
         
         Args:
-            text (str): The text to synchronize
-            audio_duration (float): Total duration of the audio
+            audio_path (str): Path to the audio file
             
         Returns:
             list: List of tuples (word, start_time, end_time)
         """
-        words = text.split()
-        if not words:
-            return []
-        
-        # Calculate time per word (simple approach)
-        time_per_word = audio_duration / len(words)
-        
-        timestamps = []
-        current_time = 0
-        
-        for word in words:
-            start_time = current_time
-            end_time = current_time + time_per_word
-            timestamps.append((word, start_time, end_time))
-            current_time = end_time
-        
-        return timestamps
+        try:
+            # Load Whisper model (using a smaller model for speed)
+            model = WhisperModel("small", device="cpu", compute_type="int8")
+            
+            # Transcribe with word-level timestamps
+            segments, info = model.transcribe(audio_path, word_timestamps=True)
+            
+            word_timestamps = []
+            for segment in segments:
+                for word_info in segment.words:
+                    word_timestamps.append((
+                        word_info.word.strip(),
+                        word_info.start,
+                        word_info.end
+                    ))
+            
+            print(f"📝 Transcrição completa gerada com {len(word_timestamps)} palavras")
+            return word_timestamps
+            
+        except Exception as e:
+            print(f"❌ Erro na transcrição com Whisper: {e}")
+            print("🔄 Usando método alternativo de sincronização...")
+            
+            # Fallback: estimate based on text length
+            return self._estimate_word_timestamps(audio_path)
 
-    def add_synchronized_subtitles(self, video, text, audio_duration):
+    def _estimate_word_timestamps(self, audio_path):
         """
-        Add synchronized subtitles to the video.
+        Fallback method to estimate word timestamps when Whisper fails.
+        
+        Args:
+            audio_path (str): Path to the audio file
+            
+        Returns:
+            list: List of tuples (word, start_time, end_time)
+        """
+        try:
+            # Get audio duration
+            audio_clip = AudioFileClip(audio_path)
+            audio_duration = audio_clip.duration
+            audio_clip.close()
+            
+            # For now, return empty list as we don't have the text here
+            # This will be handled by the calling method
+            return []
+            
+        except Exception as e:
+            print(f"❌ Erro ao estimar timestamps: {e}")
+            return []
+
+    def add_synchronized_subtitles(self, video, audio_path):
+        """
+        Add synchronized subtitles to the video using Whisper transcription.
         
         Args:
             video: VideoFileClip to add subtitles to
-            text (str): Text to display as subtitles
-            audio_duration (float): Duration of the audio
+            audio_path (str): Path to the audio file
             
         Returns:
             VideoFileClip with subtitles
         """
-        timestamps = self.generate_word_timestamps(text, audio_duration)
+        # Generate precise word timestamps using Whisper
+        word_timestamps = self.generate_word_timestamps(audio_path)
         
-        if not timestamps:
+        if not word_timestamps:
+            print("⚠️ Não foi possível gerar timestamps das palavras")
             return video
         
         # Group words into subtitle segments
         subtitle_segments = []
         current_segment = []
         current_start = 0
-        current_end = 0
         
-        for word, start_time, end_time in timestamps:
+        for word, start_time, end_time in word_timestamps:
             current_segment.append(word)
             
             if len(current_segment) == 1:
@@ -188,8 +221,10 @@ class VideoGenerator:
         
         # Add remaining words
         if current_segment:
+            # Get the end time from the last word
+            last_end_time = word_timestamps[-1][2] if word_timestamps else current_start + 1.0
             subtitle_text = " ".join(current_segment)
-            duration = audio_duration - current_start
+            duration = last_end_time - current_start
             
             subtitle_segments.append({
                 'text': subtitle_text,
@@ -197,8 +232,10 @@ class VideoGenerator:
                 'duration': duration
             })
         
-        # Add subtitle clips to video
-        subtitle_clips = []
+        print(f"📝 Criando {len(subtitle_segments)} segmentos de legenda")
+        
+        # Create text clips for each segment
+        text_clips = []
         
         for segment in subtitle_segments:
             # Create text configuration
@@ -210,29 +247,155 @@ class VideoGenerator:
                 "line_spacing": 10
             }
             
-            # Add subtitle using the existing add_text function
-            video_with_subtitle = add_text(
-                video, 
-                segment['text'], 
-                config, 
-                segment['duration'], 
-                segment['start_time']
-            )
+            # Create text image
+            font_path = os.path.join('images', self.subtitle_font)
+            try:
+                font = ImageFont.truetype(font_path, config["font_size"])
+            except:
+                # Fallback to default font
+                font = ImageFont.load_default()
             
-            subtitle_clips.append(video_with_subtitle)
+            img = Image.new("RGBA", video.size, color=(0, 0, 0, 0))  # Transparent background
+            draw = ImageDraw.Draw(img)
+
+            max_width = video.size[0] - config["padding_x"] * 2
+            lines = []
+            words = segment['text'].split()
+            current_line = ""
+
+            for word in words:
+                test_line = f"{current_line} {word}".strip()
+                try:
+                    text_bbox = draw.textbbox((0, 0), test_line, font=font)
+                    text_width = text_bbox[2] - text_bbox[0]
+                except:
+                    text_width = len(test_line) * config["font_size"] * 0.6
+
+                if text_width <= max_width:
+                    current_line = test_line
+                else:
+                    lines.append(current_line)
+                    current_line = word
+
+            if current_line:
+                lines.append(current_line)
+
+            try:
+                line_height = draw.textbbox((0, 0), "A", font=font)[3] - draw.textbbox((0, 0), "A", font=font)[1]
+            except:
+                line_height = config["font_size"]
+            
+            total_text_height = line_height * len(lines) + config["line_spacing"] * (len(lines) - 1)
+
+            y_offset = (img.height - total_text_height) // 2
+            for line in lines:
+                try:
+                    text_bbox = draw.textbbox((0, 0), line, font=font)
+                    text_width = text_bbox[2] - text_bbox[0]
+                except:
+                    text_width = len(line) * config["font_size"] * 0.6
+                
+                x_position = (img.width - text_width) // 2
+                draw.text((x_position, y_offset), line, fill=config["font_color"], font=font)
+                y_offset += line_height + config["line_spacing"]
+
+            temp_image_path = f"temp_text_{segment['start_time']}.png"
+            img.save(temp_image_path, "PNG")
+
+            text_clip = ImageClip(temp_image_path, transparent=True).set_duration(segment['duration']).set_start(segment['start_time'])
+            text_clips.append(text_clip)
         
-        # If no subtitles were added, return original video
-        if not subtitle_clips:
+        # Composite video with all text clips
+        if text_clips:
+            return CompositeVideoClip([video] + text_clips)
+        else:
+            return video
+
+    def add_song(self, video, volume=0.3):
+        """
+        Add background music to the video from the songs folder.
+        
+        Args:
+            video: VideoFileClip to add music to
+            volume (float): Volume level for the background music (0.0 to 1.0)
+            
+        Returns:
+            VideoFileClip with background music added
+        """
+        import glob
+        
+        # Find all pregacao songs in the songs folder
+        song_files = glob.glob("songs/pregacao*.mp3")
+        
+        if not song_files:
+            print("⚠️ Nenhum arquivo de música encontrado na pasta songs/")
             return video
         
-        # Composite all subtitle clips
-        final_video = video
-        for subtitle_clip in subtitle_clips:
-            final_video = CompositeVideoClip([final_video, subtitle_clip])
+        # Select random song
+        selected_song = random.choice(song_files)
+        print(f"🎵 Adicionando música de fundo: {os.path.basename(selected_song)}")
         
-        return final_video
+        try:
+            # Load the song
+            song_clip = AudioFileClip(selected_song)
+            
+            # Set volume
+            song_clip = song_clip.volumex(volume)
+            
+            # If song is shorter than video, loop it
+            video_duration = video.duration
+            if song_clip.duration < video_duration:
+                # Calculate how many times to repeat
+                repeat_count = int(video_duration // song_clip.duration) + 1
+                
+                # Create repeated clips
+                repeated_clips = []
+                for i in range(repeat_count):
+                    repeated_clips.append(song_clip)
+                
+                # Concatenate repeated clips
+                song_clip = concatenate_audioclips(repeated_clips)
+            
+            # Trim to video duration
+            song_clip = song_clip.subclip(0, video_duration)
+            
+            # Get existing audio
+            existing_audio = video.audio
+            
+            # Mix existing audio with background music
+            if existing_audio is not None:
+                # Composite the audio tracks
+                final_audio = CompositeAudioClip([existing_audio, song_clip])
+            else:
+                final_audio = song_clip
+            
+            # Set the mixed audio to the video
+            video = video.set_audio(final_audio)
+            
+            # Clean up
+            song_clip.close()
+            
+        except Exception as e:
+            print(f"❌ Erro ao adicionar música: {e}")
+        
+        return video
 
-def generate_video(self, audio_path, audio_duration, output_path, text=None):
+    def _cleanup_temp_files(self):
+        """
+        Clean up temporary files created during video generation.
+        """
+        import glob
+        
+        # Clean up temporary text image files
+        temp_files = glob.glob("temp_text_*.png")
+        for temp_file in temp_files:
+            try:
+                os.remove(temp_file)
+                print(f"🗑️ Arquivo temporário removido: {temp_file}")
+            except Exception as e:
+                print(f"⚠️ Erro ao remover arquivo temporário {temp_file}: {e}")
+
+    def generate_video(self, audio_path, audio_duration, output_path, text=None):
         """
         Generate a video synchronized with the given audio.
 
@@ -251,6 +414,9 @@ def generate_video(self, audio_path, audio_duration, output_path, text=None):
         audio_clip = AudioFileClip(audio_path)
         video = video.set_audio(audio_clip)
 
+        # Add background music
+        video = self.add_song(video, volume=0.3)
+
         # Add logo
         logo_path = f"images/logo-canal-{self.channel}.jpg"
         if os.path.exists(logo_path):
@@ -264,7 +430,7 @@ def generate_video(self, audio_path, audio_duration, output_path, text=None):
         # Add synchronized subtitles if text is provided
         if text:
             print("📝 Adicionando legendas sincronizadas...")
-            video = self.add_synchronized_subtitles(video, text, audio_duration)
+            video = self.add_synchronized_subtitles(video, audio_path)
 
         # Write final video
         video.write_videofile(output_path, codec="libx264", fps=24)
@@ -273,6 +439,9 @@ def generate_video(self, audio_path, audio_duration, output_path, text=None):
         # Clean up clips
         video.close()
         audio_clip.close()
+        
+        # Clean up temporary text files
+        self._cleanup_temp_files()
         
         return output_path
 
@@ -304,8 +473,8 @@ def generate_video(self, audio_path, audio_duration, output_path, text=None):
                 print("Failed to generate audio.")
                 return
 
-            # Generate video with the audio
-            self.generate_video(audio_path, audio_duration, output_video_path)
+            # Generate video with the audio and subtitles
+            self.generate_video(audio_path, audio_duration, output_video_path, text=full_text)
             
             # Clean up temporary audio file
             if os.path.exists(audio_path):

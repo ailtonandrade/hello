@@ -126,6 +126,16 @@
         </form>
 
         {% if streams or audio_streams %}
+        <div class="mb-4">
+            {% if session.get('thumbnail') %}
+            <div class="text-center mb-3">
+                <img src="{{ session.thumbnail }}" alt="Video Thumbnail" class="img-fluid rounded" style="max-width: 300px; max-height: 200px;">
+                {% if session.get('title') %}
+                <h5 class="mt-2">{{ session.title }}</h5>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
         <form method="POST" action="/download">
             <div class="mb-3">
                 <select name="itag" class="form-select" onchange="toggleDownloadButton()">
@@ -137,7 +147,13 @@
                     </optgroup>
                     <optgroup label="Audio Streams">
                         {% for stream in audio_streams %}
-                            <option value="{{ stream.itag }}">Audio Only</option>
+                            <option value="{{ stream.itag }}">
+                                {% if stream.quality and stream.quality != stream.itag %}
+                                    Audio Only ({{ stream.quality }})
+                                {% else %}
+                                    Audio Only
+                                {% endif %}
+                            </option>
                         {% endfor %}
                     </optgroup>
                 </select>

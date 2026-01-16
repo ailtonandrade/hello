@@ -25,19 +25,39 @@ def index():
                 yt = YouTube(url)
 
                 # Retrieve available streams
-                streams = yt.streams.filter(progressive=True, file_extension="mp4").all()
+                streams = yt.streams.filter(progressive=False, file_extension="mp4").all()
                 audio_streams = yt.streams.filter(only_audio=True).all()
 
-                # Store streams in session for later use
-                session["streams"] = [
-                    {"itag": stream.itag, "resolution": stream.resolution, "type": "video"}
-                    for stream in streams
-                ]
-                session["audio_streams"] = [
-                    {"itag": stream.itag, "type": "audio"}
-                    for stream in audio_streams
-                ]
+                # Store streams in session for later use (remove duplicates)
+                seen_resolutions = set()
+                unique_streams = []
+                for stream in streams:
+                    if stream.resolution not in seen_resolutions:
+                        unique_streams.append({
+                            "itag": stream.itag, 
+                            "resolution": stream.resolution, 
+                            "type": "video"
+                        })
+                        seen_resolutions.add(stream.resolution)
+                
+                seen_audio_qualities = set()
+                unique_audio_streams = []
+                for stream in audio_streams:
+                    # Use abr (audio bitrate) for uniqueness, fallback to itag if not available
+                    quality_key = getattr(stream, 'abr', str(stream.itag))
+                    if quality_key not in seen_audio_qualities:
+                        unique_audio_streams.append({
+                            "itag": stream.itag, 
+                            "type": "audio",
+                            "quality": quality_key
+                        })
+                        seen_audio_qualities.add(quality_key)
+
+                session["streams"] = unique_streams
+                session["audio_streams"] = unique_audio_streams
                 session["url"] = url
+                session["thumbnail"] = yt.thumbnail_url
+                session["title"] = yt.title
 
                 flash("Streams fetched successfully. Please select one to download.", "success")
                 return redirect(url_for("index"))
@@ -49,6 +69,8 @@ def index():
             session.pop("streams", None)
             session.pop("audio_streams", None)
             session.pop("url", None)
+            session.pop("thumbnail", None)
+            session.pop("title", None)
             flash("Inputs cleared successfully.", "success")
             return redirect(url_for("index"))
 
@@ -78,6 +100,8 @@ def download():
         session.pop("streams", None)
         session.pop("audio_streams", None)
         session.pop("url", None)
+        session.pop("thumbnail", None)
+        session.pop("title", None)
 
         # Send the file to the client for download
         return send_file(file_path, as_attachment=True)
