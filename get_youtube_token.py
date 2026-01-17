@@ -143,7 +143,7 @@ def get_youtube_token():
         "https://www.googleapis.com/auth/youtube.upload&"
         "response_type=code&"
         "access_type=offline&"
-        "prompt=consent%20select_account&"
+        "prompt=consent&"
         "include_granted_scopes=true"
     )
 
