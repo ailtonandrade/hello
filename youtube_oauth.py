@@ -59,6 +59,29 @@ def get_access_token():
 
     return token["access_token"]
 
+def get_authenticated_channel_info(access_token):
+    url = "https://www.googleapis.com/youtube/v3/channels"
+    params = {
+        "part": "snippet",
+        "mine": "true"
+    }
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    response = requests.get(url, headers=headers, params=params)
+    response.raise_for_status()
+
+    data = response.json()
+    if not data.get("items"):
+        raise Exception("Nenhum canal encontrado para este token")
+
+    channel = data["items"][0]
+    return {
+        "channel_id": channel["id"],
+        "title": channel["snippet"]["title"]
+    }
+
 
 # =========================
 # 📤 UPLOAD YOUTUBE
@@ -73,6 +96,10 @@ def youtube_upload_video(
     is_short: bool = False
 ):
     access_token = get_access_token()
+
+    # obtém info do canal autenticado
+    channel_info = get_authenticated_channel_info(access_token)
+    print(f"📺 Canal autenticado: {channel_info['title']} ({channel_info['channel_id']})")
 
     if not os.path.exists(video_path):
         raise YouTubeUploadError("Arquivo de vídeo não encontrado")
