@@ -12,7 +12,7 @@ from local_title_description_generator import LocalTitleDescriptionGenerator
 # Configurações fixas
 CHANNEL = "parallelcuts"
 THEME = "pregacao"
-VOICE_NAME = "pm_santa"
+VOICE_NAME = "pm_santa" #pm_alex #pf_dora
 VOICE_SPEED = 0.6
 SUBTITLE_WORDS_PER_LINE = 3
 SUBTITLE_FONT_SIZE = 45
