@@ -139,7 +139,7 @@ class VideoGenerator:
             # Sombra para melhor visibilidade
             shadow_offset = 2
             draw.text((x + shadow_offset, y + shadow_offset), segment["text"], 
-                    fill=(0, 0, 0, 150), font=font)
+                    fill=(0, 0, 0, 100), font=font)
             
             # Texto principal amarelo âmbar
             draw.text((x, y), segment["text"], fill=font_color, font=font)
