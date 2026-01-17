@@ -22,6 +22,10 @@ Sistema completo de automação para criação e postagem de vídeos no YouTube
 powershell
 # INSTALE PRIMEIRO! Sem isso nada funciona:
 
+# 0. Baixe e instale o Ollama:
+#    https://ollama.com/download/windows
+#    Configure o ollama.exe no PATH das variáveis de ambiente do windows para usuário e sistema 
+
 # 1. Baixe e instale o Visual Studio Build Tools:
 #    https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2022
 
