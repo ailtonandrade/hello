@@ -25,21 +25,22 @@ FORCE_TEXT = """
 
 def get_text_by_ollama():
     prompt = """
-    Gere UM versículo bíblico completo (cite o livro, capítulo e versículo) e, em seguida, uma explicação informal, fiel ao sentido bíblico, simples e correta.
+    Gere UM texto de motivação emocional e espiritual bíblico e, em seguida, uma explicação informal, fiel ao sentido bíblico, simples e correta.
     O texto deve parecer uma narração falada, natural e fluida.
     Não use linguagem acadêmica.
     Não faça listas.
     Não acrescente introduções nem conclusões.
     Não use emojis.
+    Não use numeros romanos.
+    Não cite o número dos versículos, apenas o livro e o capítulo
     Escreva numerais por extenso, nunca use digitos numéricos.
     Use pontuação para ajudar na dicção, como ; ! , ? ... .
     Use colchetes [] para destacar palavras importantes.
     Use parênteses () APENAS para referências bíblicas.
-    Use linguagem simples, como se estivesse falando com um amigo.
+    Use linguagem simples, como se estivesse falando com um amigo passando por alguma dificuldade relacionada ao tema.
     Use o português do Brasil.
     Use apenas livros canônicos da Bíblia.
     Não invente versículos.
-    Não use hifens nem traços entre números.
     Não ultrapasse 100 palavras no total.
     Responda APENAS com o texto final, sem títulos, sem comentários extras e sem explicações fora do texto.
     """
