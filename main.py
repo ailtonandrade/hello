@@ -31,12 +31,21 @@ def get_text_by_ollama():
     Não faça listas.
     Não acrescente introduções nem conclusões.
     Não use emojis.
+    Escreva numerais por extenso, nunca use digitos numéricos.
+    Use pontuação para ajudar na dicção, como ; ! , ? ... .
+    Use colchetes [] para destacar palavras importantes.
+    Use parênteses () APENAS para referências bíblicas.
+    Use linguagem simples, como se estivesse falando com um amigo.
+    Use o português do Brasil.
+    Use apenas livros canônicos da Bíblia.
+    Não invente versículos.
+    Não use hifens nem traços entre números.
     Não ultrapasse 100 palavras no total.
     Responda APENAS com o texto final, sem títulos, sem comentários extras e sem explicações fora do texto.
     """
 
     print("🧠 Enviando prompt para o Ollama...")
-    print("⏳ Aguardando resposta do modelo (gemma3:4b)...")
+    print(f"⏳ [{datetime.now().strftime('%H:%M:%S')}] Aguardando resposta do modelo (gemma3:4b)...")
 
     try:
         result = subprocess.run(
@@ -48,15 +57,15 @@ def get_text_by_ollama():
         )
 
         if result.stdout.strip():
-            print("✅ Resposta recebida com sucesso.")
+            print(f"✅ [{datetime.now().strftime('%H:%M:%S')}] Resposta recebida com sucesso.")
             return result.stdout.strip()
         else:
-            print("⚠️ Ollama respondeu, mas o texto veio vazio.")
+            print(f"⚠️ [{datetime.now().strftime('%H:%M:%S')}] Ollama respondeu, mas o texto veio vazio.")
             return None
 
     except subprocess.CalledProcessError as e:
         print("❌ Erro ao executar o Ollama.")
-        print("STDERR:", e.stderr)
+        print(f"STDERR: {e.stderr}")
         return None
 
     except Exception as e:
