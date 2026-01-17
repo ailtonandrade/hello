@@ -38,12 +38,9 @@ def get_text_by_ollama():
     Não use hífens em nenhuma parte do texto.
     Use pontuação para ajudar na entonação, como ; ! , ? ... .
     Use colchetes [] para destacar palavras importantes.
-    Use parênteses () APENAS para referências bíblicas.
     Use linguagem simples, como se estivesse falando com um amigo passando por alguma dificuldade relacionada ao tema.
     Use o português do Brasil.
-    Use apenas livros canônicos da Bíblia.
-    Não invente versículos.
-    Não ultrapasse 100 palavras no total.
+    Não ultrapasse 50 palavras no total.
     Responda APENAS com o texto final, sem títulos, sem comentários extras e sem explicações fora do texto.
     """
 
@@ -242,7 +239,7 @@ def youtube_upload():
 
 if __name__ == "__main__":
     try:
-        # main()
+        main()
         youtube_upload()
     except Exception as e:
         print(f"❌ Erro: {e}")
