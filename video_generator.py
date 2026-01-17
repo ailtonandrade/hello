@@ -108,10 +108,11 @@ class VideoGenerator:
             print(f"❌ Erro na transcrição: {e}")
             return []
 
-    def _create_subtitle_clip(self, segment, video_size, x_pos=0.5, y_pos=0.8):
+    def _create_subtitle_clip(self, segment, video_size, font_color, x_pos=0.5, y_pos=0.8):
         """Cria UMA legenda individual - corrigido."""
         try:
-            img = Image.new("RGBA", video_size, (0, 0, 0, 0))
+            # aplicar cor do font_color
+            img = Image.new("RGBA", video_size, (0, 0, 0, 0))# transparente
             draw = ImageDraw.Draw(img)
             
             font_path = os.path.join('images', self.subtitle_font)
@@ -140,8 +141,8 @@ class VideoGenerator:
             draw.text((x + shadow_offset, y + shadow_offset), segment["text"], 
                     fill=(0, 0, 0, 150), font=font)
             
-            # Texto principal branco
-            draw.text((x, y), segment["text"], fill=(255, 255, 255, 255), font=font)
+            # Texto principal amarelo âmbar
+            draw.text((x, y), segment["text"], fill=font_color, font=font)
             
             img_array = np.array(img)
             duration = max(segment["duration"], 0.1)
@@ -156,7 +157,7 @@ class VideoGenerator:
             return None
 
 
-    def create_subtitle_clips(self, words, video_size, x_pos=0.5, y_pos=0.8):
+    def create_subtitle_clips(self, words, video_size, font_color, x_pos=0.5, y_pos=0.8):
         """Cria VÁRIAS legendas sincronizadas - corrigido."""
         if not words:
             return []
@@ -185,7 +186,7 @@ class VideoGenerator:
                 }
                 
                 # CORREÇÃO: Agora passa o segment (dicionário)
-                clip = self._create_subtitle_clip(segment, video_size, x_pos, y_pos)
+                clip = self._create_subtitle_clip(segment, video_size, font_color, x_pos=x_pos, y_pos=y_pos)
                 if clip:
                     clips.append(clip)
                 
@@ -194,7 +195,7 @@ class VideoGenerator:
         
         return clips
 
-    def add_synchronized_subtitles(self, video, audio_path, x_pos=0.5, y_pos=0.8):
+    def add_synchronized_subtitles(self, video, audio_path, font_color, x_pos=0.5, y_pos=0.8):
         """Adiciona legendas sincronizadas com a fala."""
         if not audio_path or not os.path.exists(audio_path):
             return video
@@ -208,7 +209,7 @@ class VideoGenerator:
         
         # Criar clips de legenda
         print(f"🎬 Criando {len(words)} legendas...")
-        subtitle_clips = self.create_subtitle_clips(words, video.size, x_pos=x_pos, y_pos=y_pos)
+        subtitle_clips = self.create_subtitle_clips(words, video.size, font_color, x_pos=x_pos, y_pos=y_pos)
         
         if not subtitle_clips:
             return video
@@ -354,7 +355,7 @@ class VideoGenerator:
             video = self.effects.apply_vignette(video, intensity=0.8)
         return video
 
-    def generate_video(self, audio_path, audio_duration, output_path, text=None):
+    def generate_video(self, audio_path, font_color, audio_duration, output_path, text=None):
         """Gera vídeo final com otimização AMD/CPU."""
         
         video = None
@@ -374,11 +375,11 @@ class VideoGenerator:
             
             # 5. Adicionar legendas
             if text and audio_duration < 120:
-                video = self.add_synchronized_subtitles(video, audio_path, x_pos=0.5, y_pos=0.5)
+                video = self.add_synchronized_subtitles(video, audio_path, font_color, x_pos=0.5, y_pos=0.5)
             
             # 6. Adicionar logo
             logo_path = f"images/logo-canal-{self.channel}.jpg"
-            video = self.add_image(video, logo_path, x_pos=0.45, y_pos=0.02, 
+            video = self.add_image(video, logo_path , x_pos=0.45, y_pos=0.02, 
                                 height=100, opacity=0.7)
             
             # 7. Adicionar subscribe

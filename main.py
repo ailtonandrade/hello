@@ -6,6 +6,8 @@ import subprocess
 from datetime import datetime
 from voice_generator import VoiceGenerator
 from video_generator import VideoGenerator
+from youtube_manager import YouTubeManager
+from local_title_description_generator import LocalTitleDescriptionGenerator
 
 # Configurações fixas
 CHANNEL = "parallelcuts"
@@ -15,6 +17,7 @@ VOICE_SPEED = 0.6
 SUBTITLE_WORDS_PER_LINE = 3
 SUBTITLE_FONT_SIZE = 45
 SCREEN_ORIENTATION = "MOBILE"
+SUBTITLE_FONT_COLOR = (255, 191, 0, 255)  # Amarelo âmbar
 SUBTITLE_FONT = "lilita.ttf"
 FORCE_TEXT = """
     Irmãos e irmãs, [hoje] vamos meditar na poderosa [palavra] do [Senhor]!
@@ -50,11 +53,17 @@ def get_text_by_ollama():
 
     try:
         result = subprocess.run(
-            ["ollama", "run", "gemma3:4b", prompt],
+            [
+                "ollama", "run", "gemma3:4b",
+                "--num-ctx", "16",        # 🔥 contexto pequeno
+                "--temperature", "0.15",  # 🔥 menos devaneio
+                "--top-p", "0.9"
+            ],
+            input=prompt,               # 👈 prompt vai no stdin
             capture_output=True,
             text=True,
             encoding="utf-8",
-            check=True      # 💥 levanta exceção se falhar
+            check=True
         )
 
         if result.stdout.strip():
@@ -153,7 +162,7 @@ def main():
     video_path = os.path.join(output_folder, "video.mp4")
     
     try:
-        video_gen.generate_video(audio_path, audio_duration, video_path, full_text)
+        video_gen.generate_video(audio_path, SUBTITLE_FONT_COLOR, audio_duration, video_path, full_text)
         
         if os.path.exists(video_path):
             size_mb = os.path.getsize(video_path) / (1024 * 1024)
@@ -166,6 +175,7 @@ def main():
             
     except Exception as e:
         print(f"❌ Erro: {e}")
+
 
 def cleanup_temp_files():
     """Limpeza simples e direta."""
@@ -195,10 +205,41 @@ def cleanup_temp_files():
     print(f"🧹 Limpeza realizada nos arquivos temporários")
     return removed
 
+def get_most_recent_output_folder():
+    """Retorna a pasta de saída mais recente."""
+    output_dir = "output"
+    if not os.path.exists(output_dir):
+        return None
+    
+    folders = [f for f in os.listdir(output_dir) if os.path.isdir(os.path.join(output_dir, f))]
+    if not folders:
+        return None
+    
+    # Ordenar por data de modificação (mais recente primeiro)
+    folders.sort(key=lambda x: os.path.getmtime(os.path.join(output_dir, x)), reverse=True)
+    return os.path.join(output_dir, folders[0])
+
+
 if __name__ == "__main__":
     try:
         main()
-        pass
+        # chamar arquivo YouTube manager para postar o video baseado no nome das pastas dentro de output, a pasta mais recente deve ser recuperada a output_video_pqth , ou se eu quiser mando uma de propria escolha
+
+        
+        # Upload para YouTube
+        print("📤 Preparando upload para YouTube...")
+        output_folder = get_most_recent_output_folder()
+        if output_folder:
+            video_path = os.path.join(output_folder, "video.mp4")
+            if os.path.exists(video_path):
+                youtube_manager = YouTubeManager(screen_orientation=SCREEN_ORIENTATION)
+                title_desc_gen = LocalTitleDescriptionGenerator()
+                youtube_manager.automate_youtube_posting(THEME, CHANNEL, title_desc_gen, video_path)
+                print("✅ Upload para YouTube iniciado!")
+            else:
+                print("❌ Vídeo não encontrado na pasta de saída.")
+        else:
+            print("❌ Nenhuma pasta de saída encontrada.")
     except Exception as e:
         print(f"❌ Erro: {e}")
     finally:
