@@ -147,7 +147,7 @@ class YouTubeManager:
                 video_path=video_info["filepath"],
                 title=video_info["generated_info"]["title"],
                 description=video_info["generated_info"]["description"],
-                is_short=True
+                is_short=self.screen_orientation == "MOBILE"
             )
             return True
         except Exception as e:

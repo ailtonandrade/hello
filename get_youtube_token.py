@@ -4,7 +4,7 @@ Script simples para obter token de acesso do YouTube API
 Execute este script para gerar o youtube_token.json
 """
 
-from time import time
+import time
 import requests
 import json
 import webbrowser
@@ -96,6 +96,41 @@ class OAuthHandler(BaseHTTPRequestHandler):
 
             self.server.shutdown()
 
+def get_authenticated_channel_info(access_token):
+    """
+    Retorna informações do canal associado ao access_token OAuth.
+
+    :param access_token: token OAuth válido
+    :return: dict com channel_id e title
+    """
+    url = "https://www.googleapis.com/youtube/v3/channels"
+    params = {
+        "part": "snippet",
+        "mine": "true"
+    }
+    headers = {
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    response = requests.get(url, headers=headers, params=params)
+
+    if response.status_code != 200:
+        raise Exception(
+            f"Erro ao obter canal autenticado: {response.status_code} - {response.text}"
+        )
+
+    data = response.json()
+
+    if not data.get("items"):
+        raise Exception("Nenhum canal encontrado para este token")
+
+    channel = data["items"][0]
+
+    return {
+        "channel_id": channel["id"],
+        "title": channel["snippet"]["title"]
+    }
+
 def get_youtube_token():
     """Obtem token de acesso do YouTube API"""
 
@@ -104,12 +139,14 @@ def get_youtube_token():
         "https://accounts.google.com/o/oauth2/v2/auth?"
         f"client_id={CLIENT_ID}&"
         f"redirect_uri={REDIRECT_URI}&"
-        "scope=https://www.googleapis.com/auth/youtube.upload&"
+        "scope=https://www.googleapis.com/auth/youtube%20"
+        "https://www.googleapis.com/auth/youtube.upload&"
         "response_type=code&"
         "access_type=offline&"
-        "prompt=consent&"
+        "prompt=consent%20select_account&"
         "include_granted_scopes=true"
     )
+
 
 
     print("Abrindo navegador para autorizacao...")
@@ -138,14 +175,25 @@ def get_youtube_token():
         token_data = response.json()
 
         if 'access_token' in token_data:
+            # recupera info do canal
+            access_token = token_data["access_token"]
+
+            channel_info = get_authenticated_channel_info(access_token)
+
+            print(
+                f"📺 Canal autenticado: {channel_info['title']} "
+                f"({channel_info['channel_id']})"
+            )
+
             # Salva token
             with open('youtube_token.json', 'w') as f:
                 json.dump({
-                    'access_token': token_data['access_token'],
-                    'refresh_token': token_data.get('refresh_token'),
-                    'token_type': token_data.get('token_type', 'Bearer'),
-                    'expires_in': token_data.get('expires_in'),
-                    'created_at': int(time.time())
+                    "access_token": token_data["access_token"],
+                    "refresh_token": token_data.get("refresh_token"),
+                    "token_type": token_data.get("token_type", "Bearer"),
+                    "expires_in": token_data.get("expires_in"),
+                    "created_at": int(time.time()),
+                    "channel": channel_info
                 }, f, indent=2)
 
 
