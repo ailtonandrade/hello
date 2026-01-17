@@ -391,7 +391,7 @@ class VideoGenerator:
             if output_dir and not os.path.exists(output_dir):
                 os.makedirs(output_dir, exist_ok=True)
             
-            self.save_with_gpu_amf(video, output_path)
+            self.save_with_cpu(video, output_path)
             
             print(f"✅ Vídeo salvo: {output_path}")
             return output_path

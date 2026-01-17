@@ -2,6 +2,7 @@ import time
 import os
 import re
 import random
+import subprocess
 from datetime import datetime
 from voice_generator import VoiceGenerator
 from video_generator import VideoGenerator
@@ -22,6 +23,46 @@ FORCE_TEXT = """
     Que o [Espírito] nos conduz e nos direciona a ser como [Cristo].
     """
 
+def get_text_by_ollama():
+    prompt = """
+    Gere UM versículo bíblico completo (cite o livro, capítulo e versículo) e, em seguida, uma explicação informal, fiel ao sentido bíblico, simples e correta.
+    O texto deve parecer uma narração falada, natural e fluida.
+    Não use linguagem acadêmica.
+    Não faça listas.
+    Não acrescente introduções nem conclusões.
+    Não use emojis.
+    Não ultrapasse 100 palavras no total.
+    Responda APENAS com o texto final, sem títulos, sem comentários extras e sem explicações fora do texto.
+    """
+
+    print("🧠 Enviando prompt para o Ollama...")
+    print("⏳ Aguardando resposta do modelo (gemma3:4b)...")
+
+    try:
+        result = subprocess.run(
+            ["ollama", "run", "gemma3:4b", prompt],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=True      # 💥 levanta exceção se falhar
+        )
+
+        if result.stdout.strip():
+            print("✅ Resposta recebida com sucesso.")
+            return result.stdout.strip()
+        else:
+            print("⚠️ Ollama respondeu, mas o texto veio vazio.")
+            return None
+
+    except subprocess.CalledProcessError as e:
+        print("❌ Erro ao executar o Ollama.")
+        print("STDERR:", e.stderr)
+        return None
+
+    except Exception as e:
+        print("❌ Erro inesperado ao chamar o Ollama.")
+        print(e)
+        return None
 
 def sanitize_text(text, force_text=None):
 
@@ -52,6 +93,8 @@ def main():
     """Gera vídeo completo."""
     print("🎬 INICIANDO GERAÇÃO DE VÍDEO")
     
+    FORCE_TEXT = get_text_by_ollama()  # Defina como None para usar texto aleatório da bíblia
+
     # Carregar versículos
     try:
         with open("bible.txt", "r", encoding="utf-8") as file:
