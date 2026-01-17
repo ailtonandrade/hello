@@ -10,6 +10,7 @@ class YouTubeManager:
 
     def click_image(self, image_path, confidence=0.8, region=None, offset_x=0, offset_y=0, retries=3, delay=1):
         attempt = 0
+        image_path = os.path.join("images", image_path)
         while attempt < retries:
             try:
                 location = pyautogui.locateOnScreen(image_path, confidence=confidence, region=region)
@@ -98,29 +99,11 @@ class YouTubeManager:
         try:
             self.click_image("fav-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
             self.wait(3)
-            self.click_image("barra-url-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
-            self.type_text("youtube.com/results?search_query=" + theme + "&sp=EgQIAxAJ")
-            self.wait(3)
-            self.press_hotkey("enter")
-            self.wait(40)
-            self.click_image("botao-lupa-youtube.png", region=(0, 0, 1920, 1080), offset_x=-200, offset_y=200)
-            self.wait(20)
-            self.scroll_down(500)
         except Exception as e:
             print(f"Erro ao acessar o YouTube: {e}")
             self.press_hotkey("alt", "f4")
             return
-
-        # CAPTURA URL VIDEO
-        try:
-            self.click_image("barra-url-youtube.png", region=(0, 0, 320, 1080), offset_x=10, offset_y=10)
-            self.press_hotkey("ctrl", "c")
-            url = self.get_clipboard_text()
-            print(f"URL copiada: {url}")
-        except Exception as e:
-            print(f"Erro ao capturar URL do vídeo: {e}")
-            self.press_hotkey("alt", "f4")
-            return
+        
 
         # Generate video info if not provided
         video_info = {
@@ -129,12 +112,13 @@ class YouTubeManager:
         }
 
         # ACESSA PARA POSTAR
-        self.click_image("fav-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-        self.wait(18)
-        self.click_image("botao-criar-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-        self.wait(14)
+        self.wait(5)
+        self.click_image("fav-youtube.png", region=(0, 0, 1020, 1020), offset_x=10, offset_y=10)
+        self.wait(5)
+        self.click_image("botao-criar-youtube.png", region=(0, 0, 1920, 1920), offset_x=10, offset_y=10)
+        self.wait(2)
         self.click_image("botao-enviar-video-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-        self.wait(25)
+        self.wait(10)
         
         # Upload process...
         self._upload_video(video_info)
@@ -146,7 +130,7 @@ class YouTubeManager:
             return
 
         self.click_image("botao-selecionar-arquivos-youtube.png", region=(0, 0, 1920, 1080), offset_x=10, offset_y=10)
-        self.wait(25)
+        self.wait(5)
         
         # Navigate to video folder
         self.click_image("botao-nova-pasta-windows.png", region=(0, 0, 1920, 1080), offset_x=-20, offset_y=-25)
@@ -156,14 +140,16 @@ class YouTubeManager:
         self.type_text(video_folder_path)
         self.wait(3)
         self.press_hotkey("enter")
-        self.wait(11)
+        self.wait(2)
         
         # Select video file
         for _ in range(4):
             self.press_hotkey("tab")
             self.wait(3)
+
+        self.press_hotkey("down")
         self.press_hotkey("space")
-        self.wait(3)
+        self.wait(1)
         self.press_hotkey("enter")
 
         # Fill title and description
@@ -195,6 +181,7 @@ class YouTubeManager:
 
     def _complete_upload(self):
         """Complete the YouTube upload process."""
+        self.wait(3)
         self.click_image("botao-avancar-publicando-youtube.png", region=(0, 0, 1920, 1920), offset_x=10, offset_y=10)
         self.wait(5)
         self.press_hotkey("space")

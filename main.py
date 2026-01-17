@@ -222,7 +222,7 @@ def get_most_recent_output_folder():
 
 if __name__ == "__main__":
     try:
-        main()
+        #main()
         # chamar arquivo YouTube manager para postar o video baseado no nome das pastas dentro de output, a pasta mais recente deve ser recuperada a output_video_pqth , ou se eu quiser mando uma de propria escolha
 
         
