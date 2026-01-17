@@ -17,13 +17,8 @@ VOICE_SPEED = 0.6
 SUBTITLE_WORDS_PER_LINE = 3
 SUBTITLE_FONT_SIZE = 45
 SCREEN_ORIENTATION = "MOBILE"
-<<<<<<< Updated upstream
-SUBTITLE_FONT_COLOR = (255, 191, 0, 255)  # Amarelo âmbar
-SUBTITLE_FONT = "lilita.ttf"
-=======
 SUBTITLE_FONT_COLOR = (255, 191, 0, 200)  # Amarelo âmbar
 SUBTITLE_FONT = "ArchivoBlack.ttf"
->>>>>>> Stashed changes
 FORCE_TEXT = """
     Irmãos e irmãs, [hoje] vamos meditar na poderosa [palavra] do [Senhor]!
     O [apóstolo] [Paulo] nos diz na [carta] aos [Romanos]:
@@ -33,11 +28,7 @@ FORCE_TEXT = """
 
 def get_text_by_ollama():
     prompt = """
-<<<<<<< Updated upstream
-    Gere UM texto de motivação emocional e espiritual bíblico e, em seguida, uma explicação informal, fiel ao sentido bíblico, simples e correta.
-=======
     Gere UMA reflexão bública contextualizada em uma situação cotidiana.
->>>>>>> Stashed changes
     O texto deve parecer uma narração falada, natural e fluida.
     Não use linguagem acadêmica.
     Não faça listas.
@@ -62,14 +53,7 @@ def get_text_by_ollama():
     try:
         result = subprocess.run(
             [
-<<<<<<< Updated upstream
-                "ollama", "run", "gemma3:4b",
-                "--num-ctx", "16",        # 🔥 contexto pequeno
-                "--temperature", "0.15",  # 🔥 menos devaneio
-                "--top-p", "0.9"
-=======
                 "ollama", "run", "gemma3:1b",
->>>>>>> Stashed changes
             ],
             input=prompt,               # 👈 prompt vai no stdin
             capture_output=True,
