@@ -44,9 +44,6 @@ def get_text_by_ollama():
     Não acrescente introduções nem conclusões.
     Não use emojis.
     Não use numeros romanos.
-    Não cite o número dos versículos, apenas o livro e o capítulo
-    Escreva numerais por extenso, nunca use digitos numéricos.
-    Use pontuação para ajudar na dicção, como ; ! , ? ... .
     Não use hífens em nenhuma parte do texto.
     Use pontuação para ajudar na entonação, como ; ! , ? ... .
     Use colchetes [] para destacar palavras importantes.
