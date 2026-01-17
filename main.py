@@ -202,40 +202,48 @@ def cleanup_temp_files():
     return removed
 
 def get_most_recent_output_folder():
-    """Retorna a pasta de saída mais recente."""
+    """Retorna a pasta de saída mais recente que contenha video.mp4."""
     output_dir = "output"
     if not os.path.exists(output_dir):
         return None
-    
-    folders = [f for f in os.listdir(output_dir) if os.path.isdir(os.path.join(output_dir, f))]
-    if not folders:
-        return None
-    
-    # Ordenar por data de modificação (mais recente primeiro)
-    folders.sort(key=lambda x: os.path.getmtime(os.path.join(output_dir, x)), reverse=True)
-    return os.path.join(output_dir, folders[0])
 
+    folders = [
+        os.path.join(output_dir, f)
+        for f in os.listdir(output_dir)
+        if os.path.isdir(os.path.join(output_dir, f))
+    ]
+
+    # Ordena por data de modificação (mais recente primeiro)
+    folders.sort(key=os.path.getmtime, reverse=True)
+
+    for folder in folders:
+        video_path = os.path.join(folder, "video.mp4")
+        if os.path.isfile(video_path):
+            return folder
+
+    return None
+
+
+def youtube_upload():
+    # Upload para YouTube
+    print("📤 Preparando upload para YouTube...")
+    output_folder = get_most_recent_output_folder()
+    if output_folder:
+        video_path = os.path.join(output_folder, "video.mp4")
+        if os.path.exists(video_path):
+            youtube_manager = YouTubeManager(screen_orientation=SCREEN_ORIENTATION)
+            title_desc_gen = LocalTitleDescriptionGenerator()
+            youtube_manager.automate_youtube_posting(THEME, CHANNEL, title_desc_gen, video_path)
+            print("✅ Upload para YouTube iniciado!")
+        else:
+            print("❌ Vídeo não encontrado na pasta de saída.")
+    else:
+        print("❌ Nenhuma pasta de saída encontrada.")
 
 if __name__ == "__main__":
     try:
-        #main()
-        # chamar arquivo YouTube manager para postar o video baseado no nome das pastas dentro de output, a pasta mais recente deve ser recuperada a output_video_pqth , ou se eu quiser mando uma de propria escolha
-
-        
-        # Upload para YouTube
-        print("📤 Preparando upload para YouTube...")
-        output_folder = get_most_recent_output_folder()
-        if output_folder:
-            video_path = os.path.join(output_folder, "video.mp4")
-            if os.path.exists(video_path):
-                youtube_manager = YouTubeManager(screen_orientation=SCREEN_ORIENTATION)
-                title_desc_gen = LocalTitleDescriptionGenerator()
-                youtube_manager.automate_youtube_posting(THEME, CHANNEL, title_desc_gen, video_path)
-                print("✅ Upload para YouTube iniciado!")
-            else:
-                print("❌ Vídeo não encontrado na pasta de saída.")
-        else:
-            print("❌ Nenhuma pasta de saída encontrada.")
+        # main()
+        youtube_upload()
     except Exception as e:
         print(f"❌ Erro: {e}")
     finally:

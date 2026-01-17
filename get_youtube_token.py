@@ -4,6 +4,7 @@ Script simples para obter token de acesso do YouTube API
 Execute este script para gerar o youtube_token.json
 """
 
+from time import time
 import requests
 import json
 import webbrowser
@@ -32,7 +33,67 @@ class OAuthHandler(BaseHTTPRequestHandler):
 
         if 'code' in params:
             self.server.auth_code = params['code'][0]
-            self.wfile.write(b'<h1>Autorizacao recebida! Feche esta janela.</h1>')
+            self.wfile.write(
+            """
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8" />
+                <title>Autorização concluída</title>
+                <style>
+                    body {
+                        margin: 0;
+                        height: 100vh;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: #0f172a; /* slate-900 */
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Arial, sans-serif;
+                        color: #e5e7eb;
+                    }
+                    .card {
+                        background: #020617; /* slate-950 */
+                        padding: 32px 40px;
+                        border-radius: 12px;
+                        box-shadow: 0 20px 40px rgba(0,0,0,.5);
+                        max-width: 420px;
+                        text-align: center;
+                        border: 1px solid #1e293b;
+                    }
+                    .icon {
+                        font-size: 42px;
+                        margin-bottom: 12px;
+                    }
+                    h1 {
+                        font-size: 20px;
+                        margin: 0 0 8px;
+                        font-weight: 600;
+                    }
+                    p {
+                        font-size: 14px;
+                        color: #94a3b8;
+                        margin: 0;
+                    }
+                    .hint {
+                        margin-top: 16px;
+                        font-size: 12px;
+                        color: #64748b;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="card">
+                    <div class="icon">✅</div>
+                    <h1>Autorização concluída</h1>
+                    <p>Você já pode fechar esta janela com segurança.</p>
+                    <div class="hint">
+                        Otomandrade Hub · YouTube Media Gen
+                    </div>
+                </div>
+            </body>
+            </html>
+            """)
+
             self.server.shutdown()
 
 def get_youtube_token():
@@ -58,7 +119,7 @@ def get_youtube_token():
     server = HTTPServer(('localhost', 8080), OAuthHandler)
     print("Aguardando autorizacao...")
 
-    server.serve_request()
+    server.handle_request()
 
     if hasattr(server, 'auth_code'):
         auth_code = server.auth_code
@@ -83,7 +144,8 @@ def get_youtube_token():
                     'access_token': token_data['access_token'],
                     'refresh_token': token_data.get('refresh_token'),
                     'token_type': token_data.get('token_type', 'Bearer'),
-                    'expires_in': token_data.get('expires_in')
+                    'expires_in': token_data.get('expires_in'),
+                    'created_at': int(time.time())
                 }, f, indent=2)
 
 

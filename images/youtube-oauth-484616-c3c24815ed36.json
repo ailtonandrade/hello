@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "youtube-oauth-484616",
+  "private_key_id": "c3c24815ed36081bac89e483eb5d1fb6fd1d0647",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDDDIQUE/bwi6c4\nAxvSs6bnfjHlr9E1g4oLMcORDOftDO2M+7hy/vmiYYEQdu1Erwy9Tyn6DZijwAYJ\n1q44ObLX4czigUGwGsttleY1cMXkZzbJ8lxIiwXAwx8q5F11402+qcZTDsDYBDKi\nsKE5U4n6i514QCjeBJHNougjIfyZQ3eKIPnT9GTQ0PIArFH9fAKR37n6XA/6LB4g\nf/24MnjVqm1HObYuaA85Z38KBwcno2EN5fkCPV+oVNW5K9RqDU3h/YpH3TJL6OI5\no9vZd97ZfsSJjq+2vHaI0mh29gqibNWXWAEFa81mr0hXeJJKG/nXy/6fNXJVdzRP\nX0brbG8jAgMBAAECggEACcQ+rAkaSSebbLqUuHnQCbEDK2hT8xIH5erMy1HFUaFf\nSiGKNhF+ZOfs+bet+c2qHaPKvkw5ltMVE+w9nQmGljjAQZ2nSsiMsL51k7qp4URd\nAfYYzA+DojtWL2Rv9mjQI8cfuL9fkj5J95hQk/l5SnDJppPP3nSFuH5HxKD9cDWF\nWjzreyB8/7ZFp+hpnBy7Zqq3sM+u3hyCNOlWYuYM4yO//MZuL2zX/Q2Qf8vYxgYK\n8sqk6gJN5jUB1EihZ0H7XPfoRp/TFI8owT1U5L0jD5mhHfcwoNQuY4tcBnVbfPeU\n0GX0OvQMu48d0tllI5aXqSvA0IAC37b9DL10QWJaQQKBgQD12JiBPA7ebR9NPMCY\nj/GJqQqRcqWBNqW1wLbQfMnKNZ11R7PS9sPB2LvClglprX06LkZ8IsHIyqw5JaN5\nc2bYLJjVAAjBqHCiJKf3dLNcRv6RBqha8BOz81DQKq2uzEUUoovB6WA976cUTYc2\nmxNZxyQhsTKwMuLNchZghA+Y9QKBgQDLGtOKEGjylxzxK6tzLWOxL8AxPd7GGuIf\nnqq2syMNBNpsaV3XBxns/uFZTfT1U8w1KZPnGpUPJlM73fs+I7HdA6Xz7bQ6oAy+\nHb7gnMblrpfcS7TjcMjGOaEVGR/kFJL1IaQRmvZdsYVJepa95oku39Xj9k8iBBqV\nQVFPVz64twKBgCSeqMjHS2eyVXFJ1V5kQpRAy8QykZiXrUNPe2u+ysgGCHhJv+1y\nuGINiJpJgwlswDSEZBdljfv8xH6Wrq0OlYkpy3Ie2S8Pigd88lAX4Aekw5KSrU0u\naaDqY2U+ljRtVPTn6W1u99kB859AlR17J/y9fxJNtMEuMz5q+g5SXYhpAoGACEvX\nOjuDXe1oRD2pajH/cXxm2FwTnnn4pJwBkybsFpsNJQKEz8S9fV3H7LLvf5nlrII/\nRWBjmFPTcI2XtqkUmdeNTtJ12zMwcg+a/WfKBBXGpDv/bo7r1JUEDG2TTOi+O/8c\nyY9P4vHeZOr5/1XMYrrH7ODhyJzsTQ52+Muyhy8CgYAv0PpciHFP7oqLFlmB9a2E\nXu9X+q9AZKHZ0PGkwkBEhhkT1asubcEBpOBjOBctL112tigDqCXNdmQWKPh3tQK9\nvjlaNAca4trUpmKEabdfkdcr2wxtSgMNLsdAzJ6pCV+LlwSGdvcCnbk6yfHGDRnq\nl31zjUCw8d2526MBVQNviA==\n-----END PRIVATE KEY-----\n",
+  "client_email": "conta-servico-otomandrade-hub@youtube-oauth-484616.iam.gserviceaccount.com",
+  "client_id": "102286953804768621822",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/conta-servico-otomandrade-hub%40youtube-oauth-484616.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

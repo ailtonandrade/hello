@@ -3,6 +3,7 @@ import time
 import os
 import pyperclip
 import subprocess
+from youtube_oauth import get_access_token, youtube_upload_video
 
 class YouTubeManager:
     def __init__(self, screen_orientation="MOBILE"):
@@ -75,13 +76,30 @@ class YouTubeManager:
 
     def automate_youtube_posting(self, theme, channel, title_description_generator, video_path=None):
         """
-        Automate the YouTube posting process.
+        Primeiro tenta via OAuth.
+        Se falhar, cai para modo manual.
+        """
+
+        video_info = {
+            "filepath": video_path,
+            "generated_info": title_description_generator.generate(theme)
+        }
+
+        # 1️⃣ tenta modo moderno
+        if self.upload_youtube_oauth(video_info):
+            return
+
+        # 2️⃣ fallback manual
+        self.upload_youtube_manual(
+            theme,
+            channel,
+            title_description_generator,
+            video_path
+        )
         
-        Args:
-            theme (str): Theme for the video.
-            channel (str): Channel name.
-            title_description_generator: Generator for title and description.
-            video_path (str, optional): Path to video file. If None, will use default.
+    def upload_youtube_manual(self, theme, channel, title_description_generator, video_path=None):
+        """
+        Automate the YouTube posting process.
         """
         try:
             # ABRE JANELA
@@ -121,9 +139,24 @@ class YouTubeManager:
         self.wait(10)
         
         # Upload process...
-        self._upload_video(video_info)
+        self._upload_video_manual(video_info)
 
-    def _upload_video(self, video_info):
+    def upload_youtube_oauth(self, video_info):
+        try:
+            youtube_upload_video(
+                video_path=video_info["filepath"],
+                title=video_info["generated_info"]["title"],
+                description=video_info["generated_info"]["description"],
+                is_short=True
+            )
+            return True
+        except Exception as e:
+            print(f"⚠️ OAuth falhou, fallback manual: {e}")
+            return False
+
+
+
+    def _upload_video_manual(self, video_info):
         """Internal method to handle video upload."""
         if not video_info or "filepath" not in video_info or not os.path.exists(video_info['filepath']):
             print("Caminho do vídeo não encontrado.")

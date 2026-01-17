@@ -12,3 +12,5 @@ __pycache__/
 .env.*
 .idea/
 .vscode/
+youtube_config.py
+youtube_token.json
