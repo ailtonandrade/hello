@@ -13,3 +13,4 @@ psutil
 whisper
 scipy
 soundfile
+flask

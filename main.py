@@ -96,11 +96,11 @@ def create_output_folder():
     os.makedirs(output_folder, exist_ok=True)
     return output_folder
 
-def main():
+def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_speed=0.9, subtitle_words_per_line=3, subtitle_font_size=55, screen_orientation="MOBILE", subtitle_font_color=(255, 191, 0, 200), subtitle_font="Lilita.ttf", force_text=None):
     """Gera vídeo completo."""
     print("🎬 INICIANDO GERAÇÃO DE VÍDEO")
     
-    FORCE_TEXT = get_text_by_ollama()  # Defina como None para usar texto aleatório da bíblia
+    FORCE_TEXT = get_text_by_ollama() if force_text is None else force_text
 
     # Carregar versículos
     try:
@@ -124,7 +124,7 @@ def main():
     output_folder = create_output_folder()
     
     # Gerar áudio
-    voice_gen = VoiceGenerator(voice=VOICE_NAME, speed=VOICE_SPEED, volume=1.2)
+    voice_gen = VoiceGenerator(voice=voice_name, speed=voice_speed, volume=1.2)
     audio_path = os.path.join(output_folder, "audio.wav")
     
     print("🎤 Gerando áudio...")
@@ -136,12 +136,12 @@ def main():
     
     # Gerar vídeo
     video_gen = VideoGenerator(
-        theme=THEME,
-        channel=CHANNEL,
-        screen_orientation=SCREEN_ORIENTATION,
-        subtitle_font=SUBTITLE_FONT,
-        subtitle_font_size=SUBTITLE_FONT_SIZE,
-        subtitle_words_per_line=SUBTITLE_WORDS_PER_LINE,
+        theme=theme,
+        channel=channel,
+        screen_orientation=screen_orientation,
+        subtitle_font=subtitle_font,
+        subtitle_font_size=subtitle_font_size,
+        subtitle_words_per_line=subtitle_words_per_line,
         video_style="simple",
         optimize_memory=True
     )
@@ -150,7 +150,7 @@ def main():
     video_path = os.path.join(output_folder, "video.mp4")
     
     try:
-        video_gen.generate_video(audio_path, SUBTITLE_FONT_COLOR, audio_duration, video_path, full_text)
+        video_gen.generate_video(audio_path, subtitle_font_color, audio_duration, video_path, full_text)
         
         if os.path.exists(video_path):
             size_mb = os.path.getsize(video_path) / (1024 * 1024)
@@ -216,16 +216,16 @@ def get_most_recent_output_folder():
     return None
 
 
-def youtube_upload():
+def youtube_upload(theme, channel, screen_orientation):
     # Upload para YouTube
     print("📤 Preparando upload para YouTube...")
     output_folder = get_most_recent_output_folder()
     if output_folder:
         video_path = os.path.join(output_folder, "video.mp4")
         if os.path.exists(video_path):
-            youtube_manager = YouTubeManager(screen_orientation=SCREEN_ORIENTATION)
+            youtube_manager = YouTubeManager(screen_orientation=screen_orientation)
             title_desc_gen = LocalTitleDescriptionGenerator()
-            youtube_manager.automate_youtube_posting(THEME, CHANNEL, title_desc_gen, video_path)
+            youtube_manager.automate_youtube_posting(theme, channel, title_desc_gen, video_path)
             print("✅ Upload para YouTube iniciado!")
         else:
             print("❌ Vídeo não encontrado na pasta de saída.")
@@ -235,7 +235,7 @@ def youtube_upload():
 if __name__ == "__main__":
     try:
         main()
-        youtube_upload()
+        youtube_upload("pregacao", "parallelcuts", "MOBILE")
     except Exception as e:
         print(f"❌ Erro: {e}")
     finally:
