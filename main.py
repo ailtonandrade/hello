@@ -19,7 +19,7 @@ SUBTITLE_FONT_SIZE = 55
 SCREEN_ORIENTATION = "MOBILE"
 SUBTITLE_FONT_COLOR = (255, 191, 0, 200)  # Amarelo âmbar
 SUBTITLE_FONT = "Lilita.ttf"
-FORCE_TEXT = """Irmãos e irmãs"""
+FORCE_TEXT = None  # Defina uma string para forçar um texto específico
 
 def get_text_by_ollama():
     prompt = """
