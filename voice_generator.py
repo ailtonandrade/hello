@@ -1,72 +1,67 @@
-from kokoro import KPipeline
-import soundfile as sf
-import numpy as np
 import os
+import numpy as np
+import soundfile as sf
+from kokoro import KPipeline
+from tts_wrapper import CoquiTTS
+
 
 class VoiceGenerator:
-    def __init__(self, lang_code="p", voice="pm_santa", sample_rate=24000, 
-                 speed=1.0, pitch=1.0, volume=1.0):
+    def __init__(
+        self,
+        lang_code="p",
+        voice="pm_santa",
+        sample_rate=24000,
+        speed=1.0,
+        pitch=1.0,
+        volume=1.0,
+        coqui_model="tts_models/multilingual/multi-dataset/xtts_v2",
+        voice_file_path=None,
+    ):
         self.lang_code = lang_code
         self.voice = voice
         self.sample_rate = sample_rate
-        self.speed = max(0.5, min(2.0, speed))
-        self.pitch = max(0.5, min(2.0, pitch))
-        self.volume = max(0.0, min(2.0, volume))
+        self.speed = speed
+        self.pitch = pitch
+        self.volume = volume
+        self.coqui_model = coqui_model
+        self.voice_file_path = voice_file_path
 
-    def generate_audio(self, text, output_file):
-        """Gera áudio a partir do texto."""
-        try:
-            pipeline = KPipeline(lang_code=self.lang_code, repo_id='hexgrad/Kokoro-82M')
-            generator = pipeline(text, voice=self.voice, speed=self.speed)
-            
-            audio_chunks = []
-            for _, _, audio in generator:
-                audio_chunks.append(audio)
+        self.coqui = CoquiTTS()
 
-            if not audio_chunks:
-                return 0.0
+    def _generate_with_kokoro(self, text, output_file):
+        pipeline = KPipeline(
+            lang_code=self.lang_code,
+            repo_id="hexgrad/Kokoro-82M",
+        )
 
-            audio_data = np.concatenate(audio_chunks)
-            
-            # Ajustar pitch
-            if self.pitch != 1.0:
-                from scipy import signal
-                new_length = int(len(audio_data) / self.pitch)
-                audio_data = signal.resample(audio_data, new_length)
-            
-            # Ajustar volume
-            if self.volume != 1.0:
-                audio_data = audio_data * self.volume
-            
-            audio_data = np.clip(audio_data, -1.0, 1.0)
-            
-            os.makedirs(os.path.dirname(output_file), exist_ok=True)
-            sf.write(output_file, audio_data, self.sample_rate)
+        generator = pipeline(text, voice=self.voice, speed=self.speed)
 
-            duration = len(audio_data) / self.sample_rate
-            print(f"✅ Áudio: {duration:.2f}s")
-            return duration
-            
-        except Exception as e:
-            print(f"❌ Erro no áudio: {e}")
-            
-            # Fallback simples
+        audio = np.concatenate([chunk for _, _, chunk in generator])
+
+        if self.pitch != 1.0:
+            from scipy import signal
+            audio = signal.resample(audio, int(len(audio) / self.pitch))
+
+        audio *= self.volume
+        audio = np.clip(audio, -1.0, 1.0)
+
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        sf.write(output_file, audio, self.sample_rate)
+
+        return len(audio) / self.sample_rate
+
+    def generate_audio(self, text, output_file, prefer_coqui=True):
+        if prefer_coqui:
             try:
-                pipeline = KPipeline(lang_code=self.lang_code, repo_id='hexgrad/Kokoro-82M')
-                generator = pipeline(text, voice=self.voice, speed=1.0)
-                
-                audio_chunks = []
-                for _, _, audio in generator:
-                    audio_chunks.append(audio)
-                
-                if audio_chunks:
-                    audio_data = np.concatenate(audio_chunks)
-                    os.makedirs(os.path.dirname(output_file), exist_ok=True)
-                    sf.write(output_file, audio_data, self.sample_rate)
-                    duration = len(audio_data) / self.sample_rate
-                    print(f"✅ Áudio (fallback): {duration:.2f}s")
-                    return duration
-            except:
-                pass
-            
-            return 0.0
+                self.coqui.speak(
+                    text=text,
+                    output=output_file,
+                    language="pt" if self.lang_code == "p" else "en",
+                    model=self.coqui_model,
+                    speaker_wav=self.voice_file_path,
+                )
+                return 1.0
+            except Exception as e:
+                print(f"⚠️ Coqui falhou → Kokoro: {e}")
+
+        return self._generate_with_kokoro(text, output_file)

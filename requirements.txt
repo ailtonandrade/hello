@@ -14,3 +14,5 @@ whisper
 scipy
 soundfile
 flask
+#coqui-tts[server,ja]
+#pip install -e .[server,ja]
