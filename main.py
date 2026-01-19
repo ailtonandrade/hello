@@ -72,24 +72,6 @@ def get_text_by_ollama():
         print(e)
         return None
 
-def sanitize_text(text, force_text=None):
-
-    if force_text:
-        return force_text
-    
-    text = text.replace("\n", " ").replace("\r", " ").strip()
-    text = re.sub(r'^\s*(\d+)\s+', '', text)
-    text = re.sub(r'\.\s*(\d+)\s+', '.', text)
-    
-    return ' '.join(text.split())
-
-def select_random_verses(verses, count=2):
-    """Seleciona versículos consecutivos."""
-    if len(verses) < count:
-        return verses
-    start_index = random.randint(0, len(verses) - count)
-    return verses[start_index:start_index + count]
-
 def create_output_folder():
     """Cria pasta de saída."""
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -97,24 +79,31 @@ def create_output_folder():
     os.makedirs(output_folder, exist_ok=True)
     return output_folder
 
+def sanitize_Text(text):
+    """Sanitiza o texto removendo espaços extras e linhas em branco."""
+    # Remove espaços extras
+    text = re.sub(r'[ \t]+', ' ', text)
+    # Remove linhas em branco
+    text = re.sub(r'\n\s*\n', '\n', text)
+    # Remover os \n
+    text = text.replace('\n', ' ')
+    # Remove espaços no início e fim do texto
+    text = text.strip()
+    # Remove retissos desnecessários
+    text = re.sub(r'\.{3,}', '...', text)
+    # Troca pontos por vírgulas
+    text = re.sub(r'(?<!\.)\.(?!\.)', ',', text)
+
+    return text
+
 def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_speed=0.9, subtitle_words_per_line=3, subtitle_font_size=55, screen_orientation="MOBILE", subtitle_font_color=(255, 191, 0, 200), subtitle_font="Lilita.ttf", force_text=None):
     """Gera vídeo completo."""
     print("🎬 INICIANDO GERAÇÃO DE VÍDEO")
     
     FORCE_TEXT = get_text_by_ollama() if force_text is None else force_text
 
-    # Carregar versículos
-    try:
-        with open("bible.txt", "r", encoding="utf-8") as file:
-            verses = [line.strip() for line in file.readlines() if line.strip()]
-        
-        if len(verses) < 2:
-            print("❌ bible.txt precisa ter pelo menos 2 versículos!")
-            return
-    except Exception as e:
-        print(f"❌ Erro ao ler bible.txt: {e}")
-        return
-    
+    FORCE_TEXT = sanitize_Text(FORCE_TEXT)
+
     # Criar pasta de saída
     output_folder = create_output_folder()
     

@@ -7,6 +7,8 @@ import glob
 import numpy as np
 import json
 import re
+import unicodedata
+from rapidfuzz import fuzz
 
 from moviepy.editor import (
     concatenate_videoclips, VideoFileClip, ColorClip, 
@@ -88,90 +90,70 @@ class VideoGenerator:
                 self.whisper_model = None
         return self.whisper_model
 
-    def refine_words_with_ollama(self, words, text_base, model_name="gemma3:1b"):
-        print("🤖 Iniciando refinamento de texto com Ollama...")
+    def clean_text(self, text):
+        if not text:
+            return ""
+
+        # normaliza espaços e quebras
+        text = text.replace("\n", " ").replace("\r", " ")
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        # remove numeração no início (ex: "1 Texto")
+        text = re.sub(r'^\s*\d+\s+', '', text)
+
+        # evita "ponto" falado no final da frase
+        # troca ponto FINAL por reticências (pausa natural)
+        text = re.sub(r'\.(\s|$)', '... ', text)
+
+        # segurança: remove leitura literal de "ponto"
+        text = re.sub(r'\b[pP]onto\b', '', text)
+
+        # limpa espaços finais
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        return text
+
+    def normalize(self, s: str) -> str:
+        s = s.lower()
+        s = unicodedata.normalize("NFD", s)
+        s = "".join(c for c in s if unicodedata.category(c) != "Mn")
+        return re.sub(r"[^\w]", "", s)
+
+    def refine_words_python(self, words, text_base, max_window=4, min_score=80):
         if not words or not text_base:
             return words
 
-        # Normaliza texto base (evita invenção)
-        base_words = re.findall(r"\w+|[^\w\s]", text_base, re.UNICODE)
+        # Tokeniza texto base
+        base_tokens = re.findall(r"\w+", text_base, re.UNICODE)
+        base_norm = [self.normalize(w) for w in base_tokens]
 
-        payload = {
-            "base_text": text_base,
-            "whisper_words": [
-                {
-                    "i": i,
-                    "text": w["text"],
-                    "start": w["start"],
-                    "end": w["end"]
-                }
-                for i, w in enumerate(words)
-            ]
-        }
+        cursor = 0
 
-        prompt = f"""
-        Você é um revisor de legendas.
+        for w in words:
+            original = w["text"]
+            norm_word = self.normalize(original)
 
-        REGRAS OBRIGATÓRIAS:
-        - NÃO altere start ou end
-        - NÃO altere a ordem
-        - NÃO adicione nem remova itens
-        - Corrija APENAS o campo "text"
-        - Use APENAS palavras que existam no texto base
-        - Se não houver correspondência clara, mantenha o texto original
+            best_idx = None
+            best_score = 0
 
-        Retorne SOMENTE um JSON válido no formato:
-        {{
-        "words": [
-            {{ "i": number, "text": string }}
-        ]
-        }}
+            # janela local (mantém ordem)
+            start = max(0, cursor - max_window)
+            end = min(len(base_tokens), cursor + max_window + 1)
 
-        DADOS:
-        {json.dumps(payload, ensure_ascii=False)}
-        """
+            for i in range(start, end):
+                score = fuzz.ratio(norm_word, base_norm[i])
+                if score > best_score:
+                    best_score = score
+                    best_idx = i
 
-        try:
-            print("🤖 Enviando prompt...")
-            result = subprocess.run(
-                ["ollama", "run", model_name],
-                input=prompt,
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
-                timeout=120
-            )
+            if best_idx is not None and best_score >= min_score:
+                w["text"] = base_tokens[best_idx]
+                cursor = best_idx + 1
+            else:
+                # fallback: mantém original
+                w["text"] = original
 
-            if result.returncode != 0:
-                print("⚠️ Ollama falhou, mantendo Whisper original.")
-                return words
-
-            # Extrair JSON (proteção contra lixo no stdout)
-            match = re.search(r"\{.*\}", result.stdout, re.DOTALL)
-            if not match:
-                print("⚠️ Ollama não retornou JSON válido.")
-                return words
-
-            response = json.loads(match.group())
-
-            for item in response.get("words", []):
-                i = item.get("i")
-                new_text = item.get("text")
-
-                if (
-                    isinstance(i, int)
-                    and 0 <= i < len(words)
-                    and isinstance(new_text, str)
-                    and new_text.strip()
-                ):
-                    words[i]["text"] = new_text.strip()
-
-            print("✅ Texto refinado com Ollama.")
-            return words
-
-        except Exception as e:
-            print(f"⚠️ Erro no refinamento Ollama: {e}")
-            return words
+        return words
 
     def transcribe_audio(self, audio_path, text_base):
         """Transcreve áudio e retorna palavras com timestamps."""
@@ -191,7 +173,7 @@ class VideoGenerator:
                         "duration": word.end - word.start
                     })
 
-            words = self.refine_words_with_ollama(words, text_base)
+            words = self.refine_words_python(words, text_base)
 
             return words
         except Exception as e:
