@@ -3,6 +3,7 @@ import os
 import re
 import random
 import subprocess
+import json
 from datetime import datetime
 from voice_generator import VoiceGenerator
 from video_generator import VideoGenerator
@@ -114,21 +115,15 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
         print(f"❌ Erro ao ler bible.txt: {e}")
         return
     
-    # Selecionar versículos
-    selected_verses = select_random_verses(verses, 2)
-    full_text = " ".join(selected_verses)
-    full_text = sanitize_text(full_text, FORCE_TEXT)
-    print(f"📝 Texto: {full_text[:100]}...")
-    
     # Criar pasta de saída
     output_folder = create_output_folder()
     
     # Gerar áudio
-    voice_gen = VoiceGenerator(voice=voice_name, speed=voice_speed, volume=1.2)
+    voice_gen = VoiceGenerator(voice=voice_name, speed=voice_speed, volume=1.2, voice_file_path="vozes/audio001.wav")
     audio_path = os.path.join(output_folder, "audio.wav")
     
     print("🎤 Gerando áudio...")
-    audio_duration = voice_gen.generate_audio(full_text, audio_path)
+    audio_duration = voice_gen.generate_audio(FORCE_TEXT, audio_path)
     
     if audio_duration == 0:
         print("❌ Falha ao gerar áudio")
@@ -150,7 +145,7 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
     video_path = os.path.join(output_folder, "video.mp4")
     
     try:
-        video_gen.generate_video(audio_path, subtitle_font_color, audio_duration, video_path, full_text)
+        video_gen.generate_video(audio_path, subtitle_font_color, audio_duration, video_path, FORCE_TEXT)
         
         if os.path.exists(video_path):
             size_mb = os.path.getsize(video_path) / (1024 * 1024)

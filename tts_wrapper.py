@@ -10,36 +10,25 @@ class CoquiTTS:
         if not self.script_path.exists():
             raise FileNotFoundError("run_tts.py não encontrado no coqui-tts")
 
-    def speak(
-        self,
-        *,
-        text: str,
-        output: str,
-        language: str = "pt",
-        speaker_wav: str | None = None,
-    ) -> float:
+    def speak(self, *, text, output, language = "pt", speaker_wav=None) -> float:
+        # uv run tts --model_name tts_models/multilingual/multi-dataset/xtts_v2 --text "Olá! Isso é um teste em português 
+        # brasileiro, usando o modelo XTTS versão dois." --language_idx pt --speaker_wav audio.wav --out_path voz_xtts_ptbr.wav
 
         # 🔥 MODELOS VALIDOS (JSON REAL)
-        if speaker_wav:
-            model = "tts_models/multilingual/multi-dataset/xtts_v2"
-        else:
-            if language == "pt":
-                model = "tts_models/pt/cv/vits"
-            else:
-                model = "tts_models/en/ljspeech/vits"
+        model = "tts_models/multilingual/multi-dataset/xtts_v2"
 
         cmd = [
             "uv", "run",
             "--project", str(self.project_path),
-            "python", str(self.script_path),
+            "tts",
+            "--model_name", model,
             "--text", text,
-            "--out", output,
-            "--lang", language,
-            "--model", model,
+            "--language_idx", language,   # ex: "pt"
+            "--out_path", output,
         ]
 
         if speaker_wav:
-            cmd += ["--speaker-wav", speaker_wav]
+            cmd += ["--speaker_wav", speaker_wav]
 
         result = subprocess.run(
             cmd,

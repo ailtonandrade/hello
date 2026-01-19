@@ -7,12 +7,6 @@ resolution-markers = [
     "(platform_machine != 'aarch64' and sys_platform == 'linux') or (sys_platform != 'darwin' and sys_platform != 'linux')",
 ]
 
-[manifest]
-members = [
-    "coqui-tts",
-    "hello",
-]
-
 [[package]]
 name = "addict"
 version = "2.4.0"
@@ -366,11 +360,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/51/d3/57c6631159a1b48d2
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0c/00/3106b1854b45bd0474ced037dfe6b73b90fe68a68968cef47c23de3d43d2/confection-0.1.5-py3-none-any.whl", hash = "sha256:e29d3c3f8eac06b3f77eb9dfb4bf2fc6bcc9622a98ca00a698e3d019c6430b14", size = 35451, upload-time = "2024-05-31T16:16:59.075Z" },
 ]
-
-[[package]]
-name = "coqui-tts"
-version = "0.1.0"
-source = { virtual = "coqui-tts" }
 
 [[package]]
 name = "csvw"

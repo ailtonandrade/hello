@@ -4,7 +4,6 @@ import soundfile as sf
 from kokoro import KPipeline
 from tts_wrapper import CoquiTTS
 
-
 class VoiceGenerator:
     def __init__(
         self,
@@ -56,7 +55,7 @@ class VoiceGenerator:
                 self.coqui.speak(
                     text=text,
                     output=output_file,
-                    language="pt" if self.lang_code == "p" else "en",
+                    language="pt",
                     speaker_wav=self.voice_file_path,
                 )
 

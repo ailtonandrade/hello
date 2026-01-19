@@ -5,6 +5,8 @@ import shutil
 import random
 import glob
 import numpy as np
+import json
+import re
 
 from moviepy.editor import (
     concatenate_videoclips, VideoFileClip, ColorClip, 
@@ -86,7 +88,92 @@ class VideoGenerator:
                 self.whisper_model = None
         return self.whisper_model
 
-    def transcribe_audio(self, audio_path):
+    def refine_words_with_ollama(self, words, text_base, model_name="gemma3:1b"):
+        print("🤖 Iniciando refinamento de texto com Ollama...")
+        if not words or not text_base:
+            return words
+
+        # Normaliza texto base (evita invenção)
+        base_words = re.findall(r"\w+|[^\w\s]", text_base, re.UNICODE)
+
+        payload = {
+            "base_text": text_base,
+            "whisper_words": [
+                {
+                    "i": i,
+                    "text": w["text"],
+                    "start": w["start"],
+                    "end": w["end"]
+                }
+                for i, w in enumerate(words)
+            ]
+        }
+
+        prompt = f"""
+        Você é um revisor de legendas.
+
+        REGRAS OBRIGATÓRIAS:
+        - NÃO altere start ou end
+        - NÃO altere a ordem
+        - NÃO adicione nem remova itens
+        - Corrija APENAS o campo "text"
+        - Use APENAS palavras que existam no texto base
+        - Se não houver correspondência clara, mantenha o texto original
+
+        Retorne SOMENTE um JSON válido no formato:
+        {{
+        "words": [
+            {{ "i": number, "text": string }}
+        ]
+        }}
+
+        DADOS:
+        {json.dumps(payload, ensure_ascii=False)}
+        """
+
+        try:
+            print("🤖 Enviando prompt...")
+            result = subprocess.run(
+                ["ollama", "run", model_name],
+                input=prompt,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=120
+            )
+
+            if result.returncode != 0:
+                print("⚠️ Ollama falhou, mantendo Whisper original.")
+                return words
+
+            # Extrair JSON (proteção contra lixo no stdout)
+            match = re.search(r"\{.*\}", result.stdout, re.DOTALL)
+            if not match:
+                print("⚠️ Ollama não retornou JSON válido.")
+                return words
+
+            response = json.loads(match.group())
+
+            for item in response.get("words", []):
+                i = item.get("i")
+                new_text = item.get("text")
+
+                if (
+                    isinstance(i, int)
+                    and 0 <= i < len(words)
+                    and isinstance(new_text, str)
+                    and new_text.strip()
+                ):
+                    words[i]["text"] = new_text.strip()
+
+            print("✅ Texto refinado com Ollama.")
+            return words
+
+        except Exception as e:
+            print(f"⚠️ Erro no refinamento Ollama: {e}")
+            return words
+
+    def transcribe_audio(self, audio_path, text_base):
         """Transcreve áudio e retorna palavras com timestamps."""
         model = self._load_whisper()
         if not model:
@@ -103,10 +190,14 @@ class VideoGenerator:
                         "end": word.end,
                         "duration": word.end - word.start
                     })
+
+            words = self.refine_words_with_ollama(words, text_base)
+
             return words
         except Exception as e:
             print(f"❌ Erro na transcrição: {e}")
             return []
+
 
     def _create_subtitle_clip(self, segment, video_size, font_color, x_pos=0.5, y_pos=0.8):
         """Cria UMA legenda individual - corrigido."""
@@ -195,14 +286,14 @@ class VideoGenerator:
         
         return clips
 
-    def add_synchronized_subtitles(self, video, audio_path, font_color, x_pos=0.5, y_pos=0.8):
+    def add_synchronized_subtitles(self, video, text_base, audio_path, font_color, x_pos=0.5, y_pos=0.8):
         """Adiciona legendas sincronizadas com a fala."""
         if not audio_path or not os.path.exists(audio_path):
             return video
         
         # Transcrever áudio
         print("📝 Transcrevendo áudio...")
-        words = self.transcribe_audio(audio_path)
+        words = self.transcribe_audio(audio_path, text_base)
         
         if not words:
             return video
@@ -374,8 +465,7 @@ class VideoGenerator:
                 video = self.apply_video_effects(video)
             
             # 5. Adicionar legendas
-            if text and audio_duration < 120:
-                video = self.add_synchronized_subtitles(video, audio_path, font_color, x_pos=0.5, y_pos=0.5)
+            video = self.add_synchronized_subtitles(video, text, audio_path, font_color, x_pos=0.5, y_pos=0.5)
             
             # 6. Adicionar logo
             logo_path = f"images/logo-canal-{self.channel}.jpg"
