@@ -15,11 +15,19 @@ class CoquiTTS:
         *,
         text: str,
         output: str,
-        language: str = "en",
-        model: str = "tts_models/multilingual/multi-dataset/xtts_v2",
-        speaker: str | None = None,
+        language: str = "pt",
         speaker_wav: str | None = None,
     ) -> float:
+
+        # 🔥 MODELOS VALIDOS (JSON REAL)
+        if speaker_wav:
+            model = "tts_models/multilingual/multi-dataset/xtts_v2"
+        else:
+            if language == "pt":
+                model = "tts_models/pt/cv/vits"
+            else:
+                model = "tts_models/en/ljspeech/vits"
+
         cmd = [
             "uv", "run",
             "--project", str(self.project_path),
@@ -29,9 +37,6 @@ class CoquiTTS:
             "--lang", language,
             "--model", model,
         ]
-
-        if speaker:
-            cmd += ["--speaker", speaker]
 
         if speaker_wav:
             cmd += ["--speaker-wav", speaker_wav]
@@ -45,4 +50,4 @@ class CoquiTTS:
         if result.returncode != 0:
             raise RuntimeError(result.stderr.strip())
 
-        return 1.0  # sucesso
+        return 1.0

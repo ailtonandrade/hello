@@ -57,9 +57,9 @@ class VoiceGenerator:
                     text=text,
                     output=output_file,
                     language="pt" if self.lang_code == "p" else "en",
-                    model=self.coqui_model,
                     speaker_wav=self.voice_file_path,
                 )
+
                 return 1.0
             except Exception as e:
                 print(f"⚠️ Coqui falhou → Kokoro: {e}")
