@@ -14,9 +14,11 @@ from local_title_description_generator import LocalTitleDescriptionGenerator
 CHANNEL = "parallelcuts"
 THEME = "pregacao"
 VOICE_NAME = "pm_alex" #pm_alex #pf_dora
-VOICE_SPEED = 0.9
+VOICE_SPEED = 1.1
+VOICE_PITCH = 0.9
+VOICE_VOLUME = 1.2
 SUBTITLE_WORDS_PER_LINE = 3
-SUBTITLE_FONT_SIZE = 55
+SUBTITLE_FONT_SIZE = 45
 SCREEN_ORIENTATION = "MOBILE"
 SUBTITLE_FONT_COLOR = (255, 191, 0, 200)  # Amarelo âmbar
 SUBTITLE_FONT = "Lilita.ttf"
@@ -24,8 +26,9 @@ FORCE_TEXT = None  # Defina uma string para forçar um texto específico
 
 def get_text_by_ollama():
     prompt = """
-    Gere UMA reflexão bública contextualizada em uma situação cotidiana.
-    O texto deve parecer uma narração falada por um pastor fazendo uma ministração, natural e fluida.
+    Gere UMA oração falada em tom de ministração.
+    O texto deve soar como alguém orando em voz alta, com autoridade, calma e fé.
+    Use frases declarativas, como quem fala diretamente com Deus e com quem ouve.
     Não use linguagem acadêmica.
     Não faça listas.
     Não acrescente introduções nem conclusões.
@@ -34,9 +37,9 @@ def get_text_by_ollama():
     Não use hífens em nenhuma parte do texto.
     Use pontuação para ajudar na entonação, como ; ! , ? ... .
     Use colchetes [] para destacar palavras importantes.
-    Use linguagem simples, como se estivesse fazendo uma ministração.
+    Use linguagem simples, íntima e direta, como uma oração falada.
     Use o português do Brasil.
-    Não ultrapasse 50 palavras no total.
+    Não ultrapasse 45 palavras no total.
     Responda APENAS com o texto final, sem títulos, sem comentários extras e sem explicações fora do texto.
     """
 
@@ -108,7 +111,7 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
     output_folder = create_output_folder()
     
     # Gerar áudio
-    voice_gen = VoiceGenerator(voice=voice_name, speed=voice_speed, volume=1.2, voice_file_path="vozes/audio001.wav")
+    voice_gen = VoiceGenerator(voice=voice_name, speed=VOICE_SPEED, pitch=VOICE_PITCH, volume=VOICE_VOLUME, voice_file_path="vozes/audio001.wav")
     audio_path = os.path.join(output_folder, "audio.wav")
     
     print("🎤 Gerando áudio...")

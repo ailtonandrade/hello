@@ -28,7 +28,7 @@
             "name": "Run Otomandrade Media Generator",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/web_interface.py",
+            "program": "${workspaceFolder}/main.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "python": "${workspaceFolder}/.venv/Scripts/python.exe",

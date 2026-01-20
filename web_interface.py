@@ -28,7 +28,7 @@ def index():
         def run_generation():
             try:
                 main(channel, theme, voice_name, voice_speed, subtitle_words_per_line, subtitle_font_size, screen_orientation, subtitle_font_color, subtitle_font, force_text)
-                youtube_upload(theme, channel, screen_orientation)
+                #youtube_upload(theme, channel, screen_orientation)
                 print("✅ Geração e upload concluídos!")
             except Exception as e:
                 print(f"❌ Erro durante geração: {e}")
