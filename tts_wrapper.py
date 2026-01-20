@@ -3,7 +3,8 @@ from pathlib import Path
 
 
 class CoquiTTS:
-    def __init__(self, project_path="../coqui-tts"):
+    def __init__(self, model_name="tts_models/multilingual/multi-dataset/xtts_v2", project_path="../coqui-tts"):
+        self.model_name = model_name
         self.project_path = Path(project_path).resolve()
         self.script_path = self.project_path / "run_tts.py"
 
@@ -15,7 +16,7 @@ class CoquiTTS:
         # brasileiro, usando o modelo XTTS versão dois." --language_idx pt --speaker_wav audio.wav --out_path voz_xtts_ptbr.wav
 
         # 🔥 MODELOS VALIDOS (JSON REAL)
-        model = "tts_models/multilingual/multi-dataset/xtts_v2"
+        model = self.model_name
 
         cmd = [
             "uv", "run",

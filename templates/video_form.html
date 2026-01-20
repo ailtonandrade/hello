@@ -29,6 +29,52 @@
         .thumbnail{max-width:320px; max-height:220px; border-radius:8px}
         .theme-toggle{background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--muted); padding:6px 10px; border-radius:8px}
         @media (max-width:720px){body{padding:14px}.container{padding:0}}
+    .editor-preview {
+    background: #020617;
+    border-radius: 10px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .preview-frame {
+        position: relative;
+        width: 30%;
+        margin-left: 33%;
+        aspect-ratio: 9 / 16;
+        background: #000;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .preview-frame img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+    }
+
+    .preview-loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9aa4b2;
+        font-weight: 600;
+        background: linear-gradient(
+            90deg,
+            #020617 25%,
+            #050b1f 37%,
+            #020617 63%
+        );
+        animation: shimmer 1.4s infinite;
+    }
+
+    @keyframes shimmer {
+        0% { background-position: -400px 0; }
+        100% { background-position: 400px 0; }
+    }
+
     </style>
 </head>
 <body>
@@ -36,6 +82,20 @@
         <div class="card">
             <div class="card-header d-flex align-items-center justify-content-between">
                 <h1 class="card-title mb-0">Configurações para Geração de Vídeo</h1>
+            </div>
+            <div class="editor-preview mb-4">
+                <div class="preview-frame">
+                    <div id="previewLoading" class="preview-loading">
+                        ▶ ...
+                    </div>
+                    <img id="previewImage" />
+                </div>
+
+                <div class="editor-controls">
+                    <button type="button" class="btn btn-sm btn-outline-light" onclick="playPreview()">
+                        ▶ Play
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -121,24 +181,32 @@
     <script>
         const themeToggle = document.getElementById('themeToggle');
         const root = document.documentElement;
-        function setLightMode(on){
-            if(on){
-                root.style.setProperty('--bg','#f6f8fb');
-                root.style.setProperty('--card','#ffffff');
-                root.style.setProperty('--muted','#6b7280');
-                root.style.setProperty('--accent','#0ea5a4');
-                root.style.setProperty('--primary','#2563eb');
-                document.body.style.color = '#0b1724';
-                localStorage.setItem('vf-theme','light');
-            }else{
-                root.style.setProperty('--bg','#0f1724');
-                root.style.setProperty('--card','#071026');
-                root.style.setProperty('--muted','#9aa4b2');
-                root.style.setProperty('--accent','#6ee7b7');
-                root.style.setProperty('--primary','#7c5cff');
-                document.body.style.color = '#e6eef6';
-                localStorage.setItem('vf-theme','dark');
-            }
+        function playPreview() {
+            const img = document.getElementById("previewImage");
+            const loading = document.getElementById("previewLoading");
+
+            img.style.display = "none";
+            loading.style.display = "flex";
+
+            const form = document.querySelector("form");
+            const formData = new FormData(form);
+
+            fetch("/preview", {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                img.src = data.preview + "?t=" + Date.now(); // cache bust
+                img.onload = () => {
+                    loading.style.display = "none";
+                    img.style.display = "block";
+                };
+            })
+            .catch(err => {
+                loading.innerText = "Erro ao gerar preview";
+                console.error(err);
+            });
         }
         themeToggle?.addEventListener('click', ()=>{
             const cur = localStorage.getItem('vf-theme') === 'light';

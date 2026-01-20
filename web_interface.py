@@ -2,6 +2,21 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 import threading
 from main import main, youtube_upload
 
+
+CHANNEL = "parallelcuts"
+THEME = "pregacao"
+VOICE_NAME = "pm_alex" #pm_alex #pf_dora
+VOICE_SPEED = 1
+VOICE_PITCH = 0.8
+VOICE_VOLUME = 1.2
+VOICE_RADIO_EFFECT = True
+SUBTITLE_WORDS_PER_LINE = 3
+SUBTITLE_FONT_SIZE = 45
+SCREEN_ORIENTATION = "MOBILE"
+SUBTITLE_FONT_COLOR = (255, 191, 0, 200)  # Amarelo âmbar
+SUBTITLE_FONT = "Lilita.ttf"
+
+
 app = Flask(__name__)
 app.secret_key = "secret_key_for_flask"
 
@@ -40,6 +55,42 @@ def index():
         return redirect(url_for('index'))
 
     return render_template('video_form.html')
+
+
+@app.route("/preview", methods=["POST"])
+def preview():
+    from video_generator import VideoGenerator
+    import random
+
+    theme = request.form.get("theme")
+    screen_orientation = request.form.get("screen_orientation")
+    channel = request.form.get("channel")
+    subtitle_font = request.form.get("subtitle_font")
+
+    # Gerar vídeo
+    vg = VideoGenerator(
+        theme=theme,
+        channel=channel,
+        zoom_strength=0.015,
+        grain_intensity=0.03,
+        vignette_intensity=0.6,
+        screen_orientation=screen_orientation,
+        subtitle_font=subtitle_font,
+        subtitle_font_size=SUBTITLE_FONT_SIZE,
+        subtitle_words_per_line=SUBTITLE_WORDS_PER_LINE,
+    )
+
+    path = vg.generate_preview_frame(
+        duration=6.0,
+        t=random.uniform(0.5, 3.0),
+        output_path="static/previews/preview_current.jpg"
+    )
+
+    return {
+        "status": "ready",
+        "preview": f"/{path}"
+    }
+
 
 if __name__ == '__main__':
     app.run(debug=True)

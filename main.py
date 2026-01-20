@@ -14,9 +14,10 @@ from local_title_description_generator import LocalTitleDescriptionGenerator
 CHANNEL = "parallelcuts"
 THEME = "pregacao"
 VOICE_NAME = "pm_alex" #pm_alex #pf_dora
-VOICE_SPEED = 1.1
+VOICE_SPEED = 1
 VOICE_PITCH = 0.9
 VOICE_VOLUME = 1.2
+VOICE_RADIO_EFFECT = True
 SUBTITLE_WORDS_PER_LINE = 3
 SUBTITLE_FONT_SIZE = 45
 SCREEN_ORIENTATION = "MOBILE"
@@ -39,7 +40,7 @@ def get_text_by_ollama():
     Use colchetes [] para destacar palavras importantes.
     Use linguagem simples, íntima e direta, como uma oração falada.
     Use o português do Brasil.
-    Não ultrapasse 45 palavras no total.
+    Não ultrapasse 100 palavras no total.
     Responda APENAS com o texto final, sem títulos, sem comentários extras e sem explicações fora do texto.
     """
 
@@ -80,6 +81,7 @@ def create_output_folder():
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     output_folder = os.path.join("output", timestamp)
     os.makedirs(output_folder, exist_ok=True)
+    print(f"📁 Pasta de saída criada: {output_folder}")
     return output_folder
 
 def sanitize_Text(text):
@@ -111,7 +113,15 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
     output_folder = create_output_folder()
     
     # Gerar áudio
-    voice_gen = VoiceGenerator(voice=voice_name, speed=VOICE_SPEED, pitch=VOICE_PITCH, volume=VOICE_VOLUME, voice_file_path="vozes/audio001.wav")
+    voice_gen = VoiceGenerator(
+        speed=VOICE_SPEED,
+        pitch=VOICE_PITCH,
+        volume=VOICE_VOLUME,
+        radio_fx=VOICE_RADIO_EFFECT,
+        voice_file_path="vozes/audio001.wav",
+        language="pt"
+    )
+
     audio_path = os.path.join(output_folder, "audio.wav")
     
     print("🎤 Gerando áudio...")
@@ -123,14 +133,15 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
     
     # Gerar vídeo
     video_gen = VideoGenerator(
-        theme=theme,
-        channel=channel,
-        screen_orientation=screen_orientation,
-        subtitle_font=subtitle_font,
-        subtitle_font_size=subtitle_font_size,
-        subtitle_words_per_line=subtitle_words_per_line,
-        video_style="simple",
-        optimize_memory=True
+        theme=THEME,
+        channel=CHANNEL,
+        zoom_strength=0.015,
+        grain_intensity=0.03,
+        vignette_intensity=0.6,
+        screen_orientation=SCREEN_ORIENTATION,
+        subtitle_font=SUBTITLE_FONT,
+        subtitle_font_size=SUBTITLE_FONT_SIZE,
+        subtitle_words_per_line=SUBTITLE_WORDS_PER_LINE,
     )
     
     print(f"🎬 Gerando vídeo ({audio_duration:.1f}s)...")
@@ -138,6 +149,7 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
     
     try:
         video_gen.generate_video(audio_path, subtitle_font_color, audio_duration, video_path, FORCE_TEXT)
+
         
         if os.path.exists(video_path):
             size_mb = os.path.getsize(video_path) / (1024 * 1024)
@@ -219,10 +231,28 @@ def youtube_upload(theme, channel, screen_orientation):
     else:
         print("❌ Nenhuma pasta de saída encontrada.")
 
+def instagram_upload(theme, channel, screen_orientation):
+    # Upload para Instagram
+    print("📤 Preparando upload para Instagram...")
+    output_folder = get_most_recent_output_folder()
+    if output_folder:
+        video_path = os.path.join(output_folder, "video.mp4")
+        if os.path.exists(video_path):
+            instagram_manager = InstagramManager(screen_orientation=screen_orientation)
+            title_desc_gen = LocalTitleDescriptionGenerator()
+            instagram_manager.automate_instagram_posting(theme, channel, title_desc_gen, video_path)
+            print("✅ Upload para Instagram iniciado!")
+        else:
+            print("❌ Vídeo não encontrado na pasta de saída.")
+    else:
+        print("❌ Nenhuma pasta de saída encontrada.")
+
+
 if __name__ == "__main__":
     try:
         main()
         youtube_upload("pregacao", "parallelcuts", "MOBILE")
+        instagram_upload("pregacao", "parallelcuts", "MOBILE")
     except Exception as e:
         print(f"❌ Erro: {e}")
     finally:
