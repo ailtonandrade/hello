@@ -44,39 +44,53 @@ class VideoGenerator:
             blank_clip = ColorClip(size=self.get_video_size(), color=(0, 0, 0))
             return blank_clip.set_duration(duration)
         
-        clips = []
+        segments = []
+        source_clips = []
         total_duration = 0
         target_size = self.get_video_size()
-        
+
         while total_duration < duration:
             video_path = random.choice(video_files)
-            
+
             try:
                 clip = VideoFileClip(video_path, audio=False)
                 clip = clip.resize(target_size)
-                
+
                 clip_duration = min(4.0, duration - total_duration)
                 start_time = random.uniform(0, max(0, clip.duration - clip_duration))
                 clip_segment = clip.subclip(start_time, start_time + clip_duration)
-                clips.append(clip_segment)
+
+                # keep reference to original clip until after concatenation
+                source_clips.append(clip)
+                segments.append(clip_segment)
                 total_duration += clip_duration
-                clip.close()
-            except:
+            except Exception as e:
+                print(f"⚠️ Erro ao ler vídeo {video_path}: {e}")
                 blank_clip = ColorClip(size=target_size, color=(0, 0, 0))
                 blank_clip = blank_clip.set_duration(min(4.0, duration - total_duration))
-                clips.append(blank_clip)
+                segments.append(blank_clip)
                 total_duration += blank_clip.duration
         
-        if not clips:
+        # CORREÇÃO: A condição estava verificando uma variável 'clips' que não existe
+        # Agora verifica se 'segments' tem conteúdo
+        if not segments:
             blank_clip = ColorClip(size=target_size, color=(0, 0, 0))
             return blank_clip.set_duration(duration)
         
         try:
-            final_video = concatenate_videoclips(clips)
+            final_video = concatenate_videoclips(segments)
             if final_video.duration > duration:
                 final_video = final_video.subclip(0, duration)
+            # close original source readers to free resources
+            for sc in source_clips:
+                try:
+                    if hasattr(sc, 'reader') and sc.reader:
+                        sc.reader.close()
+                except Exception:
+                    pass
             return final_video
-        except:
+        except Exception as e:
+            print(f"⚠️ Erro ao concatenar vídeos: {e}")
             return ColorClip(size=target_size, color=(0, 0, 0)).set_duration(duration)
 
     def _load_whisper(self):
@@ -180,12 +194,11 @@ class VideoGenerator:
             print(f"❌ Erro na transcrição: {e}")
             return []
 
-
     def _create_subtitle_clip(self, segment, video_size, font_color, x_pos=0.5, y_pos=0.8):
         """Cria UMA legenda individual - corrigido."""
         try:
             # aplicar cor do font_color
-            img = Image.new("RGBA", video_size, (0, 0, 0, 0))# transparente
+            img = Image.new("RGBA", video_size, (0, 0, 0, 0))  # transparente
             draw = ImageDraw.Draw(img)
             
             font_path = os.path.join('images', self.subtitle_font)
@@ -219,16 +232,30 @@ class VideoGenerator:
             
             img_array = np.array(img)
             duration = max(segment["duration"], 0.1)
-            clip = ImageClip(img_array, transparent=True, duration=duration)
-            clip = clip.set_start(segment["start"])
+
+            # If image has alpha channel, separate mask so CompositeVideoClip composites correctly
+            if img_array.shape[2] == 4:
+                rgb = img_array[..., :3]
+                alpha = (img_array[..., 3] / 255.0).astype('float32')
+
+                clip = ImageClip(rgb).set_duration(duration).set_start(segment["start"])
+                try:
+                    mask_clip = ImageClip(alpha).set_duration(duration).set_start(segment["start"]) 
+                    mask_clip = mask_clip.set_is_mask(True)
+                    clip = clip.set_mask(mask_clip)
+                except Exception:
+                    # fallback to transparent=True if mask creation fails
+                    clip = ImageClip(img_array, transparent=True, duration=duration).set_start(segment["start"])
+
+            else:
+                clip = ImageClip(img_array, transparent=True, duration=duration).set_start(segment["start"])
+
             clip = clip.fadein(0.2).fadeout(0.2)
-            
             return clip
             
         except Exception as e:
             print(f"⚠️ Erro na legenda: {e}")
             return None
-
 
     def create_subtitle_clips(self, words, video_size, font_color, x_pos=0.5, y_pos=0.8):
         """Cria VÁRIAS legendas sincronizadas - corrigido."""
@@ -363,11 +390,16 @@ class VideoGenerator:
     def add_voice_audio(self, video, audio_path):
         """Adiciona apenas o áudio de voz ao vídeo."""
         if not os.path.exists(audio_path):
+            print(f"⚠️ Arquivo de áudio não encontrado: {audio_path}")
             return video
         
         try:
+            print(f"🎵 Adicionando áudio de voz: {os.path.basename(audio_path)}")
             voice_audio = AudioFileClip(audio_path)
-            return video.set_audio(voice_audio)
+            # CORREÇÃO: Garantir que o vídeo tenha áudio
+            video = video.set_audio(voice_audio)
+            print("✅ Áudio de voz adicionado com sucesso")
+            return video
         except Exception as e:
             print(f"⚠️ Erro ao adicionar voz: {e}")
             return video
@@ -403,14 +435,27 @@ class VideoGenerator:
             
             # Ajustar volume (30% do volume original)
             music_clip = music_clip.volumex(0.3)
-            
+
+            # Garantir duração correta
+            try:
+                music_clip = music_clip.set_duration(audio_duration)
+            except Exception:
+                music_clip = music_clip.subclip(0, min(music_clip.duration, audio_duration))
+
             # Misturar com áudio existente se houver
             if video.audio:
-                final_audio = CompositeAudioClip([video.audio, music_clip])
+                base_audio = video.audio
+                try:
+                    base_audio = base_audio.set_duration(audio_duration)
+                except Exception:
+                    pass
+                final_audio = CompositeAudioClip([base_audio, music_clip]).set_duration(audio_duration)
             else:
                 final_audio = music_clip
-            
-            return video.set_audio(final_audio)
+
+            video = video.set_audio(final_audio)
+            print("✅ Música de fundo adicionada com sucesso")
+            return video
             
         except Exception as e:
             print(f"⚠️ Erro na música de fundo: {e}")
@@ -433,28 +478,42 @@ class VideoGenerator:
         
         video = None
         try:
+            print("🎬 Iniciando geração do vídeo...")
+            
             # 1. Criar sequência de vídeo
+            print("1/7 Criando sequência de vídeo...")
             video = self.create_video_sequence(audio_duration)
+            # garantir duração do vídeo para o pipeline de áudio
+            try:
+                video = video.set_duration(audio_duration)
+            except Exception:
+                pass
             
             # 2. Adicionar áudio de voz
+            print("2/7 Adicionando áudio de voz...")
             video = self.add_voice_audio(video, audio_path)
             
             # 3. Adicionar música de fundo
+            print("3/7 Adicionando música de fundo...")
             video = self.add_background_music(video, audio_duration)
             
             # 4. Aplicar efeitos visuais
+            print("4/7 Aplicando efeitos visuais...")
             if self.video_style != "simple":
                 video = self.apply_video_effects(video)
             
             # 5. Adicionar legendas
+            print("5/7 Adicionando legendas sincronizadas...")
             video = self.add_synchronized_subtitles(video, text, audio_path, font_color, x_pos=0.5, y_pos=0.5)
             
             # 6. Adicionar logo
+            print("6/7 Adicionando logo...")
             logo_path = f"images/logo-canal-{self.channel}.jpg"
             video = self.add_image(video, logo_path , x_pos=0.45, y_pos=0.02, 
                                 height=100, opacity=0.7)
             
             # 7. Adicionar subscribe
+            print("7/7 Adicionando subscribe...")
             subscribe_path = "images/subscribe.png"
             video = self.add_image(video, subscribe_path, x_pos=0.3, y_pos=0.8, 
                                 height=80, opacity=0.6)
@@ -464,6 +523,7 @@ class VideoGenerator:
             if output_dir and not os.path.exists(output_dir):
                 os.makedirs(output_dir, exist_ok=True)
             
+            print("💾 Salvando vídeo final...")
             self.save_with_cpu(video, output_path)
             
             print(f"✅ Vídeo salvo: {output_path}")
@@ -471,6 +531,8 @@ class VideoGenerator:
             
         except Exception as e:
             print(f"❌ Erro ao gerar vídeo: {e}")
+            import traceback
+            traceback.print_exc()
             raise
         finally:
             if video:
@@ -539,11 +601,18 @@ class VideoGenerator:
             if os.path.exists(frames_dir):
                 shutil.rmtree(frames_dir)
 
-
     def save_with_cpu(self, video, output_path):
         """Fallback para CPU."""
         try:
             print("🖥️  Usando CPU para encoding...")
+            
+            # Garantir que o vídeo tenha áudio antes de salvar
+            if not video.audio:
+                print("⚠️ Vídeo não tem áudio, criando áudio silencioso...")
+                from moviepy.editor import AudioClip
+                # Criar áudio silencioso
+                silence = AudioClip(make_frame=lambda t: 0, duration=video.duration, fps=44100)
+                video = video.set_audio(silence)
             
             video.write_videofile(
                 output_path,
@@ -562,29 +631,6 @@ class VideoGenerator:
                     '-sc_threshold', '0',  # Desativa detecção de cena
                 ]
             )
-
-            # quality for release
-
-            # video.write_videofile(
-            #     output_path,
-            #     fps=24,
-            #     codec='libx264',
-            #     audio_codec='aac',
-            #     verbose=False,
-            #     threads=6,
-            #     preset='medium',          # ⬅️ BALANCEADO (rapidez + qualidade)
-            #     ffmpeg_params=[
-            #         '-crf', '23',         # Qualidade BOM para internet (23-28 é ideal)
-            #         '-profile:v', 'high', # Perfil High para melhor compressão
-            #         '-level', '4.0',      # Nível compatível com maioria dos players
-            #         '-pix_fmt', 'yuv420p', # Formato universal
-            #         '-movflags', '+faststart',  # Otimizado para streaming
-            #         '-maxrate', '2500k',  # Bitrate máximo
-            #         '-bufsize', '5000k',  # Buffer size
-            #         '-g', '48',           # GOP ideal para streaming
-            #     ]
-            # )
-                        
             return True
         except Exception as e:
             print(f"❌ Erro com CPU: {e}")
@@ -592,10 +638,6 @@ class VideoGenerator:
 
 
 # Mantenha a mesma classe VideoEffects
-import numpy as np
-from moviepy.editor import *
-from PIL import Image, ImageDraw, ImageFont
-
 class VideoEffects:
     def __init__(self):
         pass
