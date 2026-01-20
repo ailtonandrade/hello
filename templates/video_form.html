@@ -5,19 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gerador de Vídeos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #f8f9fa; }
-        .container { max-width: 800px; margin-top: 50px; }
-        .card { box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .btn-generate { background-color: #28a745; border-color: #28a745; }
-        .btn-generate:hover { background-color: #218838; border-color: #1e7e34; }
+        :root{
+            --bg:#0f1724;
+            --card:#071026;
+            --muted:#9aa4b2;
+            --accent:#6ee7b7;
+            --primary:#7c5cff;
+            --glass: rgba(255,255,255,0.03);
+        }
+        html,body{height:100%;}
+        body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; padding:28px; background: linear-gradient(180deg,#06111a 0%, var(--bg) 100%); color:#e6eef6}
+        .container{max-width:880px}
+        .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04)); border:1px solid rgba(255,255,255,0.03); box-shadow:0 10px 30px rgba(2,6,23,0.6); border-radius:12px}
+        .card-header{background:linear-gradient(90deg,var(--primary),#9b8bff); border-radius:12px 12px 0 0; color:#071021}
+        .card-title{font-weight:700}
+        .form-label{color:var(--muted)}
+        .form-control, .form-select{background:#071026; border:1px solid rgba(255,255,255,0.03); color:#e6eef6}
+        .btn-generate{background:linear-gradient(90deg,#10b981,#06b6d4); border:0; color:#021018; font-weight:700}
+        .btn-generate:active{transform:translateY(1px)}
+        .btn-close{filter:brightness(1.6)}
+        .thumbnail{max-width:320px; max-height:220px; border-radius:8px}
+        .theme-toggle{background:transparent; border:1px solid rgba(255,255,255,0.04); color:var(--muted); padding:6px 10px; border-radius:8px}
+        @media (max-width:720px){body{padding:14px}.container{padding:0}}
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header d-flex align-items-center justify-content-between">
                 <h1 class="card-title mb-0">Configurações para Geração de Vídeo</h1>
+                <button id="themeToggle" class="theme-toggle">Toggle theme</button>
             </div>
             <div class="card-body">
                 {% with messages = get_flashed_messages(with_categories=true) %}
@@ -100,6 +119,34 @@
             </div>
         </div>
     </div>
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const root = document.documentElement;
+        function setLightMode(on){
+            if(on){
+                root.style.setProperty('--bg','#f6f8fb');
+                root.style.setProperty('--card','#ffffff');
+                root.style.setProperty('--muted','#6b7280');
+                root.style.setProperty('--accent','#0ea5a4');
+                root.style.setProperty('--primary','#2563eb');
+                document.body.style.color = '#0b1724';
+                localStorage.setItem('vf-theme','light');
+            }else{
+                root.style.setProperty('--bg','#0f1724');
+                root.style.setProperty('--card','#071026');
+                root.style.setProperty('--muted','#9aa4b2');
+                root.style.setProperty('--accent','#6ee7b7');
+                root.style.setProperty('--primary','#7c5cff');
+                document.body.style.color = '#e6eef6';
+                localStorage.setItem('vf-theme','dark');
+            }
+        }
+        themeToggle?.addEventListener('click', ()=>{
+            const cur = localStorage.getItem('vf-theme') === 'light';
+            setLightMode(!cur);
+        });
+        if(localStorage.getItem('vf-theme') === 'light') setLightMode(true);
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
