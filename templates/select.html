@@ -4,77 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StreamSaver - Select Stream</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+        :root{
+            --bg:#0f1724;
+            --card:#0b1220;
+            --muted:#9aa4b2;
+            --accent:#6ee7b7;
+            --primary:#7c5cff;
+            --glass: rgba(255,255,255,0.03);
         }
-        .container {
-            text-align: center;
-            background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 500px;
+        html,body{height:100%;}
+        body{
+            margin:0; font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+            background: radial-gradient(1200px 600px at 10% 10%, rgba(124,92,255,0.12), transparent),
+                        linear-gradient(180deg, #071021 0%, var(--bg) 100%);
+            color:#e6eef6; display:flex; align-items:center; justify-content:center; padding:32px;
         }
-        header {
-            margin-bottom: 20px;
+        .container{
+            width:100%; max-width:720px; border-radius:12px; padding:28px; box-sizing:border-box;
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04));
+            backdrop-filter: blur(6px);
+            box-shadow: 0 10px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.04);
         }
-        header h1 {
-            font-size: 2rem;
-            color: #333;
-        }
-        header p {
-            font-size: 1rem;
-            color: #666;
-        }
-        select {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            width: 100%;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .flash {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 4px;
-        }
-        .flash.success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .flash.error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+        header{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px}
+        header .title{display:flex; gap:12px; align-items:center}
+        .logo{width:44px; height:44px; border-radius:10px; background:linear-gradient(135deg,var(--primary),var(--accent)); display:flex; align-items:center; justify-content:center; font-weight:700}
+        h1{margin:0; font-size:1.25rem; letter-spacing:-0.2px}
+        p.lead{margin:0; color:var(--muted); font-size:0.95rem}
+        .flash{margin:14px 0; padding:12px 14px; border-radius:8px}
+        .flash.success{background:linear-gradient(90deg, rgba(110,231,183,0.08), rgba(124,92,255,0.02)); color:var(--accent);}
+        .flash.error{background:rgba(255,70,90,0.06); color:#ffb3b8}
+        form{display:grid; gap:12px}
+        select{width:100%; padding:12px 14px; border-radius:10px; background:var(--card); color:inherit; border:1px solid rgba(255,255,255,0.03); font-size:0.98rem}
+        optgroup{color:var(--muted)}
+        button{padding:12px 14px; border-radius:10px; border:0; cursor:pointer; font-weight:600; color:#071021; background:linear-gradient(90deg,var(--primary),#9b8bff); box-shadow: 0 6px 18px rgba(124,92,255,0.12)}
+        button:active{transform:translateY(1px)}
+        .meta{display:flex; gap:12px; align-items:center}
+        .toggle{background:transparent; border:1px solid rgba(255,255,255,0.04); padding:8px 10px; border-radius:8px; color:var(--muted); cursor:pointer}
+        @media (max-width:520px){.container{padding:18px}}
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>StreamSaver</h1>
-            <p>Select the stream you want to download.</p>
+            <div class="title">
+                <div class="logo">SS</div>
+                <div>
+                    <h1>StreamSaver</h1>
+                    <p class="lead">Selecione a stream que deseja baixar</p>
+                </div>
+            </div>
+            <div class="meta">
+                <button class="toggle" id="themeToggle">Toggle theme</button>
+            </div>
         </header>
+
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -82,6 +68,7 @@
             {% endfor %}
         {% endif %}
         {% endwith %}
+
         <form method="POST">
             <select name="itag">
                 <optgroup label="Video Streams">
@@ -98,5 +85,36 @@
             <button type="submit">Download</button>
         </form>
     </div>
+
+    <script>
+        const toggle = document.getElementById('themeToggle');
+        const root = document.documentElement;
+        // simple toggle to invert colors for light mode
+        function setLightMode(on){
+            if(on){
+                root.style.setProperty('--bg','#f6f8fb');
+                root.style.setProperty('--card','#ffffff');
+                root.style.setProperty('--muted','#6b7280');
+                root.style.setProperty('--accent','#0ea5a4');
+                root.style.setProperty('--primary','#2563eb');
+                document.body.style.color = '#0b1724';
+                localStorage.setItem('ss-theme','light');
+            }else{
+                root.style.setProperty('--bg','#0f1724');
+                root.style.setProperty('--card','#0b1220');
+                root.style.setProperty('--muted','#9aa4b2');
+                root.style.setProperty('--accent','#6ee7b7');
+                root.style.setProperty('--primary','#7c5cff');
+                document.body.style.color = '#e6eef6';
+                localStorage.setItem('ss-theme','dark');
+            }
+        }
+        toggle.addEventListener('click', ()=>{
+            const cur = localStorage.getItem('ss-theme') === 'light';
+            setLightMode(!cur);
+        });
+        // initialize from storage
+        if(localStorage.getItem('ss-theme') === 'light') setLightMode(true);
+    </script>
 </body>
 </html>
