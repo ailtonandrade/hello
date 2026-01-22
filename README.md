@@ -13,7 +13,7 @@ Sistema completo de automação para criação e postagem de vídeos no YouTube
 ✨ Recursos Principais
 🎙️	Geração de Voz Realista - Usando Kokoro para áudio de alta qualidade
 🎬	Edição Automática de Vídeo - Cria vídeos completos com MoviePy
-🤖	Automação do YouTube - Posta vídeos automaticamente via PyAutoGUI
+🤖	Automação do YouTube - Posta vídeos automaticamente via OAUTH2 (boa sorte, google cloud te aguarda)
 📝	Processamento de Texto - Usa Whisper para transcrição e eSpeak para TTS
 🎨	Personalização Total - Temas, logos, overlays e elementos visuais
 ⚡	Otimizado para Windows - Configuração específica para Windows 10/11
@@ -84,9 +84,11 @@ powershell
 # Whisper (transcrição de áudio)
 uv pip install openai-whisper
 
-# Kokoro (geração de voz - PODE DAR TRABALHO NO WINDOWS!)
-# Se tiver problemas, veja a seção de troubleshooting abaixo
-uv add kokoro
+# Coqui TTS (geração de voz - PODE DAR TRABALHO NO WINDOWS!)
+# Atentar-se a usar uv para criar o ambiente e python 3.10 ideal
+Repositório do Coqui TTS
+https://github.com/coqui-ai/TTS/tree/dev?tab=readme-ov-file#installation
+
 📁 Estrutura do Projeto
 text
 📦 youtube-automation
@@ -125,8 +127,8 @@ uv run main.py
 # [1] Gerar vídeos
 #
 # Isso irá:
-# 1. Ler os textos de bible.txt
-# 2. Gerar áudio para cada verso
+# 1. Obter do Ollama um texto via prompt que foi passado
+# 2. Gerar áudio com TTS e leganda com Whisper
 # 3. Criar vídeos com os áudios
 # 4. Salvar em output_data_geracao_completa/
 Opção 2: Postar Automaticamente no YouTube
@@ -138,7 +140,8 @@ uv run main.py
 #
 # ⚠️ IMPORTANTE: Configure antes!
 # 1. Tenha o Chrome instalado
-# 2. Esteja logado no YouTube
+# 2. Realize a oAuth2 do google rodando 
+# youtube_oauth.py
 # 3. Tenha imagens de referência na pasta raiz:
 #    - fav-youtube.png
 #    - barra-url-youtube.png
