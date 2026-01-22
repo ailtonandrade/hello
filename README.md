@@ -11,7 +11,11 @@ Sistema completo de automação para criação e postagem de vídeos no YouTube
 
 </div>
 ✨ Recursos Principais
-🎙️	Geração de Voz Realista - Usando Coqui TTS para áudio de alta qualidade (usa o python 3.11.14, tts não tem piedade de ninguém)
+
+⚠️ A Hello usa Python 3.13.0 [vai rodar o principal , movuepy e post youtube]
+⚠️ Stable Diffusion - Comfy usa Python 3.11.14 [vai gerar imagem/video localmente] (https://github.com/ailtonandrade/hello-sd-generator-service)
+⚠️	Coqui TTS usa o Python 3.11.14 [vai gerar a narração] (https://github.com/ailtonandrade/hello-coqui-tts-service)
+
 🎬	Edição Automática de Vídeo - Cria vídeos completos com MoviePy
 🤖	Automação do YouTube - Posta vídeos automaticamente via OAUTH2 (boa sorte, google cloud te aguarda)
 📝	Processamento de Texto - Usa Whisper para transcrição e eSpeak para TTS
