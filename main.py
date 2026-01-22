@@ -27,8 +27,7 @@ SUBTITLE_FONT_COLOR = (255, 191, 0, 200)  # Amarelo âmbar
 SUBTITLE_FONT = "Lilita.ttf"
 FORCE_TEXT = None  # Defina uma string para forçar um texto específico
 PROMPT_OLLAMA = """
-    Gere UM texto de até 80 palavras falado uma exegese bíblica inspiradora usando fatos cotidianos, e reais e comportamentos que se repetem ao longo do tempo.
-    O tom deve ser firme, exultante, e reflexivo.
+    Gere UM texto de até 100 palavras falado uma exegese bíblica inspiradora.
     Não use linguagem acadêmica.
     Não faça listas.
     Não acrescente introduções nem conclusões.
@@ -42,7 +41,7 @@ PROMPT_OLLAMA = """
 """
 
 PROMPT_POSITIVE_COMFY = """
-    gera uma cena visual épica e inspiradora que represente a glória de Deus o criador do universo
+    gera uma realista imagem de um profeta bíblico vendo a glória de Deus, estilo pintura clássica renascentista, luz divina brilhando ao redor, detalhes ricos, cores vibrantes, alta resolução
 """
 
 
@@ -53,7 +52,7 @@ def get_text_by_ollama():
     try:
         result = subprocess.run(
             [
-                "ollama", "run", "gemma3:1b",
+                "ollama", "run", "gemma3:4b",
             ],
             input=PROMPT_OLLAMA,
             capture_output=True,
