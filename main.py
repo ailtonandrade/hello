@@ -10,7 +10,7 @@ from video_generator import VideoGenerator
 from youtube_manager import YouTubeManager
 from instagram_manager import InstagramManager
 from local_title_description_generator import LocalTitleDescriptionGenerator
-from run_video_comfy_generator import ComfyVideoGenerator
+from run_video_comfy_generator import ComfySingleFrameVideoGenerator
 
 # Configurações fixas
 CHANNEL = "parallelcuts"
@@ -26,14 +26,9 @@ SCREEN_ORIENTATION = "MOBILE"
 SUBTITLE_FONT_COLOR = (255, 191, 0, 200)  # Amarelo âmbar
 SUBTITLE_FONT = "Lilita.ttf"
 FORCE_TEXT = None  # Defina uma string para forçar um texto específico
-
-def get_text_by_ollama():
-    prompt = """
-    Gere UM texto falado sobre mentalidade milionária usando fatos históricos, padrões reais e comportamentos que se repetem ao longo do tempo.
-    O texto deve soar como alguém revelando verdades que atravessam gerações, comparando pessoas comuns e pessoas que enriqueceram ao longo da história.
-    Use exemplos implícitos de épocas, crises, ciclos econômicos e decisões humanas, sem citar datas específicas nem nomes próprios.
-    O tom deve ser firme, intrigante e reflexivo, despertando curiosidade e identificação imediata.
-    Use frases declarativas, curtas e impactantes.
+PROMPT_OLLAMA = """
+    Gere UM texto de até 80 palavras falado uma exegese bíblica inspiradora usando fatos cotidianos, e reais e comportamentos que se repetem ao longo do tempo.
+    O tom deve ser firme, exultante, e reflexivo.
     Não use linguagem acadêmica.
     Não faça listas.
     Não acrescente introduções nem conclusões.
@@ -41,14 +36,17 @@ def get_text_by_ollama():
     Não use numeros romanos.
     Não use hífens em nenhuma parte do texto.
     Use pontuação para ajudar na entonação, como ; ! , ? ... .
-    Use colchetes [] para destacar palavras importantes.
-    Use linguagem simples, direta e memorável.
     Use o português do Brasil.
     Não ultrapasse 80 palavras no total.
     Responda APENAS com o texto final, sem títulos, sem comentários extras e sem explicações fora do texto.
-    """
+"""
+
+PROMPT_POSITIVE_COMFY = """
+    gera uma cena visual épica e inspiradora que represente a glória de Deus o criador do universo
+"""
 
 
+def get_text_by_ollama():
     print("🧠 Enviando prompt para o Ollama...")
     print(f"⏳ [{datetime.now().strftime('%H:%M:%S')}] Aguardando resposta do modelo (gemma3:4b)...")
 
@@ -57,7 +55,7 @@ def get_text_by_ollama():
             [
                 "ollama", "run", "gemma3:1b",
             ],
-            input=prompt, 
+            input=PROMPT_OLLAMA,
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -136,14 +134,27 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
         print("❌ Falha ao gerar áudio")
         return
     
-    # Gerar conteúdo visual via ComfyUI baseado na duração do áudio
+
+    # =========================
+    # VISUAL (COMFY – FRAME ÚNICO)
+    # =========================
     try:
-        comfy_gen = ComfyVideoGenerator()
-        print("🎨 Gerando conteúdo visual via ComfyUI (baseado na duração do áudio)...")
-        comfy_videos = comfy_gen.get_video_content_by_comfy(THEME, prompt_positive_comfy="", prompt_negative_comfy="", audio_duration=audio_duration)
-        print(f"✅ Vídeos gerados pelo ComfyUI: {comfy_videos}")
+        comfy_gen = ComfySingleFrameVideoGenerator()
+
+        print("🎨 Gerando visual base (1 frame + overlay)...")
+
+        base_video = comfy_gen.generate(
+            theme=theme,
+            prompt_positive=PROMPT_POSITIVE_COMFY,
+            prompt_negative=""
+        )
+
+        print(f"✅ Vídeo base gerado: {base_video}")
+
     except Exception as e:
-        print(f"⚠️ Falha ao gerar conteúdo via ComfyUI: {e}")
+        print(f"⚠️ Falha ao gerar visual via ComfyUI: {e}")
+        return
+    
     
     # Gerar vídeo
     video_gen = VideoGenerator(

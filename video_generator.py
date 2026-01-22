@@ -57,33 +57,47 @@ class VideoGenerator:
     def get_video_size(self):
         return (720, 1280) if self.screen_orientation == "MOBILE" else (1280, 720)
 
+    def get_recent_videos(theme, limit=None):
+        files = glob.glob(f"videos/{theme}*.mp4")
+        files.sort(key=os.path.getmtime, reverse=True)  # 🔥 mais novos primeiro
+        return files[:limit] if limit else files
+    
+    
     def create_video_sequence(self, duration):
-        """Cria sequência de vídeos de fundo."""
+        """Cria sequência de vídeos de fundo usando os MAIS RECENTES."""
         video_files = glob.glob(f"videos/{self.theme}*.mp4")
 
         if not video_files:
             blank_clip = ColorClip(size=self.get_video_size(), color=(0, 0, 0))
             return blank_clip.set_duration(duration)
 
+        # 🔥 ordena do mais recente pro mais antigo
+        video_files.sort(key=os.path.getmtime, reverse=True)
+
         segments = []
         source_clips = []
         total_duration = 0
         target_size = self.get_video_size()
 
+        idx = 0  # percorre em ordem, não random
+        max_clip_len = 4.0
+        MAX_END = 240
+
         while total_duration < duration:
-            video_path = random.choice(video_files)
+            video_path = video_files[idx % len(video_files)]  # ciclo controlado
+            idx += 1
 
             try:
                 clip = VideoFileClip(video_path, audio=False)
                 clip = clip.resize(target_size)
 
-                clip_duration = min(4.0, duration - total_duration)
-                MAX_END = 240  # segundos
+                clip_duration = min(max_clip_len, duration - total_duration)
 
                 start_time = random.uniform(
                     0,
                     max(0, min(clip.duration, MAX_END) - clip_duration)
                 )
+
                 clip_segment = clip.subclip(start_time, start_time + clip_duration)
 
                 source_clips.append(clip)
@@ -93,13 +107,12 @@ class VideoGenerator:
             except Exception as e:
                 print(f"⚠️ Erro ao ler vídeo {video_path}: {e}")
                 blank_clip = ColorClip(size=target_size, color=(0, 0, 0))
-                blank_clip = blank_clip.set_duration(min(4.0, duration - total_duration))
+                blank_clip = blank_clip.set_duration(min(max_clip_len, duration - total_duration))
                 segments.append(blank_clip)
                 total_duration += blank_clip.duration
 
         if not segments:
-            blank_clip = ColorClip(size=target_size, color=(0, 0, 0))
-            return blank_clip.set_duration(duration)
+            return ColorClip(size=target_size, color=(0, 0, 0)).set_duration(duration)
 
         try:
             final_video = concatenate_videoclips(segments)
