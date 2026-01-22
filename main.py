@@ -10,6 +10,7 @@ from video_generator import VideoGenerator
 from youtube_manager import YouTubeManager
 from instagram_manager import InstagramManager
 from local_title_description_generator import LocalTitleDescriptionGenerator
+from run_video_comfy_generator import ComfyVideoGenerator
 
 # Configurações fixas
 CHANNEL = "parallelcuts"
@@ -43,7 +44,7 @@ def get_text_by_ollama():
     Use colchetes [] para destacar palavras importantes.
     Use linguagem simples, direta e memorável.
     Use o português do Brasil.
-    Não ultrapasse 100 palavras no total.
+    Não ultrapasse 80 palavras no total.
     Responda APENAS com o texto final, sem títulos, sem comentários extras e sem explicações fora do texto.
     """
 
@@ -56,7 +57,7 @@ def get_text_by_ollama():
             [
                 "ollama", "run", "gemma3:1b",
             ],
-            input=prompt,               # 👈 prompt vai no stdin
+            input=prompt, 
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -115,7 +116,7 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
 
     # Criar pasta de saída
     output_folder = create_output_folder()
-    
+
     # Gerar áudio
     voice_gen = VoiceGenerator(
         speed=VOICE_SPEED,
@@ -134,6 +135,15 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
     if audio_duration == 0:
         print("❌ Falha ao gerar áudio")
         return
+    
+    # Gerar conteúdo visual via ComfyUI baseado na duração do áudio
+    try:
+        comfy_gen = ComfyVideoGenerator()
+        print("🎨 Gerando conteúdo visual via ComfyUI (baseado na duração do áudio)...")
+        comfy_videos = comfy_gen.get_video_content_by_comfy(THEME, prompt_positive_comfy="", prompt_negative_comfy="", audio_duration=audio_duration)
+        print(f"✅ Vídeos gerados pelo ComfyUI: {comfy_videos}")
+    except Exception as e:
+        print(f"⚠️ Falha ao gerar conteúdo via ComfyUI: {e}")
     
     # Gerar vídeo
     video_gen = VideoGenerator(
