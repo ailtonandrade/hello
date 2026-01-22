@@ -11,7 +11,7 @@ Sistema completo de automação para criação e postagem de vídeos no YouTube
 
 </div>
 ✨ Recursos Principais
-🎙️	Geração de Voz Realista - Usando Kokoro para áudio de alta qualidade
+🎙️	Geração de Voz Realista - Usando Coqui TTS para áudio de alta qualidade (usa o python 3.11.14, tts não tem piedade de ninguém)
 🎬	Edição Automática de Vídeo - Cria vídeos completos com MoviePy
 🤖	Automação do YouTube - Posta vídeos automaticamente via OAUTH2 (boa sorte, google cloud te aguarda)
 📝	Processamento de Texto - Usa Whisper para transcrição e eSpeak para TTS
@@ -85,7 +85,7 @@ powershell
 uv pip install openai-whisper
 
 # Coqui TTS (geração de voz - PODE DAR TRABALHO NO WINDOWS!)
-# Atentar-se a usar uv para criar o ambiente e python 3.10 ideal
+# Atentar-se a usar uv para criar o ambiente e python 3.11.14 ideal
 Repositório do Coqui TTS
 https://github.com/coqui-ai/TTS/tree/dev?tab=readme-ov-file#installation
 
@@ -117,15 +117,13 @@ text
 ├── 📜 requirements.txt                # Lista de dependências
 ├── 📜 pyproject.toml                  # Configuração do UV
 └── 📜 README.md                       # Este arquivo
+
 🎯 Como Usar
 Opção 1: Gerar Vídeos Localmente
 powershell
 # Execute o script principal
 uv run main.py
 
-# No menu, selecione:
-# [1] Gerar vídeos
-#
 # Isso irá:
 # 1. Obter do Ollama um texto via prompt que foi passado
 # 2. Gerar áudio com TTS e leganda com Whisper
@@ -139,18 +137,8 @@ uv run main.py
 # [2] Postar no YouTube
 #
 # ⚠️ IMPORTANTE: Configure antes!
-# 1. Tenha o Chrome instalado
 # 2. Realize a oAuth2 do google rodando 
 # youtube_oauth.py
-# 3. Tenha imagens de referência na pasta raiz:
-#    - fav-youtube.png
-#    - barra-url-youtube.png
-#    - botao-lupa-youtube.png
-#    - etc...
-Opção 3: Usar Direto no Código
-python
-from voice_generator import VoiceGenerator
-from video_generator import VideoGenerator
 
 # Gerar áudio
 voice_gen = VoiceGenerator()
@@ -159,6 +147,7 @@ audio_duration = voice_gen.generate_audio("Seu texto aqui", "audio.wav")
 # Gerar vídeo
 video_gen = VideoGenerator(theme="pregacao", channel="parallelcuts")
 video_gen.generate_video("audio.wav", audio_duration, "video_final.mp4")
+
 ⚠️ Troubleshooting - Problemas Comuns no Windows
 ❌ "error: Microsoft Visual C++ 14.0 or greater is required"
 powershell
@@ -176,12 +165,7 @@ powershell
 # 2. Ou defina manualmente no código:
 import os
 os.environ["IMAGEIO_FFMPEG_EXE"] = "C:\\ffmpeg\\bin\\ffmpeg.exe"
-❌ PyAutoGUI não encontra imagens
-powershell
-# 1. Use printscreen para capturar as imagens EXATAS da sua tela
-# 2. Salve como PNG na pasta raiz
-# 3. Use region para limitar a busca:
-click_image("imagem.png", region=(0, 0, 1920, 1080))
+
 🔧 Configuração
 Variáveis Globais (em main.py)
 python
@@ -190,6 +174,7 @@ THEME = "pregacao"          # Tema dos vídeos
 SCREEN_ORIENTATION = "MOBILE"  # "MOBILE" ou "DESKTOP"
 Preparar Arquivos Necessários
 powershell
+
 # 1. Coloque vídeos de fundo na pasta videos/
 #    Nomeie como: {tema}{numero}.mp4
 #    Exemplo: pregacao001.mp4, pregacao002.mp4
@@ -198,10 +183,7 @@ powershell
 #    Nomeie como: logo-canal-{canal}.jpg
 #    Exemplo: logo-canal-parallelcuts.jpg
 
-# 3. Prepare bible.txt com seus textos
-#    Um verso por linha
-
-# 4. Para automação YouTube, capture screenshots:
+# 3. Para automação YouTube, capture screenshots:
 #    - fav-youtube.png (ícone do YouTube)
 #    - barra-url-youtube.png
 #    - botao-lupa-youtube.png
@@ -224,14 +206,12 @@ video = add_image(video, "images/subscribe.png",
                   x=0.2, y=0.7,    # Posição
                   size_multiplier=0.8,
                   opacity=0.6)
-Mudar Voz (Kokoro)
+Mudar Voz (Coqui-tts)
 python
-# Em voice_generator.py
-class VoiceGenerator:
-    def __init__(self, lang_code="p", voice="pm_santa"):
-        # voice options: "pm_santa", "af_heart", "am_adam", etc.
-🤝 Contribuindo
-Fork o projeto
+# Tem um arquivo em coqui-tts (que vem do outro repo separado https://github.com/ailtonandrade/hello-coqui-tts-service
+é só baixar ele e por numa pasta próxima a desse projeto)
+# O nome do arquivo é audio.wav
+# Se trocar ele, a voz muda
 
 Crie uma branch (git checkout -b feature/nova-feature)
 
