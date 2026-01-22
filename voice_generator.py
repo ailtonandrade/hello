@@ -42,9 +42,12 @@ class VoiceGenerator:
         rate = int(self.sample_rate * self.pitch)
 
         radio_chain = (
-            "highpass=f=120,"
-            "lowpass=f=4800,"
-            "acompressor=threshold=-18dB:ratio=3:attack=5:release=50"
+            "highpass=f=180,"
+            "lowpass=f=6000,"
+            "acompressor=threshold=-26dB:ratio=8:attack=2:release=120:makeup=8,"
+            "equalizer=f=250:t=q:w=1:g=-4,"
+            "equalizer=f=4000:t=q:w=1:g=6,"
+            "alimiter=limit=0.95"
         )
 
         filter_chain = f"asetrate={rate},atempo={self.speed}"

@@ -112,7 +112,10 @@
 
         <form method="POST" class="mb-3">
             <div class="mb-3">
-                <input type="text" name="url" class="form-control" placeholder="Enter YouTube URL" value="{{ session.get('url', '') }}">
+                <div class="input-group">
+                    <button class="btn btn-secondary" type="button" id="pasteBtn" title="Colar do clipboard">Colar</button>
+                    <input type="text" id="urlInput" name="url" class="form-control" placeholder="Enter YouTube URL" value="{{ session.get('url', '') }}">
+                </div>
             </div>
             <div class="d-grid gap-2">
                 <button type="submit" name="fetch" class="btn btn-primary">Fetch Streams</button>
@@ -131,13 +134,17 @@
             </div>
             {% endif %}
         </div>
-        <form method="POST" action="/download">
+        <form id="downloadForm" method="POST" action="/download">
             <div class="mb-3">
                 <select name="itag" class="form-select" onchange="toggleDownloadButton()">
                     <option value="">Select a stream</option>
                     <optgroup label="Video Streams">
                         {% for stream in streams %}
-                            <option value="{{ stream.itag }}">{{ stream.resolution }} (Video)</option>
+                                    <option value="{{ stream.itag }}" {% if default_itag and stream.itag == default_itag %}selected{% endif %}>
+                                        {{ stream.resolution }} (Video)
+                                        {% if stream.filesize_human %} — {{ stream.filesize_human }}{% endif %}
+                                        {% if stream.duration_human %} — {{ stream.duration_human }}{% endif %}
+                                    </option>
                         {% endfor %}
                     </optgroup>
                     <optgroup label="Audio Streams">
@@ -148,15 +155,36 @@
                                 {% else %}
                                     Audio Only
                                 {% endif %}
+                                {% if stream.filesize_human %} — {{ stream.filesize_human }}{% endif %}
+                                {% if stream.duration_human %} — {{ stream.duration_human }}{% endif %}
                             </option>
                         {% endfor %}
                     </optgroup>
                 </select>
             </div>
+            <div class="row g-2 mb-3">
+                <div class="col-md-8">
+                    <input type="text" name="download_dir" class="form-control" placeholder="Download folder (optional, e.g. C:\\videos or downloads/)" value="{{ session.get('download_dir', '') }}">
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="filename" class="form-control" placeholder="Filename (optional, without extension)" value="{{ session.get('download_filename', '') }}">
+                </div>
+            </div>
             <div class="d-grid">
-                <button type="submit" name="download" class="btn btn-success hidden">Download</button>
+                <button type="submit" id="downloadBtn" name="download" class="btn btn-success hidden">Download</button>
             </div>
         </form>
+        <div id="progressWrapper" class="mt-3" style="display:none;">
+            <div class="mb-2">Progresso:</div>
+            <div class="progress">
+                <div id="progressBar" class="progress-bar" role="progressbar" style="width:0%">0%</div>
+            </div>
+            <div id="progressMsg" class="mt-2 text-muted"></div>
+            <div id="downloadLink" class="mt-2"></div>
+            <div class="mt-2">
+                <button id="cancelBtn" class="btn btn-sm btn-warning" style="display:none;">Cancelar</button>
+            </div>
+        </div>
         {% endif %}
     </div>
 
@@ -201,7 +229,90 @@
             if (downloadButton) downloadButton.addEventListener("click", () => setTimeout(hideLoading, 3000));
             const select = document.querySelector("select[name='itag']");
             const downloadBtn = document.querySelector("button[name='download']");
-            if(select && downloadBtn){ select.addEventListener('change', ()=>{ if(select.value) downloadBtn.classList.remove('hidden'); else downloadBtn.classList.add('hidden'); }); }
+            if(select && downloadBtn){
+                // show/hide on change
+                select.addEventListener('change', ()=>{
+                    if(select.value) downloadBtn.classList.remove('hidden'); else downloadBtn.classList.add('hidden');
+                });
+                // also set initial visibility in case a stream is pre-selected (e.g. default 1080p)
+                if(select.value) downloadBtn.classList.remove('hidden');
+            }
+
+            // async download flow
+            const form = document.getElementById('downloadForm');
+            const progressWrapper = document.getElementById('progressWrapper');
+            const progressBar = document.getElementById('progressBar');
+            const progressMsg = document.getElementById('progressMsg');
+            const downloadLink = document.getElementById('downloadLink');
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const itag = formData.get('itag');
+                if(!itag){ alert('Select a stream first'); return; }
+
+                // start async download
+                progressWrapper.style.display = 'block';
+                progressBar.style.width = '0%'; progressBar.textContent = '0%';
+                progressMsg.textContent = 'Iniciando...';
+                downloadLink.innerHTML = '';
+
+                const resp = await fetch('/download_async', { method:'POST', body: formData });
+                if(!resp.ok){ const txt = await resp.text(); progressMsg.textContent = 'Erro: ' + txt; return; }
+                const j = await resp.json();
+                const job_id = j.job_id;
+
+                // poll status
+                const cancelBtn = document.getElementById('cancelBtn');
+                cancelBtn.style.display = 'inline-block';
+                cancelBtn.onclick = async ()=>{
+                    try{
+                        await fetch('/cancel_download', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({job_id})});
+                        progressMsg.textContent = 'Cancelando...';
+                        cancelBtn.style.display = 'none';
+                    }catch(err){ progressMsg.textContent = 'Erro ao cancelar'; }
+                };
+
+                const poll = setInterval(async ()=>{
+                    try{
+                        const s = await fetch('/download_status?job_id=' + job_id);
+                        if(!s.ok){ progressMsg.textContent = 'Status error'; clearInterval(poll); return; }
+                        const status = await s.json();
+                        const pct = status.percent || 0;
+                        progressBar.style.width = pct + '%'; progressBar.textContent = pct + '%';
+                        progressMsg.textContent = status.message || status.status;
+                        if(status.status === 'done'){
+                            clearInterval(poll);
+                            progressBar.style.width = '100%'; progressBar.textContent = '100%';
+                            // show saved path instead of requiring manual download
+                            const path = status.filepath || 'file saved';
+                            progressMsg.textContent = 'Concluído — salvo em: ' + path;
+                            downloadLink.innerHTML = '';
+                            cancelBtn.style.display = 'none';
+                        } else if(status.status === 'error'){
+                            clearInterval(poll);
+                            progressMsg.textContent = 'Erro: ' + (status.message || 'unknown');
+                            cancelBtn.style.display = 'none';
+                        } else if(status.status === 'cancelled' || status.status === 'cancelling'){
+                            clearInterval(poll);
+                            progressMsg.textContent = status.message || 'cancelled';
+                            cancelBtn.style.display = 'none';
+                        }
+                    }catch(err){ clearInterval(poll); progressMsg.textContent = 'Polling error'; }
+                }, 800);
+            });
+            // paste-from-clipboard button next to URL
+            const pasteBtn = document.getElementById('pasteBtn');
+            const urlInput = document.getElementById('urlInput');
+            pasteBtn?.addEventListener('click', async () => {
+                try {
+                    if (!navigator.clipboard) throw new Error('Clipboard API not supported');
+                    const text = await navigator.clipboard.readText();
+                    if (text) urlInput.value = text;
+                } catch (err) {
+                    alert('Não foi possível acessar o clipboard: ' + err.message);
+                }
+            });
         });
     </script>
     <!-- Bootstrap JS -->

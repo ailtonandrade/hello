@@ -31,8 +31,8 @@ class VideoGenerator:
         theme="pregacao",
         channel="parallelcuts",
         zoom_strength=0.015,
-        grain_intensity=0.03,
-        vignette_intensity=0.6,
+        grain_intensity=0.08,
+        vignette_intensity=0.9,
         screen_orientation="MOBILE",
         subtitle_font="lilita.ttf",
         subtitle_font_size=50,
@@ -78,7 +78,12 @@ class VideoGenerator:
                 clip = clip.resize(target_size)
 
                 clip_duration = min(4.0, duration - total_duration)
-                start_time = random.uniform(0, max(0, clip.duration - clip_duration))
+                MAX_END = 240  # segundos
+
+                start_time = random.uniform(
+                    0,
+                    max(0, min(clip.duration, MAX_END) - clip_duration)
+                )
                 clip_segment = clip.subclip(start_time, start_time + clip_duration)
 
                 source_clips.append(clip)
@@ -432,8 +437,18 @@ class VideoGenerator:
         try:
             print(f"🎵 Adicionando áudio de voz: {os.path.basename(audio_path)}")
             voice_audio = AudioFileClip(audio_path)
+            
+            # CORREÇÃO: Garantir que o áudio não seja mais longo que o vídeo
+            if voice_audio.duration > video.duration:
+                print(f"⚠️ Áudio ({voice_audio.duration:.2f}s) mais longo que vídeo ({video.duration:.2f}s). Cortando...")
+                voice_audio = voice_audio.subclip(0, video.duration)
+            elif voice_audio.duration < video.duration:
+                print(f"⚠️ Vídeo ({video.duration:.2f}s) mais longo que áudio ({voice_audio.duration:.2f}s). Ajustando...")
+                # Cortar vídeo para duração do áudio
+                video = video.subclip(0, voice_audio.duration)
+            
             video = video.set_audio(voice_audio)
-            print("✅ Áudio de voz adicionado com sucesso")
+            print(f"✅ Áudio de voz adicionado (áudio: {voice_audio.duration:.2f}s, vídeo: {video.duration:.2f}s)")
             return video
         except Exception as e:
             print(f"⚠️ Erro ao adicionar voz: {e}")
@@ -455,29 +470,36 @@ class VideoGenerator:
 
             music_clip = AudioFileClip(music_path)
 
-            if music_clip.duration < audio_duration:
-                repeat_count = int(audio_duration // music_clip.duration) + 1
+            # CORREÇÃO: Usar a duração real do vídeo, não do parâmetro
+            video_duration = video.duration
+            
+            if music_clip.duration < video_duration:
+                repeat_count = int(video_duration // music_clip.duration) + 1
                 music_clips = [music_clip] * repeat_count
                 music_clip = concatenate_audioclips(music_clips)
 
-            music_clip = music_clip.subclip(0, audio_duration)
+            music_clip = music_clip.subclip(0, video_duration)
             music_clip = music_clip.volumex(0.3)
 
             if video.audio:
                 base_audio = video.audio
                 try:
-                    base_audio = base_audio.set_duration(audio_duration)
-                except Exception:
-                    pass
-
-                final_audio = CompositeAudioClip(
-                    [base_audio, music_clip]
-                ).set_duration(audio_duration)
+                    # CORREÇÃO: Garantir que ambos tenham a mesma duração
+                    base_audio = base_audio.subclip(0, video_duration)
+                    music_clip = music_clip.subclip(0, video_duration)
+                    
+                    final_audio = CompositeAudioClip(
+                        [base_audio, music_clip]
+                    ).set_duration(video_duration)
+                except Exception as e:
+                    print(f"⚠️ Erro ao sincronizar áudio: {e}")
+                    # Fallback: usar apenas o áudio base
+                    final_audio = base_audio.set_duration(video_duration)
             else:
-                final_audio = music_clip
+                final_audio = music_clip.set_duration(video_duration)
 
             video = video.set_audio(final_audio)
-            print("✅ Música de fundo adicionada com sucesso")
+            print(f"✅ Música de fundo adicionada (duração: {video_duration:.2f}s)")
             return video
 
         except Exception as e:
@@ -486,23 +508,12 @@ class VideoGenerator:
 
     def apply_video_effects(self, video):
         """Aplica efeitos visuais baseados no estilo."""
-        if self.video_style == "cinematic":
-            video = self.effects.apply_vignette(video, intensity=self.vignette_intensity)
-            video = self.effects.apply_sepia(video, intensity=0.3)
 
-        elif self.video_style == "vintage":
-            video = self.effects.apply_sepia(video, intensity=0.6)
-            video = self.effects.apply_vignette(video, intensity=self.vignette_intensity)
+        video = self.effects.apply_vignette(video, intensity=6)
 
-        elif self.video_style == "dramatic":
-            video = self.effects.apply_vignette(video, intensity=self.vignette_intensity)
-
-        # Aplicar zoom e grain se especificado
-        if self.zoom_strength > 0:
-            video = self.effects.apply_zoom_effect(video, strength=self.zoom_strength)
+        video = self.effects.apply_zoom_effect(video, strength=4)
         
-        if self.grain_intensity > 0:
-            video = self.effects.apply_film_grain(video, intensity=self.grain_intensity)
+        video = self.effects.apply_film_grain(video, intensity=4)
 
         return video
 
@@ -513,19 +524,31 @@ class VideoGenerator:
         try:
             print("🎬 Iniciando geração do vídeo...")
 
+            # CORREÇÃO: Obter duração real do áudio primeiro
+            if os.path.exists(audio_path):
+                voice_audio = AudioFileClip(audio_path)
+                actual_audio_duration = voice_audio.duration
+                voice_audio.close()
+                print(f"📊 Duração do áudio: {actual_audio_duration:.2f}s")
+            else:
+                actual_audio_duration = audio_duration
+                print(f"📊 Duração fornecida: {actual_audio_duration:.2f}s")
+
             print("1/7 Criando sequência de vídeo...")
-            video = self.create_video_sequence(audio_duration)
+            video = self.create_video_sequence(actual_audio_duration)
 
             try:
-                video = video.set_duration(audio_duration)
+                video = video.set_duration(actual_audio_duration)
             except Exception:
                 pass
+
+            print(f"📊 Duração do vídeo criado: {video.duration:.2f}s")
 
             print("2/7 Adicionando áudio de voz...")
             video = self.add_voice_audio(video, audio_path)
 
             print("3/7 Adicionando música de fundo...")
-            video = self.add_background_music(video, audio_duration)
+            video = self.add_background_music(video, actual_audio_duration)
 
             print("4/7 Aplicando efeitos visuais...")
             if self.video_style != "simple":
@@ -543,35 +566,41 @@ class VideoGenerator:
 
             print("6/7 Adicionando logo...")
             logo_path = f"images/logo-canal-{self.channel}.jpg"
-            video = self.add_image(
-                video,
-                logo_path,
-                x_pos=0.45,
-                y_pos=0.02,
-                height=100,
-                opacity=0.7
-            )
+            if os.path.exists(logo_path):
+                video = self.add_image(
+                    video,
+                    logo_path,
+                    x_pos=0.45,
+                    y_pos=0.02,
+                    height=100,
+                    opacity=0.7
+                )
 
             print("7/7 Adicionando subscribe...")
             subscribe_path = "images/subscribe.png"
-            video = self.add_image(
-                video,
-                subscribe_path,
-                x_pos=0.3,
-                y_pos=0.8,
-                height=80,
-                opacity=0.6
-            )
+            if os.path.exists(subscribe_path):
+                video = self.add_image(
+                    video,
+                    subscribe_path,
+                    x_pos=0.3,
+                    y_pos=0.8,
+                    height=80,
+                    opacity=0.6
+                )
 
             output_dir = os.path.dirname(output_path)
             if output_dir and not os.path.exists(output_dir):
                 os.makedirs(output_dir, exist_ok=True)
 
-            print("💾 Salvando vídeo final...")
-            self.save_with_cpu(video, output_path)
+            print(f"💾 Salvando vídeo final ({video.duration:.2f}s)...")
+            success = self.save_with_cpu(video, output_path)
 
-            print(f"✅ Vídeo salvo: {output_path}")
-            return output_path
+            if success:
+                print(f"✅ Vídeo salvo: {output_path}")
+                return output_path
+            else:
+                print(f"❌ Falha ao salvar vídeo: {output_path}")
+                return None
 
         except Exception as e:
             print(f"❌ Erro ao gerar vídeo: {e}")

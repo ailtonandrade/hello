@@ -8,11 +8,12 @@ from datetime import datetime
 from voice_generator import VoiceGenerator
 from video_generator import VideoGenerator
 from youtube_manager import YouTubeManager
+from instagram_manager import InstagramManager
 from local_title_description_generator import LocalTitleDescriptionGenerator
 
 # Configurações fixas
 CHANNEL = "parallelcuts"
-THEME = "pregacao"
+THEME = "mentalidade_investidor"
 VOICE_NAME = "pm_alex" #pm_alex #pf_dora
 VOICE_SPEED = 1
 VOICE_PITCH = 0.9
@@ -27,9 +28,11 @@ FORCE_TEXT = None  # Defina uma string para forçar um texto específico
 
 def get_text_by_ollama():
     prompt = """
-    Gere UMA oração falada em tom de ministração.
-    O texto deve soar como alguém orando em voz alta, com autoridade, calma e fé.
-    Use frases declarativas, como quem fala diretamente com Deus e com quem ouve.
+    Gere UM texto falado sobre mentalidade milionária usando fatos históricos, padrões reais e comportamentos que se repetem ao longo do tempo.
+    O texto deve soar como alguém revelando verdades que atravessam gerações, comparando pessoas comuns e pessoas que enriqueceram ao longo da história.
+    Use exemplos implícitos de épocas, crises, ciclos econômicos e decisões humanas, sem citar datas específicas nem nomes próprios.
+    O tom deve ser firme, intrigante e reflexivo, despertando curiosidade e identificação imediata.
+    Use frases declarativas, curtas e impactantes.
     Não use linguagem acadêmica.
     Não faça listas.
     Não acrescente introduções nem conclusões.
@@ -38,11 +41,12 @@ def get_text_by_ollama():
     Não use hífens em nenhuma parte do texto.
     Use pontuação para ajudar na entonação, como ; ! , ? ... .
     Use colchetes [] para destacar palavras importantes.
-    Use linguagem simples, íntima e direta, como uma oração falada.
+    Use linguagem simples, direta e memorável.
     Use o português do Brasil.
     Não ultrapasse 100 palavras no total.
     Responda APENAS com o texto final, sem títulos, sem comentários extras e sem explicações fora do texto.
     """
+
 
     print("🧠 Enviando prompt para o Ollama...")
     print(f"⏳ [{datetime.now().strftime('%H:%M:%S')}] Aguardando resposta do modelo (gemma3:4b)...")
@@ -135,9 +139,9 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
     video_gen = VideoGenerator(
         theme=THEME,
         channel=CHANNEL,
-        zoom_strength=0.015,
-        grain_intensity=0.03,
-        vignette_intensity=0.6,
+        zoom_strength=0.025,
+        grain_intensity=0.08,
+        vignette_intensity=0.9,
         screen_orientation=SCREEN_ORIENTATION,
         subtitle_font=SUBTITLE_FONT,
         subtitle_font_size=SUBTITLE_FONT_SIZE,
@@ -252,7 +256,7 @@ if __name__ == "__main__":
     try:
         main()
         youtube_upload("pregacao", "parallelcuts", "MOBILE")
-        instagram_upload("pregacao", "parallelcuts", "MOBILE")
+        #instagram_upload("pregacao", "parallelcuts", "MOBILE")
     except Exception as e:
         print(f"❌ Erro: {e}")
     finally:
