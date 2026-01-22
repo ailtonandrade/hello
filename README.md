@@ -9,6 +9,10 @@ Conjunto de ferramentas e exemplos usados para gerar vídeos a partir de texto, 
 
 ## Requisitos
 
+⚠️ A Hello usa Python 3.13.0 [vai rodar o principal , movuepy e post youtube]
+⚠️ Stable Diffusion - Comfy usa Python 3.11.14 [vai gerar imagem/video localmente] (https://github.com/ailtonandrade/hello-sd-generator-service)
+⚠️	Coqui TTS usa o Python 3.11.14 [vai gerar a narração] (https://github.com/ailtonandrade/hello-coqui-tts-service)
+
 - Python 3.13 ou superior
 - ffmpeg instalado no sistema (usado por `moviepy`)
 - GPU com CUDA (opcional, depende de bibliotecas como `faster-whisper`)
