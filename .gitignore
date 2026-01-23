@@ -9,6 +9,11 @@ __pycache__/
 *.tmp
 *.log
 .env
+.wav
+.mp4
+.png
+.jpg
+.jpeg
 .env.*
 .idea/
 .vscode/
