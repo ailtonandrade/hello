@@ -274,13 +274,22 @@ def instagram_upload(theme, channel, screen_orientation):
 
 
 if __name__ == "__main__":
+    start_time = time.time()  # ⏱️ início
+
     try:
         main()
         youtube_upload("pregacao", "parallelcuts", "MOBILE")
-        #instagram_upload("pregacao", "parallelcuts", "MOBILE")
+        # instagram_upload("pregacao", "parallelcuts", "MOBILE")
+
     except Exception as e:
         print(f"❌ Erro: {e}")
+
     finally:
-        # Limpar arquivos temporários após terminar
         cleanup_temp_files()
+
+        elapsed = time.time() - start_time
+        minutes = int(elapsed // 60)
+        seconds = int(elapsed % 60)
+
         print("🧹 Limpeza concluída")
+        print(f"⏱️ Tempo total de execução: {minutes}m {seconds}s")

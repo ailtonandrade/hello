@@ -123,7 +123,7 @@ class VideoGenerator:
         video_files.sort(key=os.path.getmtime, reverse=True)
 
         # 🔥 limita aos mais recentes (ajuste como quiser)
-        MAX_RECENT = 12
+        MAX_RECENT = 50
         recent_videos = video_files[:MAX_RECENT]
 
         # 🔥 embaralha os recentes
