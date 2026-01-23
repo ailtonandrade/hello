@@ -102,8 +102,18 @@ class VideoGenerator:
 
 
     def create_video_sequence(self, duration):
-        """Cria sequência de vídeos de fundo usando os MAIS RECENTES."""
+        """Cria sequência de vídeos de fundo usando os mais recentes, porém embaralhados."""
         video_files = glob.glob(f"videos/{self.theme}*.mp4")
+
+        if not video_files:
+            blank_clip = ColorClip(size=self.get_video_size(), color=(0, 0, 0))
+            return blank_clip.set_duration(duration)
+
+        # 🔥 filtra só os vídeos do tema
+        video_files = [
+            vf for vf in video_files
+            if os.path.basename(vf).startswith(self.theme)
+        ]
 
         if not video_files:
             blank_clip = ColorClip(size=self.get_video_size(), color=(0, 0, 0))
@@ -111,19 +121,24 @@ class VideoGenerator:
 
         # 🔥 ordena do mais recente pro mais antigo
         video_files.sort(key=os.path.getmtime, reverse=True)
-        # filrar apenas s nome começando com o tema
-        video_files = [vf for vf in video_files if os.path.basename(vf).startswith(self.theme)]
+
+        # 🔥 limita aos mais recentes (ajuste como quiser)
+        MAX_RECENT = 12
+        recent_videos = video_files[:MAX_RECENT]
+
+        # 🔥 embaralha os recentes
+        random.shuffle(recent_videos)
+
         segments = []
         source_clips = []
         total_duration = 0
         target_size = self.get_video_size()
 
-        idx = 0  # percorre em ordem, não random
+        idx = 0
         max_clip_len = 4.0
-        MAX_END = 240
 
         while total_duration < duration:
-            video_path = video_files[idx % len(video_files)]  # ciclo controlado
+            video_path = recent_videos[idx % len(recent_videos)]
             idx += 1
 
             try:
@@ -132,9 +147,7 @@ class VideoGenerator:
 
                 clip_duration = min(max_clip_len, duration - total_duration)
 
-                start_time = 0
-
-                clip_segment = clip.subclip(start_time, start_time + clip_duration)
+                clip_segment = clip.subclip(0, clip_duration)
 
                 source_clips.append(clip)
                 segments.append(clip_segment)
@@ -143,7 +156,9 @@ class VideoGenerator:
             except Exception as e:
                 print(f"⚠️ Erro ao ler vídeo {video_path}: {e}")
                 blank_clip = ColorClip(size=target_size, color=(0, 0, 0))
-                blank_clip = blank_clip.set_duration(min(max_clip_len, duration - total_duration))
+                blank_clip = blank_clip.set_duration(
+                    min(max_clip_len, duration - total_duration)
+                )
                 segments.append(blank_clip)
                 total_duration += blank_clip.duration
 
@@ -156,6 +171,7 @@ class VideoGenerator:
             if final_video.duration > duration:
                 final_video = final_video.subclip(0, duration)
 
+            # 🔥 overlay aplicado uma única vez (correto)
             final_video = self.apply_overlay(final_video)
 
             for sc in source_clips:
@@ -575,7 +591,6 @@ class VideoGenerator:
         try:
             print("🎬 Iniciando geração do vídeo...")
 
-            # CORREÇÃO: Obter duração real do áudio primeiro
             if os.path.exists(audio_path):
                 voice_audio = AudioFileClip(audio_path)
                 actual_audio_duration = voice_audio.duration

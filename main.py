@@ -28,7 +28,7 @@ SUBTITLE_FONT_COLOR = (255, 191, 0, 200)
 SUBTITLE_FONT = "Lilita.ttf"
 FORCE_TEXT = None
 PROMPT_KEY = "pregacao_epica"
-
+GENERATE_NEW_FRAMES = False
 
 def load_prompts(prompt_key):
     if prompt_key not in PROMPTS:
@@ -138,6 +138,11 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
     # VISUAL (COMFY – FRAME ÚNICO)
     # =========================
     try:
+
+        if not GENERATE_NEW_FRAMES:
+            print("ℹ️ Geração de visual via ComfyUI pulada (usar GENERATE_NEW_FRAMES=True para forçar)")
+            return
+        
         comfy_gen = ComfySingleFrameVideoGenerator()
 
         print("🎨 Gerando visual base (1 frame + overlay)...")
