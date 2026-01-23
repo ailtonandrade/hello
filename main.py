@@ -137,29 +137,24 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
     # =========================
     # VISUAL (COMFY – FRAME ÚNICO)
     # =========================
-    try:
+    if GENERATE_NEW_FRAMES:
+        try:
+            comfy_gen = ComfySingleFrameVideoGenerator()
+            print("🎨 Gerando visual base (1 frame + overlay)...")
+            base_video = comfy_gen.generate(
+                theme=theme,
+                audio_duration=audio_duration,
+                prompt_positive=PROMPT_POSITIVE_COMFY,
+                prompt_negative=PROMPT_NEGATIVE_COMFY
+            )
 
-        if not GENERATE_NEW_FRAMES:
-            print("ℹ️ Geração de visual via ComfyUI pulada (usar GENERATE_NEW_FRAMES=True para forçar)")
+            print(f"✅ Vídeo base gerado: {base_video}")
+
+        except Exception as e:
+            print(f"⚠️ Falha ao gerar visual via ComfyUI: {e}")
             return
-        
-        comfy_gen = ComfySingleFrameVideoGenerator()
-
-        print("🎨 Gerando visual base (1 frame + overlay)...")
-
-        base_video = comfy_gen.generate(
-            theme=theme,
-            audio_duration=audio_duration,
-            prompt_positive=PROMPT_POSITIVE_COMFY,
-            prompt_negative=PROMPT_NEGATIVE_COMFY
-        )
-
-        print(f"✅ Vídeo base gerado: {base_video}")
-
-    except Exception as e:
-        print(f"⚠️ Falha ao gerar visual via ComfyUI: {e}")
-        return
-    
+    else:
+        print("ℹ️ Pulando geração de frames via ComfyUI (usar vídeos pré-gerados).")
     
     # Gerar vídeo
     video_gen = VideoGenerator(
