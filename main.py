@@ -11,11 +11,12 @@ from youtube_manager import YouTubeManager
 from instagram_manager import InstagramManager
 from local_title_description_generator import LocalTitleDescriptionGenerator
 from run_video_comfy_generator import ComfySingleFrameVideoGenerator
+from prompts import PROMPTS
 
 # Configurações fixas
 CHANNEL = "parallelcuts"
 THEME = "pregacao"
-VOICE_NAME = "pm_alex" #pm_alex #pf_dora
+VOICE_NAME = "pm_alex" # deactivated
 VOICE_SPEED = 1.1
 VOICE_PITCH = 0.90
 VOICE_VOLUME = 1.2
@@ -23,29 +24,26 @@ VOICE_RADIO_EFFECT = True
 SUBTITLE_WORDS_PER_LINE = 3
 SUBTITLE_FONT_SIZE = 45
 SCREEN_ORIENTATION = "MOBILE"
-SUBTITLE_FONT_COLOR = (255, 191, 0, 200)  # Amarelo âmbar
+SUBTITLE_FONT_COLOR = (255, 191, 0, 200)
 SUBTITLE_FONT = "Lilita.ttf"
-FORCE_TEXT = None  # Defina uma string para forçar um texto específico
-PROMPT_OLLAMA = """
-    Gere UM texto de até 100 palavras em português do Brasil falado uma exegese bíblica inspiradora.
-    Não usar: linguagem acadêmica,  Não faça listas,
-    Não acrescente introduções nem conclusões,
-    Não use emojis, Não use numeros romanos,
-    Não use hífens em nenhuma parte do texto,
-    Responda APENAS com o texto final, sem títulos, sem comentários extras e sem explicações fora do texto.
-"""
+FORCE_TEXT = None
+PROMPT_KEY = "pregacao_epica"
 
-PROMPT_POSITIVE_COMFY = """
-bible preaching, dramatic lighting, cinematic, highly detailed, 8k resolution, photorealistic, intricate details, vibrant colors, sharp focus, depth of field, masterpiece, realistic textures, dynamic composition, epic scene, divine atmosphere
-"""
 
-PROMPT_NEGATIVE_COMFY = """ 
-sem texto, sem marca d'água, sem assinatura, sem borrão, sem baixa resolução, sem arte digital, sem arte 3D, sem desenho animado, sem pixelização, sem distorção, sem arte abstrata
-sem elementos modernos, sem roupas modernas, sem acessórios modernos, sem fundo confuso, sem múltiplas figuras, sem cores desbotadas, sem iluminação ruim
-no japanese, no chinese, no korean
-no girl, no indian
-"""
+def load_prompts(prompt_key):
+    if prompt_key not in PROMPTS:
+        raise KeyError(f"Prompt '{prompt_key}' não encontrado em prompts.py")
 
+    p = PROMPTS[prompt_key]
+
+    return (
+        p.get("ollama", "").strip(),
+        p.get("comfy_positive", "").strip(),
+        p.get("comfy_negative", "").strip()
+    )
+
+PROMPT_OLLAMA, PROMPT_POSITIVE_COMFY, PROMPT_NEGATIVE_COMFY = load_prompts(PROMPT_KEY)
+# \\ Configurações fixas
 
 def get_text_by_ollama():
     print("🧠 Enviando prompt para o Ollama...")
