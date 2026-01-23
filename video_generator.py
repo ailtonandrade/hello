@@ -62,7 +62,45 @@ class VideoGenerator:
         files.sort(key=os.path.getmtime, reverse=True)  # 🔥 mais novos primeiro
         return files[:limit] if limit else files
     
-    
+    def apply_overlay(self, base_video, opacity=0.4):
+        """
+        Aplica um overlay visual contínuo sobre o vídeo base.
+        O overlay é aplicado UMA única vez, após o concatenate.
+        """
+
+        overlay_files = glob.glob("./overlays/*.mp4")
+
+        if not overlay_files:
+            print("⚠️ Nenhum overlay encontrado, pulando overlay.")
+            return base_video
+
+        overlay_path = random.choice(overlay_files)
+
+        try:
+            overlay = VideoFileClip(str(overlay_path), audio=False)
+
+            # 🔁 garante que o overlay dure o vídeo inteiro
+            overlay = overlay.loop(duration=base_video.duration)
+
+            # 📐 garante mesmo tamanho
+            overlay = overlay.resize(base_video.size)
+
+            # 🎚️ controla força do efeito
+            overlay = overlay.set_opacity(opacity)
+
+            # 🎬 composição final
+            final = CompositeVideoClip(
+                [base_video, overlay],
+                size=base_video.size
+            )
+
+            return final
+
+        except Exception as e:
+            print(f"⚠️ Erro ao aplicar overlay: {e}")
+            return base_video
+
+
     def create_video_sequence(self, duration):
         """Cria sequência de vídeos de fundo usando os MAIS RECENTES."""
         video_files = glob.glob(f"videos/{self.theme}*.mp4")
@@ -73,7 +111,8 @@ class VideoGenerator:
 
         # 🔥 ordena do mais recente pro mais antigo
         video_files.sort(key=os.path.getmtime, reverse=True)
-
+        # filrar apenas s nome começando com o tema
+        video_files = [vf for vf in video_files if os.path.basename(vf).startswith(self.theme)]
         segments = []
         source_clips = []
         total_duration = 0
@@ -93,10 +132,7 @@ class VideoGenerator:
 
                 clip_duration = min(max_clip_len, duration - total_duration)
 
-                start_time = random.uniform(
-                    0,
-                    max(0, min(clip.duration, MAX_END) - clip_duration)
-                )
+                start_time = 0
 
                 clip_segment = clip.subclip(start_time, start_time + clip_duration)
 
@@ -119,6 +155,8 @@ class VideoGenerator:
 
             if final_video.duration > duration:
                 final_video = final_video.subclip(0, duration)
+
+            final_video = self.apply_overlay(final_video)
 
             for sc in source_clips:
                 try:
@@ -564,8 +602,8 @@ class VideoGenerator:
             video = self.add_background_music(video, actual_audio_duration)
 
             print("4/7 Aplicando efeitos visuais...")
-            if self.video_style != "simple":
-                video = self.apply_video_effects(video)
+            
+            video = self.apply_video_effects(video)
 
             print("5/7 Adicionando legendas sincronizadas...")
             video = self.add_synchronized_subtitles(

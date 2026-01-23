@@ -93,26 +93,39 @@ class ComfySingleFrameVideoGenerator:
     # 🎥 Frame → vídeo 5s
     # -------------------------
     def create_video_from_frame(self, frame_path, theme):
-
-        overlay_files = list(OVERLAYS_DIR.glob("*.mp4"))
-        if not overlay_files:
-            raise RuntimeError("Nenhum overlay encontrado em ./overlays")
-
-        overlay = random.choice(overlay_files)
+        import random
         output_video = VIDEOS_DIR / f"{theme}_{random.randint(0,9999)}.mp4"
 
+        # 🎛️ CONTROLES DE ZOOM (AJUSTE AQUI)
+        zoom_start = 1.00
+        zoom_end   = 1.05   # ex: 1.02 bem sutil | 1.06 mais cinematográfico
+
+        zoom_min = 1.00
+        zoom_max = random.choice([1.03, 1.04, 1.05])  # variação sutil
+
+        # decide direção
+        zoom_in = random.choice([True, False])
+
+        if zoom_in:
+            zoom_start = zoom_min
+            zoom_end = zoom_max
+        else:
+            zoom_start = zoom_max
+            zoom_end = zoom_min
+        
         filter_complex = (
-            f"[0:v]scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}:force_original_aspect_ratio=decrease,"
+            f"[0:v]"
+            f"scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}:force_original_aspect_ratio=decrease,"
             f"pad={VIDEO_WIDTH}:{VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2,"
-            f"format=rgb24,"
+            f"zoompan="
+                f"z='{zoom_start}+({zoom_end}-{zoom_start})*on/({FINAL_TIME*FINAL_FPS}-1)':"
+                f"x='iw/2-(iw/zoom/2)':"
+                f"y='ih/2-(ih/zoom/2)':"
+                f"d=1,"
+            f"scale={VIDEO_WIDTH}:{VIDEO_HEIGHT},"
+            f"format=gbrp,"
             f"fade=t=in:st=0:d={FADE_TIME},"
             f"fade=t=out:st={FINAL_TIME-FADE_TIME}:d={FADE_TIME}"
-            f"[base];"
-            f"[1:v]scale={VIDEO_WIDTH}:{VIDEO_HEIGHT},"
-            f"format=rgb24,"
-            f"colorlevels=rimax=1:gimax=1:bimax=1"
-            f"[ov];"
-            f"[base][ov]blend=all_mode=screen:all_opacity=1"
         )
 
         subprocess.run([
@@ -120,8 +133,6 @@ class ComfySingleFrameVideoGenerator:
             "-y",
             "-loop", "1",
             "-i", str(frame_path),
-            "-stream_loop", "-1",
-            "-i", str(overlay),
             "-filter_complex", filter_complex,
             "-t", str(FINAL_TIME),
             "-r", str(FINAL_FPS),
@@ -133,25 +144,37 @@ class ComfySingleFrameVideoGenerator:
 
         return output_video
 
+
     # -------------------------
     # 🚀 API pública
     # -------------------------
-    def generate(self, theme, prompt_positive, prompt_negative=""):
+    def generate(self, theme, audio_duration, prompt_positive, prompt_negative=""):
+        total_generated_time = 0
+        iteration = 0
 
-        print("🎬 Gerando frame único...")
-        frame = self._run_workflow(
-            WORKFLOW_TEXT2IMG,
-            prompt_positive,
-            prompt_negative
-        )
+        while total_generated_time < audio_duration:
+            iteration += 1
+            print(f"🎬 Gerando frame #{iteration} (tempo coberto: {total_generated_time:.2f}s / {audio_duration:.2f}s)")
 
-        final_frame = FRAMES_DIR / "frame.png"
-        shutil.copy(frame, final_frame)
+            frame = self._run_workflow(
+                WORKFLOW_TEXT2IMG,
+                prompt_positive,
+                prompt_negative
+            )
 
-        print("🎥 Gerando vídeo com overlay...")
-        video = self.create_video_from_frame(final_frame, theme)
+            final_frame = FRAMES_DIR / f"frame_{iteration:03d}.png"
+            shutil.copy(frame, final_frame)
+
+            print("🎥 Gerando vídeo com overlay...")
+            video = self.create_video_from_frame(
+                final_frame,
+                theme
+            )
+
+            total_generated_time += FINAL_TIME
+
+        print(f"✅ Geração concluída. Tempo total gerado: {total_generated_time:.2f}s")
 
         shutil.rmtree(FRAMES_DIR, ignore_errors=True)
         FRAMES_DIR.mkdir(exist_ok=True)
-
         return video

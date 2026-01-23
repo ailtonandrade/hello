@@ -1,8 +1,4 @@
 import subprocess
-import re
-import tempfile
-import wave
-import shutil
 from pathlib import Path
 
 
@@ -11,12 +7,11 @@ class CoquiTTS:
         self,
         model_name="tts_models/multilingual/multi-dataset/xtts_v2",
         project_path="../coqui-tts",
-        max_chars_per_chunk=350,  # seguro pra PT-BR narrativo
-    ):
+    ):  
+
         self.model_name = model_name
         self.project_path = Path(project_path).resolve()
         self.script_path = self.project_path / "run_tts.py"
-        self.max_chars_per_chunk = max_chars_per_chunk
 
         if not self.script_path.exists():
             raise FileNotFoundError(
@@ -24,55 +19,16 @@ class CoquiTTS:
             )
 
     # ---------------------------
-    # 🔪 Chunking seguro
-    # ---------------------------
-    def _split_text(self, text: str):
-        sentences = re.split(r'(?<=[.!?])\s+', text.strip())
-        chunks = []
-        current = ""
-
-        def force_split(long_text):
-            """Divide texto longo em pedaços seguros."""
-            return [
-                long_text[i:i + self.max_chars_per_chunk]
-                for i in range(0, len(long_text), self.max_chars_per_chunk)
-            ]
-
-        for s in sentences:
-            s = s.strip()
-            if not s:
-                continue
-
-            # 🔥 frase sozinha já é grande demais → split forçado
-            if len(s) > self.max_chars_per_chunk:
-                if current:
-                    chunks.append(current)
-                    current = ""
-
-                chunks.extend(force_split(s))
-                continue
-
-            candidate = (current + " " + s).strip()
-            if len(candidate) <= self.max_chars_per_chunk:
-                current = candidate
-            else:
-                if current:
-                    chunks.append(current)
-                current = s
-
-        if current:
-            chunks.append(current)
-
-        return chunks
-
-
-    # ---------------------------
-    # 🔊 Gera WAV único
+    # 🔊 Gera WAV único (texto inteiro)
     # ---------------------------
     def _speak_single(self, *, text, output, language, speaker_wav):
         output = Path(output)
         output.parent.mkdir(parents=True, exist_ok=True)
-
+        
+        # low profile
+        self.model_name = "tts_models/multilingual/multi-dataset/your_tts"
+        language = "pt-br"
+        
         cmd = [
             "uv", "run",
             "--project", str(self.project_path),
@@ -105,61 +61,21 @@ class CoquiTTS:
             )
 
     # ---------------------------
-    # 🔗 Concatena WAVs
-    # ---------------------------
-    def _concat_wavs(self, wavs, output):
-        with wave.open(str(wavs[0]), "rb") as w:
-            params = w.getparams()
-            frames = [w.readframes(w.getnframes())]
-
-        for wav in wavs[1:]:
-            with wave.open(str(wav), "rb") as w:
-                frames.append(w.readframes(w.getnframes()))
-
-        output = Path(output)
-        output.parent.mkdir(parents=True, exist_ok=True)
-
-        with wave.open(str(output), "wb") as out:
-            out.setparams(params)
-            for f in frames:
-                out.writeframes(f)
-
-    # ---------------------------
     # 🚀 API pública
     # ---------------------------
     def speak(self, *, text, output, language="pt", speaker_wav=None) -> float:
-        chunks = self._split_text(text)
+        """
+        Gera áudio TTS em WAV a partir do texto completo.
+        Retorna 1.0 apenas como placeholder de compatibilidade.
+        """
+        if not text or not text.strip():
+            raise ValueError("Texto vazio para TTS")
 
-        # Texto pequeno
-        if len(chunks) == 1:
-            self._speak_single(
-                text=chunks[0],
-                output=output,
-                language=language,
-                speaker_wav=speaker_wav,
-            )
-            return 1.0
-
-        # Texto grande → chunk + concat
-        temp_dir = Path(tempfile.mkdtemp(prefix="coqui_chunks_"))
-        wavs = []
-
-        try:
-            for i, chunk in enumerate(chunks):
-                wav_path = temp_dir / f"part_{i:03d}.wav"
-
-                self._speak_single(
-                    text=chunk,
-                    output=wav_path,
-                    language=language,
-                    speaker_wav=speaker_wav,
-                )
-
-                wavs.append(wav_path)
-
-            self._concat_wavs(wavs, Path(output))
-
-        finally:
-            shutil.rmtree(temp_dir, ignore_errors=True)
+        self._speak_single(
+            text=text.strip(),
+            output=output,
+            language=language,
+            speaker_wav=speaker_wav,
+        )
 
         return 1.0

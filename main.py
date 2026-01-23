@@ -14,10 +14,10 @@ from run_video_comfy_generator import ComfySingleFrameVideoGenerator
 
 # Configurações fixas
 CHANNEL = "parallelcuts"
-THEME = "mentalidade_investidor"
+THEME = "pregacao"
 VOICE_NAME = "pm_alex" #pm_alex #pf_dora
 VOICE_SPEED = 1
-VOICE_PITCH = 0.9
+VOICE_PITCH = 0.6
 VOICE_VOLUME = 1.2
 VOICE_RADIO_EFFECT = True
 SUBTITLE_WORDS_PER_LINE = 3
@@ -36,12 +36,19 @@ PROMPT_OLLAMA = """
     Não use hífens em nenhuma parte do texto.
     Use pontuação para ajudar na entonação, como ; ! , ? ... .
     Use o português do Brasil.
-    Não ultrapasse 80 palavras no total.
+    Não ultrapasse 20 palavras no total.
     Responda APENAS com o texto final, sem títulos, sem comentários extras e sem explicações fora do texto.
 """
 
 PROMPT_POSITIVE_COMFY = """
-    gera uma realista imagem de um profeta bíblico vendo a glória de Deus, estilo pintura clássica renascentista, luz divina brilhando ao redor, detalhes ricos, cores vibrantes, alta resolução
+bible preaching, dramatic lighting, cinematic, highly detailed, 8k resolution, photorealistic, intricate details, vibrant colors, sharp focus, depth of field, masterpiece, realistic textures, dynamic composition, epic scene, divine atmosphere
+"""
+
+PROMPT_NEGATIVE_COMFY = """ 
+sem texto, sem marca d'água, sem assinatura, sem borrão, sem baixa resolução, sem arte digital, sem arte 3D, sem desenho animado, sem pixelização, sem distorção, sem arte abstrata
+sem elementos modernos, sem roupas modernas, sem acessórios modernos, sem fundo confuso, sem múltiplas figuras, sem cores desbotadas, sem iluminação ruim
+no japanese, no chinese, no korean
+np girl
 """
 
 
@@ -52,7 +59,7 @@ def get_text_by_ollama():
     try:
         result = subprocess.run(
             [
-                "ollama", "run", "gemma3:4b",
+                "ollama", "run", "gemma3:1b",
             ],
             input=PROMPT_OLLAMA,
             capture_output=True,
@@ -100,7 +107,9 @@ def sanitize_Text(text):
     text = re.sub(r'\.{3,}', '...', text)
     # Troca pontos por vírgulas
     text = re.sub(r'(?<!\.)\.(?!\.)', ',', text)
-
+    #se ultimo casactere for uma virgula , trocar por pomto e virgula
+    if text.endswith(','):
+        text = text[:-1] + ';'
     return text
 
 def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_speed=0.9, subtitle_words_per_line=3, subtitle_font_size=55, screen_orientation="MOBILE", subtitle_font_color=(255, 191, 0, 200), subtitle_font="Lilita.ttf", force_text=None):
@@ -110,6 +119,7 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
     FORCE_TEXT = get_text_by_ollama() if force_text is None else force_text
 
     FORCE_TEXT = sanitize_Text(FORCE_TEXT)
+    print(f"📝 Texto final para geração:\n{FORCE_TEXT}\n")
 
     # Criar pasta de saída
     output_folder = create_output_folder()
@@ -144,8 +154,9 @@ def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_s
 
         base_video = comfy_gen.generate(
             theme=theme,
+            audio_duration=audio_duration,
             prompt_positive=PROMPT_POSITIVE_COMFY,
-            prompt_negative=""
+            prompt_negative=PROMPT_NEGATIVE_COMFY
         )
 
         print(f"✅ Vídeo base gerado: {base_video}")
@@ -275,7 +286,7 @@ def instagram_upload(theme, channel, screen_orientation):
 if __name__ == "__main__":
     try:
         main()
-        youtube_upload("pregacao", "parallelcuts", "MOBILE")
+        #youtube_upload("pregacao", "parallelcuts", "MOBILE")
         #instagram_upload("pregacao", "parallelcuts", "MOBILE")
     except Exception as e:
         print(f"❌ Erro: {e}")
