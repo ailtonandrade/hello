@@ -560,11 +560,11 @@ class VideoGenerator:
     def apply_video_effects(self, video):
         """Aplica efeitos visuais baseados no estilo."""
 
-        video = self.effects.apply_vignette(video, intensity=6)
+        #video = self.effects.apply_vignette(video, intensity=6)
 
-        video = self.effects.apply_zoom_effect(video, strength=4)
+        #video = self.effects.apply_zoom_effect(video, strength=4)
         
-        video = self.effects.apply_film_grain(video, intensity=4)
+        #video = self.effects.apply_film_grain(video, intensity=4)
 
         return video
 

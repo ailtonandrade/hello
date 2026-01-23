@@ -26,8 +26,8 @@ class CoquiTTS:
         output.parent.mkdir(parents=True, exist_ok=True)
         
         # low profile
-        self.model_name = "tts_models/multilingual/multi-dataset/your_tts"
-        language = "pt-br"
+        #self.model_name = "tts_models/multilingual/multi-dataset/your_tts"
+        #language = "pt-br"
         
         cmd = [
             "uv", "run",

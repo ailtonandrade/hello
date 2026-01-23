@@ -16,8 +16,8 @@ from run_video_comfy_generator import ComfySingleFrameVideoGenerator
 CHANNEL = "parallelcuts"
 THEME = "pregacao"
 VOICE_NAME = "pm_alex" #pm_alex #pf_dora
-VOICE_SPEED = 1
-VOICE_PITCH = 0.6
+VOICE_SPEED = 1.1
+VOICE_PITCH = 0.90
 VOICE_VOLUME = 1.2
 VOICE_RADIO_EFFECT = True
 SUBTITLE_WORDS_PER_LINE = 3
@@ -27,16 +27,11 @@ SUBTITLE_FONT_COLOR = (255, 191, 0, 200)  # Amarelo âmbar
 SUBTITLE_FONT = "Lilita.ttf"
 FORCE_TEXT = None  # Defina uma string para forçar um texto específico
 PROMPT_OLLAMA = """
-    Gere UM texto de até 100 palavras falado uma exegese bíblica inspiradora.
-    Não use linguagem acadêmica.
-    Não faça listas.
-    Não acrescente introduções nem conclusões.
-    Não use emojis.
-    Não use numeros romanos.
-    Não use hífens em nenhuma parte do texto.
-    Use pontuação para ajudar na entonação, como ; ! , ? ... .
-    Use o português do Brasil.
-    Não ultrapasse 20 palavras no total.
+    Gere UM texto de até 100 palavras em português do Brasil falado uma exegese bíblica inspiradora.
+    Não usar: linguagem acadêmica,  Não faça listas,
+    Não acrescente introduções nem conclusões,
+    Não use emojis, Não use numeros romanos,
+    Não use hífens em nenhuma parte do texto,
     Responda APENAS com o texto final, sem títulos, sem comentários extras e sem explicações fora do texto.
 """
 
@@ -48,7 +43,7 @@ PROMPT_NEGATIVE_COMFY = """
 sem texto, sem marca d'água, sem assinatura, sem borrão, sem baixa resolução, sem arte digital, sem arte 3D, sem desenho animado, sem pixelização, sem distorção, sem arte abstrata
 sem elementos modernos, sem roupas modernas, sem acessórios modernos, sem fundo confuso, sem múltiplas figuras, sem cores desbotadas, sem iluminação ruim
 no japanese, no chinese, no korean
-np girl
+no girl, no indian
 """
 
 
@@ -106,10 +101,7 @@ def sanitize_Text(text):
     # Remove retissos desnecessários
     text = re.sub(r'\.{3,}', '...', text)
     # Troca pontos por vírgulas
-    text = re.sub(r'(?<!\.)\.(?!\.)', ',', text)
-    #se ultimo casactere for uma virgula , trocar por pomto e virgula
-    if text.endswith(','):
-        text = text[:-1] + ';'
+    text = re.sub(r'(?<!\.)\.(?!\.)', ';', text)
     return text
 
 def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_speed=0.9, subtitle_words_per_line=3, subtitle_font_size=55, screen_orientation="MOBILE", subtitle_font_color=(255, 191, 0, 200), subtitle_font="Lilita.ttf", force_text=None):
@@ -286,7 +278,7 @@ def instagram_upload(theme, channel, screen_orientation):
 if __name__ == "__main__":
     try:
         main()
-        #youtube_upload("pregacao", "parallelcuts", "MOBILE")
+        youtube_upload("pregacao", "parallelcuts", "MOBILE")
         #instagram_upload("pregacao", "parallelcuts", "MOBILE")
     except Exception as e:
         print(f"❌ Erro: {e}")
