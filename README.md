@@ -1,77 +1,145 @@
+Otom - AI Media Generator
 
-# Hello
+Projeto de utilitários para processamento de áudio, geração de vídeos e integração com serviços como YouTube e Instagram.
+Inclui scripts para síntese de voz (TTS), geração de imagens/vídeos e uma interface web simples.
 
-Projeto de utilitários para processamento de áudio, geração de vídeos e integração com serviços (YouTube, Instagram, etc.). Contém scripts para síntese de voz, edição de vídeo e uma interface web simples.
+==================================================
 
-## Descrição
+DESCRIÇÃO
 
-Conjunto de ferramentas e exemplos usados para gerar vídeos a partir de texto, manipular áudio e automatizar publicações. Integra com bibliotecas como `moviepy`, `faster-whisper` (ou `whisper`) e utilitários locais para TTS.
+Conjunto de ferramentas usadas para gerar vídeos a partir de texto, manipular áudio e automatizar publicações.
+Integra bibliotecas como moviepy, faster-whisper (ou whisper) e serviços locais de TTS e Stable Diffusion.
 
-## Requisitos
+O projeto é dividido em serviços independentes, cada um com seu ambiente Python específico.
 
-⚠️ A Hello usa Python 3.13.0 [vai rodar o principal , movuepy e post youtube]
-⚠️ Stable Diffusion - Comfy usa Python 3.11.14 [vai gerar imagem/video localmente] (https://github.com/ailtonandrade/hello-sd-generator-service)
-⚠️	Coqui TTS usa o Python 3.11.14 [vai gerar a narração] (https://github.com/ailtonandrade/hello-coqui-tts-service)
+==================================================
 
-- Python 3.13 ou superior
-- ffmpeg instalado no sistema (usado por `moviepy`)
-- GPU com CUDA (opcional, depende de bibliotecas como `faster-whisper`)
+REQUISITOS E AMBIENTES
 
-## Instalação
+OTOM (CORE)
+- Python 3.13.0
+- Responsável pelo fluxo principal, MoviePy e upload (YouTube)
 
-1. Crie e ative um ambiente virtual (recomendado):
+STABLE DIFFUSION (COMFYUI)
+- Python 3.11.14
+- Geração local de imagens e vídeos
+- Repositório:
+  https://github.com/ailtonandrade/hello-sd-generator-service
 
-```bash
-python -m venv .venv
-.\.venv\Scripts\activate
-```
+COQUI TTS
+- Python 3.11.14
+- Geração de narração por voz
+- Repositório:
+  https://github.com/ailtonandrade/hello-coqui-tts-service
 
-2. Instale as dependências:
+OUTROS REQUISITOS
+- ffmpeg instalado no sistema (usado pelo moviepy)
+- GPU com CUDA (opcional, depende de bibliotecas como faster-whisper)
 
-```bash
-pip install -r requirements.txt
-```
+==================================================
 
-3. Se desejar usar recursos de TTS locais, veja o diretório `coqui-tts` e instale-o conforme necessário.
+GERENCIAMENTO DE DEPENDÊNCIAS
 
-## Uso
+O projeto utiliza UV para gerenciamento de ambientes e dependências.
 
-- Executar o script principal (exemplo):
+- pyproject.toml contém a definição canônica das dependências
+- requirements.txt é derivado dele
 
-```bash
-python main.py
-```
+==================================================
 
-- Interface web (se aplicável):
+INSTALAÇÃO
 
-```bash
-python app.py
-```
+1) Criar ambiente virtual:
 
-- Gerar vídeo usando o helper `run_video.py` (ex.: ComfyUI local):
+uv venv
+source .venv/bin/activate
+(no Windows, use o ativador equivalente)
 
-```bash
-python run_video.py
-```
+2) Instalar dependências:
 
-Parâmetros e scripts principais:
+uv pip install -r requirements.txt
 
-- `main.py`: ponto de entrada de exemplo.
-- `app.py`: possível interface web.
-- `run_video.py`: fluxo para gerar frames usando ComfyUI.
-- `video_generator.py`, `video_editor.py`: helpers para montagem e edição de vídeo.
-- `tts_wrapper.py`, `voice_generator.py`: utilitários de síntese de voz.
+==================================================
 
-## Observações
+USO
 
-- Alguns pacotes exigem bibliotecas de sistema (ex.: `ffmpeg`).
-- O arquivo `pyproject.toml` contém a lista canônica de dependências; `requirements.txt` foi gerado a partir dele.
+========================================================================
 
-## Estrutura
+Otom AI Media Generator (/hello) - Python 3.13
+Escolher entre Python ou Interface Web
 
-- `songs/`, `videos/`, `images/`, `output/`: pastas para artefatos gerados.
-- `templates/`: modelos HTML usados pela interface.
+Padrão:
+> cd .\ pasta do main.py
+> python --version (verificar se versão é 3.13.0)
+> .\.venv\Scripts\activate.ps1
 
-## Licença
+Aqui só escolher um dos dois:
+    Python:
+    > python main.py
 
-Consulte o arquivo `LICENSE` no repositório.
+    Interface web:
+    > python web_interface.py
+
+Espere ate aparecer
+...
+> Running on http://127.0.0.1:5000
+
+========================================================================
+
+Otom AI Media Generator (/hello) - Python 3.10.19
+(Eg.: stable-difusion-imag\ComfyUI\main.py)
+
+> cd path-to\stable-difusion-image\ComfyUI
+> .\.venv\Scripts\activate.ps1
+> python --version (verificar se versão é 3.10.19)
+> python main.py --directml
+
+Espere ate aparecer
+...
+> Starting server
+> To see the GUI go to: http://127.0.0.1:xxxx
+
+Abra no seu navegador a URL
+
+==================================================
+
+SCRIPTS PRINCIPAIS
+
+main.py
+- Ponto de entrada do fluxo principal
+
+app.py
+- Interface web (opcional)
+
+run_video.py
+- Geração de frames e vídeos via ComfyUI
+
+video_generator.py, video_editor.py
+- Helpers para montagem e edição de vídeo
+
+tts_wrapper.py, voice_generator.py
+- Utilitários de síntese de voz
+
+==================================================
+
+ESTRUTURA DO PROJETO
+
+songs/, videos/, images/, output/
+- Artefatos gerados
+
+templates/
+- Templates HTML usados pela interface web
+
+==================================================
+
+OBSERVAÇÕES
+
+- Alguns pacotes exigem dependências de sistema (ex.: ffmpeg)
+- Cada serviço (core, SD, TTS) roda em ambiente isolado
+- Projeto voltado para uso local e automação de pipelines
+
+==================================================
+
+LICENÇA
+
+Consulte o arquivo LICENSE no repositório.
