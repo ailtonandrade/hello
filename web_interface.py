@@ -8,6 +8,7 @@ import smtplib
 from email.message import EmailMessage
 import urllib.parse
 from config import BASE_URL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, FROM_EMAIL
+from config import STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET, SECRET_KEY
 
 
 CHANNEL = "parallelcuts"
@@ -25,7 +26,21 @@ SUBTITLE_FONT = "Lilita.ttf"
 
 
 app = Flask(__name__)
-app.secret_key = "secret_key_for_flask"
+app.secret_key = SECRET_KEY
+
+
+@app.context_processor
+def inject_user_globals():
+    """Inject `user` and `credits` into all templates when a user is logged in."""
+    user = None
+    credits = 0
+    try:
+        if session.get('user_id'):
+            user = auth.get_user(session['user_id'])
+            credits = auth.get_credits(session['user_id'])
+    except Exception:
+        pass
+    return dict(user=user, credits=credits)
 
 
 # controle de execução
@@ -42,7 +57,6 @@ def generate():
         # Get form data
         channel = request.form.get('channel')
         theme = request.form.get('theme')
-        prompt_key = request.form.get('prompt_key')
         prompt_ollama = request.form.get('prompt_ollama')
         prompt_positive = request.form.get('prompt_positive')
         prompt_negative = request.form.get('prompt_negative')
@@ -63,13 +77,13 @@ def generate():
         voice_volume = float(request.form.get('voice_volume', getattr(main, 'VOICE_VOLUME', 1.2)))
         voice_radio_effect = request.form.get('voice_radio_effect') in ('on', 'true', '1')
 
-        prompt_key = request.form.get('prompt_key', getattr(main, 'PROMPT_KEY', None))
+        # prompt_key removed from web UI; templates supply prompt text directly
+        prompt_key = None
         generate_new_frames = request.form.get('generate_new_frames') in ('on', 'true', '1')
 
         # write into main module
         main.CHANNEL = channel
         main.THEME = theme
-        main.PROMPT_KEY = prompt_key
         main.PROMPT_POSITIVE_COMFY = prompt_positive
         main.PROMPT_NEGATIVE_COMFY = prompt_negative
         main.PROMPT_OLLAMA = prompt_ollama
@@ -87,16 +101,7 @@ def generate():
         main.FORCE_TEXT = force_text
         main.GENERATE_NEW_FRAMES = generate_new_frames
 
-        # reload prompts if prompt_key provided
-        if prompt_key:
-            try:
-                p_ollama, p_pos, p_neg = main.load_prompts(prompt_key)
-                main.PROMPT_OLLAMA = p_ollama
-                main.PROMPT_POSITIVE_COMFY = p_pos
-                main.PROMPT_NEGATIVE_COMFY = p_neg
-                main.PROMPT_KEY = prompt_key
-            except Exception as e:
-                flash(f"Prompt key inválido: {e}", "warning")
+        # prompt keys removed from UI; template-provided prompts are used
 
         # check credits and consume 1 credit per generation
         user_id = session.get('user_id')
@@ -170,10 +175,9 @@ def generate():
         flash("Geração de vídeo iniciada! Verifique o console para o progresso.", "success")
         return redirect(url_for('generate'))
 
-    # pass user's prompt keys and templates for selects
-    keys = auth.get_prompt_keys_for_user(session['user_id']) if 'user_id' in session else []
+    # pass user's templates for select (users only see their own templates)
     templates = auth.get_templates_for_user(session['user_id']) if 'user_id' in session else []
-    return render_template('video/video_form.html', prompt_keys=keys, templates=templates)
+    return render_template('video/video_form.html', templates=templates)
 
 
 @app.route('/status')
@@ -439,6 +443,16 @@ def template_delete(tid):
     return redirect(url_for('templates_list'))
 
 
+@app.route('/terms-of-use')
+def terms_of_use():
+    return render_template('terms/terms_of_use.html')
+
+
+@app.route('/terms-of-responsibility')
+def terms_of_responsibility():
+    return render_template('terms/terms_of_responsibility.html')
+
+
 @app.route('/api/template/<int:tid>')
 def api_template(tid):
     tpl = auth.get_template(tid)
@@ -523,6 +537,112 @@ def stop_generation():
         return jsonify({'stopped': False, 'reason': 'no active generation'})
     except Exception as e:
         return jsonify({'stopped': False, 'reason': str(e)})
+
+
+@app.route('/buy')
+def buy():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    packages = auth.get_credit_packages()
+    return render_template('billing/buy.html', packages=packages)
+
+
+@app.route('/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    if 'user_id' not in session:
+        return jsonify({'error': 'not authenticated'}), 401
+    pkg_id = request.form.get('package_id') or request.json.get('package_id')
+    if not pkg_id:
+        return jsonify({'error': 'package_id required'}), 400
+    pkg = auth.get_credit_package(int(pkg_id))
+    if not pkg:
+        return jsonify({'error': 'package not found'}), 404
+    # stripe integration
+    try:
+        import stripe
+    except Exception:
+        return jsonify({'error': 'stripe library not installed'}), 500
+    if not STRIPE_SECRET_KEY:
+        return jsonify({'error': 'stripe secret key not configured'}), 500
+    stripe.api_key = STRIPE_SECRET_KEY
+    domain = BASE_URL.rstrip('/')
+    try:
+        session_obj = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            mode='payment',
+            line_items=[{
+                'price_data': {
+                    'currency': 'brl',
+                    'product_data': {'name': f"{pkg['name']} - {pkg['credits']} créditos"},
+                    'unit_amount': int(pkg['price_cents'])
+                },
+                'quantity': 1
+            }],
+            success_url=f"{domain}/dashboard?payment=success",
+            cancel_url=f"{domain}/dashboard?payment=cancel",
+            metadata={'user_id': session['user_id'], 'package_id': str(pkg['id'])}
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    # create payment record
+    try:
+        auth.create_payment(session['user_id'], pkg['id'], session_obj.id, pkg['price_cents'], pkg['credits'], status='pending')
+    except Exception:
+        pass
+
+    return redirect(session_obj.url, code=303)
+
+
+@app.route('/stripe-webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.data
+    sig_header = request.headers.get('Stripe-Signature')
+    event = None
+    try:
+        import stripe
+        stripe.api_key = STRIPE_SECRET_KEY
+        if STRIPE_WEBHOOK_SECRET and sig_header:
+            event = stripe.Webhook.construct_event(payload, sig_header, STRIPE_WEBHOOK_SECRET)
+        else:
+            # best-effort parse without verification
+            event = stripe.Event.construct_from(json.loads(payload), stripe.api_key)
+    except Exception as e:
+        print('Webhook error:', e)
+        return jsonify({'status': 'error', 'reason': str(e)}), 400
+
+    # handle checkout.session.completed
+    if event['type'] == 'checkout.session.completed':
+        session_obj = event['data']['object']
+        session_id = session_obj.get('id')
+        meta = session_obj.get('metadata', {})
+        # update payment record
+        rec = auth.update_payment_status_by_session(session_id, 'completed', metadata=session_obj)
+        # if record exists, add credits to user
+        try:
+            if rec and rec.get('user_id'):
+                pkg = auth.get_credit_package(rec.get('package_id'))
+                credits_to_add = rec.get('credits') or (pkg['credits'] if pkg else 0)
+                auth.add_credits(rec.get('user_id'), credits_to_add, action='purchase')
+        except Exception as e:
+            print('Error granting credits:', e)
+
+    return jsonify({'status': 'ok'})
+
+
+@app.route('/payments')
+def payments():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    payments = auth.get_payments_for_user(session['user_id'])
+    # attach package name
+    for p in payments:
+        try:
+            pkg = auth.get_credit_package(p.get('package_id'))
+            p['package_name'] = pkg['name'] if pkg else None
+        except Exception:
+            p['package_name'] = None
+    return render_template('billing/payments_list.html', payments=payments)
 
 
 @app.route("/preview", methods=["POST"])

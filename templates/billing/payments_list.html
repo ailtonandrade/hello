@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Pagamentos{% endblock %}
+{% block content %}
+  <div class="max-w-3xl mx-auto bg-slate-800 p-6 rounded">
+    <h1 class="text-2xl font-bold mb-4">Meus Pagamentos</h1>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="text-slate-400">
+          <tr><th class="p-2">#</th><th class="p-2">Pacote</th><th class="p-2">Créditos</th><th class="p-2">Valor</th><th class="p-2">Status</th><th class="p-2">Data</th></tr>
+        </thead>
+        <tbody>
+          {% for p in payments %}
+          <tr class="border-t border-slate-700">
+            <td class="p-2">{{ p.id }}</td>
+            <td class="p-2">{{ p.package_name if p.package_name else '-' }}</td>
+            <td class="p-2">{{ p.credits }}</td>
+            <td class="p-2">R$ {{ '%.2f' | format((p.amount_cents or 0) / 100) }}</td>
+            <td class="p-2">{{ p.status }}</td>
+            <td class="p-2">{{ p.created_at }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}

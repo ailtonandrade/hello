@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Termos de Responsabilidade — Otom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100">
+    <div class="flex flex-col md:flex-row">
+        <aside class="w-full md:w-72 bg-slate-800 p-4 md:min-h-screen">
+            <div class="mb-6">
+                <div class="text-sm text-slate-400">Conectado como</div>
+                <div class="text-lg font-semibold mt-1">{{ user.name if user is defined else 'Visitante' }}</div>
+                <div class="mt-2 flex items-center justify-between">
+                    <div class="text-sm">Créditos</div>
+                    <div class="font-bold text-emerald-400">{{ credits if credits is defined else 0 }}</div>
+                </div>
+            </div>
+
+            <nav class="flex md:flex-col gap-2 md:space-y-2 overflow-x-auto md:overflow-visible">
+                <a href="/generate" class="block px-3 py-2 rounded bg-slate-700 hover:bg-slate-600">Gerar Vídeo</a>
+                <a href="/prompt_keys" class="block px-3 py-2 rounded hover:bg-slate-700">Prompt Keys</a>
+                <a href="/templates" class="block px-3 py-2 rounded hover:bg-slate-700">Templates</a>
+                <a href="/dashboard" class="block px-3 py-2 rounded hover:bg-slate-700">Dashboard</a>
+                <a href="/logout" class="block px-3 py-2 rounded text-rose-400 hover:bg-slate-700">Sair</a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-8 relative overflow-hidden">
+            <section class="max-w-4xl mx-auto bg-slate-900/0 p-6">
+                <h1 class="text-2xl font-bold mb-4">Termos de Responsabilidade</h1>
+                <p class="mb-4">Estas diretrizes aplicam-se ao uso e às responsabilidades relacionadas ao conteúdo gerado com o Otom — AI Media Generator.</p>
+
+                <h2 class="text-xl font-semibold mt-4">1. Responsabilidade do Usuário</h2>
+                <p class="mb-2">O usuário é responsável por garantir que o conteúdo submetido e gerado esteja em conformidade com leis locais, direitos autorais e normas de terceiros. O Otom não se responsabiliza por materiais ilegais ou que violem direitos de terceiros gerados a partir de entradas do usuário.</p>
+
+                <h2 class="text-xl font-semibold mt-4">2. Conteúdo Gerado</h2>
+                <p class="mb-2">O serviço gera arquivos multimídia com base nos parâmetros e templates fornecidos. O usuário deve revisar o conteúdo antes de publicá-lo em plataformas externas.</p>
+
+                <h2 class="text-xl font-semibold mt-4">3. Limitação de Garantia</h2>
+                <p class="mb-2">O software é fornecido no estado em que se encontra; não há garantias explícitas de adequação a um propósito específico. O mantenedor não se responsabiliza por perdas decorrentes do uso do software.</p>
+
+                <h2 class="text-xl font-semibold mt-4">4. Suporte e Atualizações</h2>
+                <p class="mb-2">O repositório inclui scripts e integrações que podem exigir atualização conforme dependências do sistema. O usuário é responsável por manter o ambiente adequado.</p>
+
+            </section>
+        </main>
+    </div>
+    {% include 'partials/_footer.html' %}
+</body>
+</html>

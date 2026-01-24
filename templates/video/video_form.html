@@ -1,40 +1,53 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerador de Vídeos</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
+{% extends 'base.html' %}
+{% block title %}Gerador de Vídeos{% endblock %}
+{% block head_extras %}
     <style>
-        /* Small complement to Tailwind for consistent font-family and a subtle page gradient */
-        :root{--bg-start:#06111a; --bg-end:#081224}
-        html,body{height:100%}
-        body{font-family:Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; margin:0; padding:0; background:linear-gradient(180deg,var(--bg-start) 0%, var(--bg-end) 100%); color:#e6eef6}
-        /* Focus ring consistent color */
         .focus-ring:focus{outline:2px solid rgba(124,92,255,0.18); outline-offset:2px}
     </style>
-</head>
-<body>
-    <div class="max-w-3xl mx-auto px-4 py-8">
-        <div class="bg-slate-900/60 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-800">
-            <header class="flex items-center justify-between p-5 bg-gradient-to-r from-violet-700 to-indigo-500">
-                <div class="flex items-center gap-3">
-                    <button type="button" onclick="history.back()" class="mr-2 p-2 rounded-md bg-emerald-400 text-slate-900 hover:opacity-90 shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-                    </button>
-                    <div class="p-2 rounded-md bg-white/10">
-                        <svg class="w-7 h-7 text-emerald-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 2v6M5 6l7 6 7-6"/></svg>
-                    </div>
-                    <div>
-                        <h3 class="text-slate-50 font-bold text-lg">Gerador de Vídeos</h3>
-                        <p class="text-slate-300 text-sm">Preencha os campos e gere o vídeo — rápido e limpo</p>
-                    </div>
+{% endblock %}
+{% block content %}
+<div>
+    <div class="bg-slate-900/60 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden border border-slate-800">
+        <header class="flex items-center justify-between p-5 bg-gradient-to-r from-violet-700 to-indigo-500">
+            <div class="flex items-center gap-3">
+                <button type="button" onclick="history.back()" class="mr-2 p-2 rounded-md bg-emerald-400 text-slate-900 hover:opacity-90 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <div class="p-2 rounded-md bg-white/10">
+                    <svg class="w-7 h-7 text-emerald-300" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 2v6M5 6l7 6 7-6"/></svg>
                 </div>
-            </header>
+                <div>
+                    <h3 class="text-slate-50 font-bold text-lg">Gerador de Vídeos</h3>
+                    <p class="text-slate-300 text-sm">Preencha os campos e gere o vídeo — rápido e limpo</p>
+                </div>
+            </div>
+        </header>
 
-            <div class="p-6 space-y-6">
-                <form id="genForm">
+        <div class="p-6 space-y-6">
+            <form id="genForm">
+                    <!-- Template selector moved to top for prominence -->
+                    <div class="mb-4">
+                        <label class="text-slate-300 text-sm font-semibold">Template</label>
+                        <div class="mt-2 flex gap-3 items-center">
+                            <select id="template_select" name="template_id" class="flex-1 bg-slate-800 border border-slate-700 text-slate-100 rounded-md px-3 py-2 focus:ring-2 focus:ring-emerald-400">
+                                <option value="">— selecione —</option>
+                                {% for t in templates %}
+                                    <option value="{{ t.id }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="flex items-center gap-2">
+                                <button type="button" id="saveTemplateBtn" class="inline-flex items-center gap-2 px-2 py-1 bg-emerald-400 hover:bg-emerald-300 text-slate-900 rounded text-sm" title="Salvar template atual">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                </button>
+                                <button type="button" id="updateTemplateBtn" class="inline-flex items-center gap-2 px-2 py-1 bg-emerald-400 hover:bg-emerald-300 text-slate-900 rounded text-sm" title="Atualizar template selecionado">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6"/></svg>
+                                </button>
+                                <button type="button" id="deleteTemplateBtn" class="inline-flex items-center gap-2 px-2 py-1 bg-emerald-400 hover:bg-emerald-300 text-slate-900 rounded text-sm" title="Excluir template selecionado">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-800" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="text-slate-300 text-sm font-semibold flex items-center gap-2"><svg class="w-4 h-4 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2-2 4 4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>Velocidade da Voz</span></label>
@@ -66,26 +79,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-slate-300 text-sm font-semibold flex items-center gap-2"><svg class="w-4 h-4 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 11c1.657 0 3-1.567 3-3.5S13.657 4 12 4 9 5.567 9 7.5 10.343 11 12 11zM5 20v-2a4 4 0 014-4h6"/></svg><span>Chave de Prompt</span></label>
-                            <select id="prompt_key" name="prompt_key" class="mt-2 w-full bg-slate-800 text-slate-100 rounded-md px-3 py-2">
-                                <option value="">— selecione —</option>
-                                {% for pk in prompt_keys %}
-                                    <option value="{{ pk.id }}">{{ pk.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div>
-                            <label class="text-slate-300 text-sm font-semibold flex items-center gap-2"><svg class="w-4 h-4 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 7v10a2 2 0 002 2h14V7H3zM7 3v4"/></svg><span>Template</span></label>
-                            <select id="template_select" name="template_id" class="mt-2 w-full bg-slate-800 text-slate-100 rounded-md px-3 py-2">
-                                <option value="">— selecione —</option>
-                                {% for t in templates %}
-                                    <option value="{{ t.id }}">{{ t.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
+                    <!-- removed duplicated bottom template controls (moved to top) -->
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
@@ -166,24 +160,15 @@
                             </button>
                         </div>
                     </div>
-                </form>
-            </div>
+            </form>
         </div>
     </div>
-    <script>
-            // Load prompt key or template and populate form
-            async function loadPromptKey(pkId) {
-                if (!pkId) return;
-                try {
-                    const res = await fetch('/api/prompt_key/' + pkId);
-                    if (!res.ok) return;
-                    const j = await res.json();
-                    document.getElementById('prompt_ollama').value = j.prompt_ollama || '';
-                    document.getElementById('prompt_positive').value = j.prompt_positive || '';
-                    document.getElementById('prompt_negative').value = j.prompt_negative || '';
-                } catch (e) { console.error(e); }
-            }
+</div>
+{% endblock %}
 
+{% block scripts %}
+        <script>
+            // Load template and populate form
             async function loadTemplate(tid) {
                 if (!tid) return;
                 try {
@@ -191,7 +176,6 @@
                     if (!res.ok) return;
                     const j = await res.json();
                     const data = j.data || {};
-                    if (data.prompt_ollama) document.getElementById('prompt_ollama').value = data.prompt_ollama;
                     if (data.prompt_positive) document.getElementById('prompt_positive').value = data.prompt_positive;
                     if (data.prompt_negative) document.getElementById('prompt_negative').value = data.prompt_negative;
                     if (data.channel) document.getElementById('channel') && (document.getElementById('channel').value = data.channel);
@@ -201,10 +185,57 @@
                 } catch (e) { console.error(e); }
             }
 
-            document.getElementById('prompt_key')?.addEventListener('change', (e) => {
+            // template select -> load template when changed
+            document.getElementById('template_select')?.addEventListener('change', (e) => {
                 const v = e.target.value;
                 if (!v) return;
-                loadPromptKey(v);
+                loadTemplate(v);
+            });
+
+            // Save current form as new template
+            document.getElementById('saveTemplateBtn')?.addEventListener('click', async () => {
+                const name = prompt('Nome do template:');
+                if (!name) return;
+                const form = document.getElementById('genForm');
+                const fd = new FormData(form);
+                fd.append('name', name);
+                try {
+                    const res = await fetch('/templates/new', { method: 'POST', body: fd });
+                    if (res.ok) {
+                        alert('Template salvo');
+                        location.reload();
+                    } else {
+                        alert('Falha ao salvar template');
+                    }
+                } catch (e) { console.error(e); alert('Erro ao salvar'); }
+            });
+
+            // Update selected template with current form
+            document.getElementById('updateTemplateBtn')?.addEventListener('click', async () => {
+                const sel = document.getElementById('template_select');
+                const tid = sel && sel.value;
+                if (!tid) { alert('Selecione um template para atualizar'); return; }
+                if (!confirm('Atualizar o template selecionado com os valores atuais?')) return;
+                const form = document.getElementById('genForm');
+                const fd = new FormData(form);
+                try {
+                    const res = await fetch('/templates/' + tid + '/edit', { method: 'POST', body: fd });
+                    if (res.ok) { alert('Template atualizado'); location.reload(); }
+                    else { alert('Falha ao atualizar template'); }
+                } catch (e) { console.error(e); alert('Erro ao atualizar'); }
+            });
+
+            // Delete selected template
+            document.getElementById('deleteTemplateBtn')?.addEventListener('click', async () => {
+                const sel = document.getElementById('template_select');
+                const tid = sel && sel.value;
+                if (!tid) { alert('Selecione um template para excluir'); return; }
+                if (!confirm('Excluir o template selecionado? Esta ação não pode ser desfeita.')) return;
+                try {
+                    const res = await fetch('/templates/' + tid + '/delete', { method: 'POST' });
+                    if (res.ok) { alert('Template excluído'); location.reload(); }
+                    else { alert('Falha ao excluir template'); }
+                } catch (e) { console.error(e); alert('Erro ao excluir'); }
             });
 
             document.getElementById('template_select')?.addEventListener('change', (e) => {
@@ -394,9 +425,7 @@
                     forceCounter.textContent = forceText.value.length + '/' + MAX;
                 });
             }
-
         // Dark mode enforced by CSS variables in :root
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+{% endblock %}

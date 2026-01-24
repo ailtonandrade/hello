@@ -1,55 +1,50 @@
-<!doctype html>
-<html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Prompt Key</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-slate-900 text-slate-100 p-6">
-  <div class="max-w-2xl mx-auto">
-    <a href="/prompt_keys" class="text-slate-400">← Voltar</a>
-    <h1 class="text-2xl font-bold mt-4">{{ 'Editar' if key else 'Nova' }} Prompt Key</h1>
-    <form method="POST" class="mt-4 bg-slate-800 p-4 rounded space-y-3">
-      <label class="block">
-        <div class="text-sm text-slate-300">Nome</div>
-        <input name="name" value="{{ key.name if key }}" class="w-full mt-1 p-2 rounded bg-slate-700" />
-      </label>
-      <label class="block">
-        <div class="flex items-center justify-between">
-          <div class="text-sm text-slate-300">Prompt Ollama</div>
-          <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('prompt_ollama')">Mostrar / Ocultar</button>
-        </div>
-        <textarea id="prompt_ollama" name="prompt_ollama" rows="4" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ key.prompt_ollama if key }}</textarea>
-      </label>
-      <label class="block">
-        <div class="flex items-center justify-between">
-          <div class="text-sm text-slate-300">Prompt Positive (Comfy)</div>
-          <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('prompt_positive')">Mostrar / Ocultar</button>
-        </div>
-        <textarea id="prompt_positive" name="prompt_positive" rows="3" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ key.prompt_positive if key }}</textarea>
-      </label>
-      <label class="block">
-        <div class="flex items-center justify-between">
-          <div class="text-sm text-slate-300">Prompt Negative (Comfy)</div>
-          <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('prompt_negative')">Mostrar / Ocultar</button>
-        </div>
-        <textarea id="prompt_negative" name="prompt_negative" rows="3" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ key.prompt_negative if key }}</textarea>
-      </label>
-      <div class="flex gap-2">
-        <button class="bg-emerald-500 text-slate-900 px-3 py-2 rounded">Salvar</button>
-        <a href="/prompt_keys" class="bg-slate-700 px-3 py-2 rounded">Cancelar</a>
+{% extends 'base.html' %}
+{% block title %}Prompt Key{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <h1 class="text-2xl font-bold mt-4">{{ 'Editar' if key else 'Nova' }} Prompt Key</h1>
+  <form method="POST" class="mt-4 bg-slate-800 p-4 rounded space-y-3">
+    <label class="block">
+      <div class="text-sm text-slate-300">Nome</div>
+      <input name="name" value="{{ key.name if key }}" class="w-full mt-1 p-2 rounded bg-slate-700" />
+    </label>
+    <label class="block">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-slate-300">Prompt Ollama</div>
+        <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('prompt_ollama')">Mostrar / Ocultar</button>
       </div>
-    </form>
-  </div>
-  <script>
-    function toggleBlur(id){
-      const el = document.getElementById(id);
-      if(!el) return;
-      el.classList.toggle('blurred');
-      if(el.classList.contains('blurred')) el.style.filter='blur(6px)'; else el.style.filter='none';
-    }
-    document.querySelectorAll('.blurred').forEach(el=> el.style.filter='blur(6px)');
-  </script>
-</body>
-</html>
+      <textarea id="prompt_ollama" name="prompt_ollama" rows="4" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ key.prompt_ollama if key }}</textarea>
+    </label>
+    <label class="block">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-slate-300">Prompt Positive (Comfy)</div>
+        <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('prompt_positive')">Mostrar / Ocultar</button>
+      </div>
+      <textarea id="prompt_positive" name="prompt_positive" rows="3" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ key.prompt_positive if key }}</textarea>
+    </label>
+    <label class="block">
+      <div class="flex items-center justify-between">
+        <div class="text-sm text-slate-300">Prompt Negative (Comfy)</div>
+        <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('prompt_negative')">Mostrar / Ocultar</button>
+      </div>
+      <textarea id="prompt_negative" name="prompt_negative" rows="3" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ key.prompt_negative if key }}</textarea>
+    </label>
+    <div class="flex gap-2">
+      <button class="bg-emerald-500 text-slate-900 px-3 py-2 rounded">Salvar</button>
+      <a href="/prompt_keys" class="bg-slate-700 px-3 py-2 rounded">Cancelar</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleBlur(id){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.classList.toggle('blurred');
+    if(el.classList.contains('blurred')) el.style.filter='blur(6px)'; else el.style.filter='none';
+  }
+  document.querySelectorAll('.blurred').forEach(el=> el.style.filter='blur(6px)');
+</script>
+{% endblock %}

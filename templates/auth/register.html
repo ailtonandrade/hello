@@ -74,8 +74,9 @@
         <a href="/generate" class="text-emerald-300 hover:underline">Experimentar sem criar conta</a>
       </div>
     </div>
-  </div>
-  {% include 'partials/_modal.html' %}
+      </main>
+    </div>
+    {% include 'partials/_modal.html' %}
   {% if flash_message %}
     <div id="flash-data" class="hidden">{{ flash_message | tojson }}</div>
   {% endif %}
@@ -259,5 +260,7 @@
     try{
     }catch(e){/* ignore */}
   </script>
+</script>
+  {% include 'partials/_footer.html' %}
 </body>
 </html>

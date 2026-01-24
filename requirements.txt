@@ -18,3 +18,4 @@ torchaudio>=2.9.1
 PyJWT>=2.8.0
 
 # Observação: o projeto também inclui um pacote local `coqui-tts` na workspace (veja `pyproject.toml`).
+stripe>=5.0.0

@@ -19,3 +19,12 @@ FROM_EMAIL = os.environ.get('FROM_EMAIL', SMTP_USER or 'no-reply@example.com')
 
 # ComfyUI RPC URL (used by local ComfyUI instance)
 COMFY_URL = os.environ.get('COMFY_URL', 'http://127.0.0.1:8188')
+# Stripe configuration (set environment variables in production)
+STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
+STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
+
+# Flask secret key used for sessions. In production set SECRET_KEY or
+# FLASK_SECRET_KEY as an environment variable. The default below is
+# only suitable for local development.
+SECRET_KEY = os.environ.get('SECRET_KEY') or os.environ.get('FLASK_SECRET_KEY') or 'dev-secret-key-change-me'

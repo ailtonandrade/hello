@@ -1,0 +1,67 @@
+{% if session.get('user_id') %}
+<style>
+  /* Ensure sidebar font sizing is consistent across pages */
+  #siteSidebar { font-size: 0.875rem; }
+  #siteSidebar .text-lg { font-size: 1.125rem; }
+</style>
+<aside id="siteSidebar" class="text-sm fixed inset-y-0 left-0 z-50 w-64 transform -translate-x-full md:translate-x-0 md:static md:w-72 bg-slate-800 p-4 md:min-h-screen transition-transform duration-200 ease-in-out overflow-y-auto">
+  <div class="mb-6">
+    <div class="text-sm text-slate-400">Conectado como</div>
+    <div class="text-lg font-semibold mt-1">{{ user.name if user else 'Usuário' }}</div>
+    <div class="mt-2 flex items-center justify-between">
+      <div class="text-sm">Créditos</div>
+      <div class="font-bold text-emerald-400">{{ credits or 0 }}</div>
+    </div>
+  </div>
+
+  <nav class="flex md:flex-col gap-2 md:space-y-2 overflow-y-auto">
+    <a href="/generate" class="block px-3 py-2 rounded {% if request.path.startswith('/generate') %}bg-slate-700{% else %}hover:bg-slate-700{% endif %} transition-colors duration-150">Gerar Vídeo</a>
+    <a href="/prompt_keys" class="block px-3 py-2 rounded {% if request.path.startswith('/prompt_keys') %}bg-slate-700{% else %}hover:bg-slate-700{% endif %} transition-colors duration-150">Prompt Keys</a>
+    <a href="/templates" class="block px-3 py-2 rounded {% if request.path.startswith('/templates') %}bg-slate-700{% else %}hover:bg-slate-700{% endif %} transition-colors duration-150">Templates</a>
+    <a href="/payments" class="block px-3 py-2 rounded {% if request.path.startswith('/payments') %}bg-slate-700{% else %}hover:bg-slate-700{% endif %} transition-colors duration-150">Pagamentos</a>
+    <a href="/dashboard" class="block px-3 py-2 rounded {% if request.path == '/' or request.path.startswith('/dashboard') %}bg-slate-700{% else %}hover:bg-slate-700{% endif %} transition-colors duration-150">Dashboard</a>
+    <a href="/logout" class="block px-3 py-2 rounded text-rose-400 hover:bg-slate-700 transition-colors duration-150">Sair</a>
+  </nav>
+</aside>
+
+<!-- Mobile toggle button -->
+<button id="sidebarToggle" class="md:hidden fixed top-4 left-4 z-50 bg-emerald-400 rounded-full p-2 shadow-lg" aria-label="Abrir menu">
+  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-slate-900" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+</button>
+
+<script>
+  (function(){
+    const btn = document.getElementById('sidebarToggle');
+    const aside = document.getElementById('siteSidebar');
+    if(!btn || !aside) return;
+    // mobile: toggle transform to avoid layout shifts and horizontal scroll
+    btn.addEventListener('click', ()=>{
+      const shown = aside.classList.contains('translate-x-0');
+      if(shown){
+        aside.classList.remove('translate-x-0');
+        aside.classList.add('-translate-x-full');
+        btn.setAttribute('aria-label','Abrir menu');
+      } else {
+        aside.classList.remove('-translate-x-full');
+        aside.classList.add('translate-x-0');
+        btn.setAttribute('aria-label','Fechar menu');
+      }
+    });
+    // close sidebar when clicking outside on mobile
+    document.addEventListener('click', (e)=>{
+      if(window.innerWidth >= 768) return;
+      if(!aside.classList.contains('translate-x-0')) return;
+      const withinAside = aside.contains(e.target) || (btn && btn.contains(e.target));
+      if(!withinAside){
+        aside.classList.remove('translate-x-0');
+        aside.classList.add('-translate-x-full');
+      }
+    });
+  })();
+</script>
+{% else %}
+<!-- If not logged, show a small login button in the same place -->
+<div class="fixed top-4 left-4 z-50">
+  <a href="{{ url_for('login') }}" class="bg-emerald-400 text-slate-900 rounded-full p-2 shadow-lg">Entrar</a>
+</div>
+{% endif %}

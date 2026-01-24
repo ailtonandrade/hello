@@ -114,6 +114,30 @@ def init_db():
     )
     ''')
     c.execute('''
+    CREATE TABLE IF NOT EXISTS credit_packages (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL,
+        credits INTEGER NOT NULL,
+        price_cents INTEGER NOT NULL,
+        created_at TEXT
+    )
+    ''')
+
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS payments (
+        id INTEGER PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        package_id INTEGER,
+        stripe_session_id TEXT,
+        amount_cents INTEGER,
+        credits INTEGER,
+        status TEXT,
+        metadata TEXT,
+        created_at TEXT,
+        updated_at TEXT
+    )
+    ''')
+    c.execute('''
     CREATE TABLE IF NOT EXISTS password_resets (
         id INTEGER PRIMARY KEY,
         user_id INTEGER NOT NULL,
@@ -125,6 +149,30 @@ def init_db():
     ''')
     conn.commit()
     conn.close()
+
+    # ensure there are some default credit packages
+    try:
+        conn = get_conn()
+        c = conn.cursor()
+        existing = c.execute('SELECT COUNT(1) as cnt FROM credit_packages').fetchone()['cnt']
+        if existing == 0:
+            now = datetime.utcnow().isoformat()
+            packages = [
+                ('1000 créditos', 1000, 1000),   # R$10.00 -> 1000 cents
+                ('4000 créditos', 4000, 4000),   # R$40.00
+                ('9000 créditos', 9000, 9000),   # R$90.00
+            ]
+            for name, credits, price_cents in packages:
+                c.execute('INSERT INTO credit_packages (name, credits, price_cents, created_at) VALUES (?,?,?,?)',
+                          (name, credits, price_cents, now))
+            conn.commit()
+    except Exception:
+        pass
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 init_db()
 
@@ -393,6 +441,60 @@ def get_templates_for_user(user_id):
             d['data'] = {}
         res.append(d)
     return res
+
+
+def get_credit_packages():
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute('SELECT * FROM credit_packages ORDER BY credits ASC')
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_credit_package(pkg_id):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute('SELECT * FROM credit_packages WHERE id = ?', (pkg_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def create_payment(user_id, package_id, stripe_session_id, amount_cents, credits, status='pending', metadata=None):
+    conn = get_conn()
+    c = conn.cursor()
+    now = datetime.utcnow().isoformat()
+    meta = json.dumps(metadata) if metadata else None
+    c.execute('INSERT INTO payments (user_id, package_id, stripe_session_id, amount_cents, credits, status, metadata, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)',
+              (user_id, package_id, stripe_session_id, amount_cents, credits, status, meta, now, now))
+    conn.commit()
+    pid = c.lastrowid
+    conn.close()
+    return pid
+
+
+def update_payment_status_by_session(session_id, status, metadata=None):
+    conn = get_conn()
+    c = conn.cursor()
+    now = datetime.utcnow().isoformat()
+    meta = json.dumps(metadata) if metadata else None
+    c.execute('UPDATE payments SET status = ?, metadata = ?, updated_at = ? WHERE stripe_session_id = ?', (status, meta, now, session_id))
+    conn.commit()
+    # return updated row
+    c.execute('SELECT * FROM payments WHERE stripe_session_id = ?', (session_id,))
+    row = c.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_payments_for_user(user_id):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute('SELECT * FROM payments WHERE user_id = ? ORDER BY id DESC', (user_id,))
+    rows = c.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
 
 def get_template(tid, user_id=None):
     conn = get_conn()

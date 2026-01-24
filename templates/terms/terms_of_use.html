@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Termos de Uso — Otom</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100">
+    <div class="flex flex-col md:flex-row">
+        <aside class="w-full md:w-72 bg-slate-800 p-4 md:min-h-screen">
+            <div class="mb-6">
+                <div class="text-sm text-slate-400">Conectado como</div>
+                <div class="text-lg font-semibold mt-1">{{ user.name if user is defined else 'Visitante' }}</div>
+                <div class="mt-2 flex items-center justify-between">
+                    <div class="text-sm">Créditos</div>
+                    <div class="font-bold text-emerald-400">{{ credits if credits is defined else 0 }}</div>
+                </div>
+            </div>
+
+            <nav class="flex md:flex-col gap-2 md:space-y-2 overflow-x-auto md:overflow-visible">
+                <a href="/generate" class="block px-3 py-2 rounded bg-slate-700 hover:bg-slate-600">Gerar Vídeo</a>
+                <a href="/prompt_keys" class="block px-3 py-2 rounded hover:bg-slate-700">Prompt Keys</a>
+                <a href="/templates" class="block px-3 py-2 rounded hover:bg-slate-700">Templates</a>
+                <a href="/dashboard" class="block px-3 py-2 rounded hover:bg-slate-700">Dashboard</a>
+                <a href="/logout" class="block px-3 py-2 rounded text-rose-400 hover:bg-slate-700">Sair</a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-8 relative overflow-hidden">
+            <section class="max-w-4xl mx-auto bg-slate-900/0 p-6">
+                <h1 class="text-2xl font-bold mb-4">Termos de Uso</h1>
+                <p class="mb-4">Esses Termos de Uso descrevem as regras e responsabilidades ao usar o Otom — AI Media Generator.</p>
+
+                <h2 class="text-xl font-semibold mt-4">1. Objetivo do Serviço</h2>
+                <p class="mb-2">O sistema permite a geração de conteúdo multimídia automatizado (vídeos, legendas, áudio) a partir de entradas fornecidas pelo usuário. O fluxo principal inclui síntese de voz (TTS), geração de frames via serviços locais (ComfyUI/Stable Diffusion) e montagem com MoviePy.</p>
+
+                <h2 class="text-xl font-semibold mt-4">2. Funcionalidades</h2>
+                <ul class="list-disc ml-6 mb-2">
+                        <li>Gerar vídeos a partir de texto e templates salvos pelo usuário.</li>
+                        <li>Sintetizar narração via TTS local (Coqui ou engines configuradas).</li>
+                        <li>Gerar imagens via ComfyUI/Stable Diffusion quando configurado.</li>
+                        <li>Subir vídeos para serviços externos (ex.: YouTube) somente quando credenciais estiverem configuradas.</li>
+                </ul>
+
+                <h2 class="text-xl font-semibold mt-4">3. Uso Responsável</h2>
+                <p class="mb-2">O usuário concorda em não utilizar a plataforma para gerar conteúdo ilegal, difamatório, pornográfico ou que viole direitos autorais de terceiros. O usuário é o único responsável pelo conteúdo submetido ao sistema.</p>
+
+                <h2 class="text-xl font-semibold mt-4">4. Limitações Técnicas</h2>
+                <p class="mb-2">Algumas operações dependem de software e hardware locais (ex.: ffmpeg, GPU, serviços TTS e ComfyUI). A performance e disponibilidade podem variar conforme ambiente.</p>
+
+                <h2 class="text-xl font-semibold mt-4">5. Privacidade e Dados</h2>
+                <p class="mb-2">Os dados (templates, histórico de geração) são armazenados localmente. Não compartilhe credenciais sensíveis. Consulte a Política de Responsabilidade para mais detalhes sobre conteúdo e responsabilidade.</p>
+
+                <p class="mt-6">Última atualização: {{ "now"|replace("\n","") }}</p>
+            </section>
+        </main>
+    </div>
+    {% include 'partials/_footer.html' %}
+</body>
+</html>

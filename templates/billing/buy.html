@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Comprar Créditos{% endblock %}
+{% block content %}
+  <div class="max-w-3xl mx-auto bg-slate-800 p-6 rounded">
+    <h1 class="text-2xl font-bold mb-4">Comprar Créditos</h1>
+    <p class="text-slate-400 mb-4">Escolha um pacote e finalize o pagamento via Stripe.</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left">
+        <thead class="text-slate-400 text-sm">
+          <tr><th class="p-2">Pacote</th><th class="p-2">Créditos</th><th class="p-2">Preço</th><th class="p-2"></th></tr>
+        </thead>
+        <tbody>
+          {% for p in packages %}
+          <tr class="border-t border-slate-700">
+            <td class="p-2">{{ p.name }}</td>
+            <td class="p-2">{{ p.credits }}</td>
+            <td class="p-2">R$ {{ '%.2f' | format(p.price_cents / 100) }}</td>
+            <td class="p-2 text-right">
+              <form method="POST" action="/create-checkout-session">
+                <input type="hidden" name="package_id" value="{{ p.id }}" />
+                <button class="px-3 py-1 bg-emerald-400 text-slate-900 rounded">Comprar</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
