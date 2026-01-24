@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Registrar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-900 flex items-center justify-center">
+  <div class="w-full max-w-lg bg-slate-800 rounded-lg p-6 shadow-lg">
+    <div class="flex items-center gap-3 mb-4">
+      <svg class="w-10 h-10 text-emerald-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 20v-1a4 4 0 014-4h8a4 4 0 014 4v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <h1 class="text-xl font-semibold text-emerald-400">Criar Conta</h1>
+    </div>
+    <form method="POST" action="/register" class="grid grid-cols-1 gap-4">
+      <div>
+        <label class="text-sm text-slate-300">Nome</label>
+        <input name="name" required class="mt-1 w-full rounded bg-slate-700 p-2 text-slate-100" />
+      </div>
+      <div>
+        <label class="text-sm text-slate-300">E-mail</label>
+        <input name="email" type="email" required class="mt-1 w-full rounded bg-slate-700 p-2 text-slate-100" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm text-slate-300">Senha</label>
+          <div class="relative mt-1">
+            <input id="password" name="password" type="password" required class="w-full rounded bg-slate-700 p-2 pr-10 text-slate-100" />
+            <button type="button" id="togglePassword" class="absolute inset-y-0 right-2 flex items-center px-2 text-slate-300" aria-label="Mostrar senha"></button>
+          </div>
+        </div>
+        <div>
+          <label class="text-sm text-slate-300">Confirmar Senha</label>
+          <div class="relative mt-1">
+            <input id="confirm_password" name="confirm_password" type="password" required class="w-full rounded bg-slate-700 p-2 pr-10 text-slate-100" />
+            <button type="button" id="toggleConfirm" class="absolute inset-y-0 right-2 flex items-center px-2 text-slate-300" aria-label="Mostrar confirmar senha"></button>
+          </div>
+          <p id="passwordError" class="text-sm text-red-400 mt-1 hidden">As senhas não coincidem</p>
+          <p id="passwordStrengthError" class="text-sm text-yellow-400 mt-1 hidden">Senha precisa ter mínimo 8 caracteres, incluir pelo menos 1 número e 1 caractere especial</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-sm text-slate-300">Telefone</label>
+          <input name="phone" class="mt-1 w-full rounded bg-slate-700 p-2 text-slate-100" />
+        </div>
+        <div>
+          <label class="text-sm text-slate-300">CPF</label>
+          <input name="cpf" id="cpf_input" class="mt-1 w-full rounded bg-slate-700 p-2 text-slate-100" />
+          <p id="cpfError" class="text-sm text-red-400 mt-1 hidden">CPF inválido — máximo 11 dígitos (formato 000.000.000-00)</p>
+        </div>
+      </div>
+      <button id="registerSubmit" disabled class="w-full py-2 rounded bg-emerald-400 text-slate-900 font-semibold">Registrar</button>
+    </form>
+    <p class="mt-4 text-sm text-slate-400">Já tem conta? <a href="/login" class="text-emerald-300">Entrar</a></p>
+  </div>
+  {% include '_modal.html' %}
+  {% if flash_message %}
+    <div id="flash-data" class="hidden">{{ flash_message | tojson }}</div>
+  {% endif %}
+
+  <script>
+    (function(){
+      const eye = '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>';
+      const eyeOff = '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.995 9.995 0 012.696-4.042M3 3l18 18"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.88 9.88A3 3 0 0114.12 14.12"/></svg>';
+
+      const pwd = document.getElementById('password');
+      const cpwd = document.getElementById('confirm_password');
+      const btn = document.getElementById('togglePassword');
+      const btn2 = document.getElementById('toggleConfirm');
+
+      function setIcon(button, visible){
+        if(!button) return;
+        button.innerHTML = visible ? eyeOff : eye;
+      }
+
+      if(btn && pwd){
+        btn.addEventListener('click', ()=>{
+          const show = pwd.type === 'password';
+          pwd.type = show ? 'text' : 'password';
+          setIcon(btn, show);
+        });
+        setIcon(btn, false);
+      }
+
+      if(btn2 && cpwd){
+        btn2.addEventListener('click', ()=>{
+          const show = cpwd.type === 'password';
+          cpwd.type = show ? 'text' : 'password';
+          setIcon(btn2, show);
+        });
+        setIcon(btn2, false);
+      }
+
+      // real-time password & CPF validation
+      const submitBtn = document.getElementById('registerSubmit');
+      const passwordError = document.getElementById('passwordError');
+      const cpfError = document.getElementById('cpfError');
+      const cpfField = document.getElementById('cpf_input');
+
+      let passwordsMatch = false;
+      let cpfValid = true;
+      let passwordStrengthOk = false;
+
+      function updateSubmitState(){
+        if(submitBtn) submitBtn.disabled = !(passwordsMatch && cpfValid && passwordStrengthOk);
+      }
+
+      function checkPasswords(){
+        const a = pwd ? pwd.value : '';
+        const b = cpwd ? cpwd.value : '';
+        if(a === '' && b === ''){
+          if(passwordError) passwordError.classList.add('hidden');
+          passwordsMatch = false;
+          updateSubmitState();
+          return;
+        }
+        if(a !== b){
+          if(passwordError) passwordError.classList.remove('hidden');
+          passwordsMatch = false;
+        } else {
+          if(passwordError) passwordError.classList.add('hidden');
+          passwordsMatch = true;
+        }
+        // also check strength when password changes
+        checkPasswordStrength();
+        updateSubmitState();
+      }
+
+      function checkPasswordStrength(){
+        if(!pwd) return;
+        const v = pwd.value || '';
+        const strengthEl = document.getElementById('passwordStrengthError');
+        if(v.length === 0){
+          if(strengthEl) strengthEl.classList.add('hidden');
+          passwordStrengthOk = false;
+          updateSubmitState();
+          return;
+        }
+        const hasLen = v.length >= 8;
+        const hasNum = /\d/.test(v);
+        const hasSpecial = /[^A-Za-z0-9]/.test(v);
+        if(hasLen && hasNum && hasSpecial){
+          if(strengthEl) strengthEl.classList.add('hidden');
+          passwordStrengthOk = true;
+        } else {
+          if(strengthEl) strengthEl.classList.remove('hidden');
+          passwordStrengthOk = false;
+        }
+        updateSubmitState();
+      }
+
+      // CPF validation: allow up to 11 chars, last char may be 'x' or digit; full validation when length==11
+      function checkCPF(){
+        if(!cpfField) return;
+        const raw = cpfField.value || '';
+        const cleaned = raw.replace(/[.\-]/g,'');
+        if(cleaned === ''){
+          if(cpfError) cpfError.classList.add('hidden');
+          cpfValid = true;
+          updateSubmitState();
+          return;
+        }
+        if(cleaned.length > 11){
+          if(cpfError) cpfError.classList.remove('hidden');
+          cpfValid = false;
+          updateSubmitState();
+          return;
+        }
+        // if not complete yet, don't show error
+        if(cleaned.length < 11){
+          if(cpfError) cpfError.classList.add('hidden');
+          cpfValid = true;
+          updateSubmitState();
+          return;
+        }
+        // cleaned.length === 11 -> validate pattern: first 10 digits, last is digit or x/X
+        const ok = /^\d{10}(?:\d|[xX])$/.test(cleaned);
+        if(!ok){
+          if(cpfError) cpfError.classList.remove('hidden');
+          cpfValid = false;
+        } else {
+          if(cpfError) cpfError.classList.add('hidden');
+          cpfValid = true;
+        }
+        updateSubmitState();
+      }
+
+      if(pwd) pwd.addEventListener('input', checkPasswords);
+      if(cpwd) cpwd.addEventListener('input', checkPasswords);
+      if(cpfField) cpfField.addEventListener('input', checkCPF);
+      checkPasswords();
+      checkCPF();
+    })();
+  </script>
+  <script>
+    // input masks for BR phone and CPF
+    function maskCPF(v){
+      // allow digits and an optional trailing 'x' or 'X'
+      v = v.replace(/[^0-9xX]/g,'').slice(0,11);
+      const a = v.slice(0,3);
+      const b = v.slice(3,6);
+      const c = v.slice(6,9);
+      const d = v.slice(9); // last part (1 or 2 chars)
+      let out = '';
+      if(a) out += a;
+      if(b) out += '.' + b;
+      if(c) out += '.' + c;
+      if(d) out += '-' + d;
+      return out;
+    }
+    function maskPhone(v){
+      // keep only digits and limit to 11 (DD + 9 digits)
+      v = v.replace(/\D/g,'').slice(0,11);
+      if(v.length <= 10){
+        v = v.replace(/(\d{2})(\d)/,'($1) $2');
+        v = v.replace(/(\d{4})(\d)/,'$1-$2');
+      } else {
+        v = v.replace(/(\d{2})(\d)/,'($1) $2');
+        v = v.replace(/(\d{5})(\d)/,'$1-$2');
+      }
+      return v;
+    }
+    const phoneInput = document.querySelector('input[name="phone"]');
+    const cpfInput = document.querySelector('input[name="cpf"]');
+    if(phoneInput){
+      phoneInput.setAttribute('placeholder','(99) 99999-9999');
+      phoneInput.setAttribute('maxlength','15');
+      phoneInput.addEventListener('input', (e)=>{ e.target.value = maskPhone(e.target.value); });
+    }
+    if(cpfInput){
+      cpfInput.setAttribute('placeholder','000.000.000-0X');
+      cpfInput.setAttribute('maxlength','14');
+      cpfInput.addEventListener('input', (e)=>{ e.target.value = maskCPF(e.target.value); });
+    }
+
+    // show modal on flash messages (if server sets them into template variable `flash_message_json`)
+    try{
+      const fm = document.getElementById('flash-data');
+      if(fm){
+        const data = JSON.parse(fm.textContent || '{}');
+        if(data && data.message){
+          showModal(data.title||'Mensagem', data.message, data.icon||'ℹ️');
+        }
+      }
+    }catch(e){/* ignore */}
+  </script>
+</body>
+</html>

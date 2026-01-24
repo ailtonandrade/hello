@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Template</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100 p-6">
+  <div class="max-w-3xl mx-auto">
+    <a href="/templates" class="text-slate-400">← Voltar</a>
+    <h1 class="text-2xl font-bold mt-4">{{ 'Editar' if template else 'Novo' }} Template</h1>
+    <form method="POST" class="mt-4 bg-slate-800 p-4 rounded space-y-3">
+      <label class="block">
+        <div class="text-sm text-slate-300">Nome do Template</div>
+        <input name="name" value="{{ template.name if template }}" class="w-full mt-1 p-2 rounded bg-slate-700" />
+      </label>
+      <div class="text-sm text-slate-300">Campos do formulário (serão salvos tal como)</div>
+      <label class="block">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-slate-300">Prompt Ollama</div>
+          <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('tpl_prompt_ollama')">Mostrar / Ocultar</button>
+        </div>
+        <textarea id="tpl_prompt_ollama" name="prompt_ollama" rows="4" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ template.data.prompt_ollama if template }}</textarea>
+      </label>
+      <label class="block">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-slate-300">Prompt Positive (Comfy)</div>
+          <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('tpl_prompt_positive')">Mostrar / Ocultar</button>
+        </div>
+        <textarea id="tpl_prompt_positive" name="prompt_positive" rows="3" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ template.data.prompt_positive if template }}</textarea>
+      </label>
+      <label class="block">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-slate-300">Prompt Negative (Comfy)</div>
+          <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('tpl_prompt_negative')">Mostrar / Ocultar</button>
+        </div>
+        <textarea id="tpl_prompt_negative" name="prompt_negative" rows="3" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ template.data.prompt_negative if template }}</textarea>
+      </label>
+
+      <div class="flex gap-2">
+        <button class="bg-emerald-500 text-slate-900 px-3 py-2 rounded">Salvar Template</button>
+        <a href="/templates" class="bg-slate-700 px-3 py-2 rounded">Cancelar</a>
+      </div>
+    </form>
+  </div>
+  <script>
+    function toggleBlur(id){
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.classList.toggle('blurred');
+      if(el.classList.contains('blurred')) el.style.filter='blur(6px)'; else el.style.filter='none';
+    }
+    document.querySelectorAll('.blurred').forEach(el=> el.style.filter='blur(6px)');
+  </script>
+</body>
+</html>

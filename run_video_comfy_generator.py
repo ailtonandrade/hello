@@ -148,11 +148,15 @@ class ComfySingleFrameVideoGenerator:
     # -------------------------
     # 🚀 API pública
     # -------------------------
-    def generate(self, theme, audio_duration, prompt_positive, prompt_negative=""):
+    def generate(self, theme, audio_duration, prompt_positive, prompt_negative="", cancel_event=None):
         total_generated_time = 0
         iteration = 0
 
         while total_generated_time < audio_duration:
+            # checa cancelamento pedido
+            if cancel_event is not None and getattr(cancel_event, 'is_set', lambda: False)():
+                print("⚠️ Geração interrompida pelo usuário")
+                return None
             iteration += 1
             print(f"🎬 Gerando frame #{iteration} (tempo coberto: {total_generated_time:.2f}s / {audio_duration:.2f}s)")
 
@@ -170,6 +174,11 @@ class ComfySingleFrameVideoGenerator:
                 final_frame,
                 theme
             )
+
+            # checa cancelamento após criação do vídeo
+            if cancel_event is not None and getattr(cancel_event, 'is_set', lambda: False)():
+                print("⚠️ Geração interrompida pelo usuário (após criação de vídeo)")
+                return None
 
             total_generated_time += FINAL_TIME
 

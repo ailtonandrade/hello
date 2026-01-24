@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Prompt Keys</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100 p-6">
+  <div class="max-w-3xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold">Prompt Keys</h1>
+      <div>
+        <a href="/prompt_keys/new" class="inline-block bg-emerald-500 text-slate-900 px-3 py-2 rounded font-semibold">Nova Prompt Key</a>
+        <a href="/" class="ml-2 inline-block bg-slate-700 px-3 py-2 rounded">Voltar</a>
+      </div>
+    </div>
+
+    <div class="bg-slate-800 rounded p-4">
+      {% if keys %}
+        <ul class="space-y-3">
+          {% for k in keys %}
+            <li class="flex items-center justify-between bg-slate-700 p-3 rounded">
+              <div>
+                <div class="font-semibold">{{ k.name }}</div>
+                <div class="text-sm text-slate-400">Criado: {{ k.created_at }}</div>
+              </div>
+              <div class="flex items-center gap-2">
+                <a href="/prompt_keys/{{ k.id }}/edit" class="text-sky-400">Editar</a>
+                <form method="POST" action="/prompt_keys/{{ k.id }}/delete" onsubmit="return confirm('Remover?')">
+                  <button class="text-rose-400">Remover</button>
+                </form>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="text-slate-400">Nenhuma prompt key criada ainda.</div>
+      {% endif %}
+    </div>
+  </div>
+</body>
+</html>

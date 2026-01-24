@@ -69,7 +69,7 @@ Parâmetros e scripts principais:
 
 ## Estrutura
 
-- `audios/`, `videos/`, `images/`, `output/`: pastas para artefatos gerados.
+- `songs/`, `videos/`, `images/`, `output/`: pastas para artefatos gerados.
 - `templates/`: modelos HTML usados pela interface.
 
 ## Licença

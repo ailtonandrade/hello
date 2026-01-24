@@ -98,6 +98,13 @@
                 </div>
             </div>
             <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Progresso</label>
+                    <div class="progress" style="height:20px">
+                        <div id="progressBar" class="progress-bar" role="progressbar" style="width:0%">0%</div>
+                    </div>
+                    <div id="progressMessage" class="mt-2 text-muted">pronto</div>
+                </div>
                 {% with messages = get_flashed_messages(with_categories=true) %}
                     {% if messages %}
                         {% for category, message in messages %}
@@ -108,11 +115,51 @@
                         {% endfor %}
                     {% endif %}
                 {% endwith %}
-                <form method="POST">
+                <form id="genForm" method="POST">
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="channel" class="form-label">Canal</label>
                             <input type="text" class="form-control" id="channel" name="channel" value="parallelcuts" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="prompt_key" class="form-label">Prompt Key</label>
+                                <div>
+                                    <a href="/prompt_keys" class="small text-decoration-none text-info">Gerenciar Prompt Keys</a>
+                                </div>
+                            </div>
+                            <select id="prompt_key" name="prompt_key" class="form-select">
+                                <option value="">-- Nenhuma --</option>
+                                {% for k in prompt_keys %}
+                                <option value="{{ k.id }}">{{ k.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label for="template_select" class="form-label">Template</label>
+                                <div>
+                                    <a href="/templates" class="small text-decoration-none text-info">Gerenciar Templates</a>
+                                </div>
+                            </div>
+                            <select id="template_select" name="template_select" class="form-select">
+                                <option value="">-- Nenhum --</option>
+                                {% for t in templates %}
+                                <option value="{{ t.id }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="prompt_ollama" class="form-label">Prompt Ollama</label>
+                            <textarea class="form-control" id="prompt_ollama" name="prompt_ollama" rows="3" required>Escreva um texto inspirador e motivacional sobre fé cristã, esperança e superação, adequado para um vídeo curto no YouTube. Use uma linguagem envolvente e positiva que ressoe com o público, transmitindo uma mensagem de encorajamento e força espiritual.</textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="prompt_positive" class="form-label">Prompt Positivo Comfy</label>
+                            <textarea class="form-control" id="prompt_positive" name="prompt_positive" rows="3" required>ultra wide shot, cinematic lighting, epic composition, highly detailed, 8k, photorealistic, trending on artstation, sharp focus, dramatic lighting, intricate details, vibrant colors</textarea>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="prompt_negative" class="form-label">Prompt Negativo Comfy</label>
+                            <textarea class="form-control" id="prompt_negative" name="prompt_negative" rows="3" required>lowres, bad anatomy, error body, error hands, error fingers, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, jpeg artifacts, ugly, blurry, distorted, deformed, disfigured, mutated, mutated hands and fingers</textarea>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="theme" class="form-label">Tema</label>
@@ -127,6 +174,25 @@
                         <div class="col-md-6 mb-3">
                             <label for="voice_speed" class="form-label">Velocidade da Voz</label>
                             <input type="number" step="0.1" class="form-control" id="voice_speed" name="voice_speed" value="0.9" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="voice_pitch" class="form-label">Pitch da Voz</label>
+                            <input type="number" step="0.01" class="form-control" id="voice_pitch" name="voice_pitch" value="0.90" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="voice_volume" class="form-label">Volume da Voz</label>
+                            <input type="number" step="0.1" class="form-control" id="voice_volume" name="voice_volume" value="1.2" required>
+                        </div>
+                        <div class="col-md-4 mb-3 d-flex align-items-center">
+                            <div>
+                                <label class="form-label d-block">Efeito rádio</label>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="voice_radio_effect" name="voice_radio_effect" checked>
+                                    <label class="form-check-label" for="voice_radio_effect">Ativar</label>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="row">
@@ -173,12 +239,114 @@
                         <label for="force_text" class="form-label">Texto Forçado (opcional)</label>
                         <textarea class="form-control" id="force_text" name="force_text" rows="4"></textarea>
                     </div>
-                    <button type="submit" class="btn btn-generate btn-lg w-100">Gerar Vídeo</button>
+                    <button id="generateBtn" type="button" class="btn btn-generate btn-lg w-100">Gerar Vídeo</button>
                 </form>
             </div>
         </div>
     </div>
     <script>
+            // Load prompt key or template and populate form
+            async function loadPromptKey(pkId) {
+                if (!pkId) return;
+                try {
+                    const res = await fetch('/api/prompt_key/' + pkId);
+                    if (!res.ok) return;
+                    const j = await res.json();
+                    document.getElementById('prompt_ollama').value = j.prompt_ollama || '';
+                    document.getElementById('prompt_positive').value = j.prompt_positive || '';
+                    document.getElementById('prompt_negative').value = j.prompt_negative || '';
+                } catch (e) { console.error(e); }
+            }
+
+            async function loadTemplate(tid) {
+                if (!tid) return;
+                try {
+                    const res = await fetch('/api/template/' + tid);
+                    if (!res.ok) return;
+                    const j = await res.json();
+                    const data = j.data || {};
+                    if (data.prompt_ollama) document.getElementById('prompt_ollama').value = data.prompt_ollama;
+                    if (data.prompt_positive) document.getElementById('prompt_positive').value = data.prompt_positive;
+                    if (data.prompt_negative) document.getElementById('prompt_negative').value = data.prompt_negative;
+                    if (data.channel) document.getElementById('channel').value = data.channel;
+                    if (data.theme) document.getElementById('theme').value = data.theme;
+                    if (data.voice_name) document.getElementById('voice_name').value = data.voice_name;
+                    if (data.voice_speed) document.getElementById('voice_speed').value = data.voice_speed;
+                } catch (e) { console.error(e); }
+            }
+
+            document.getElementById('prompt_key')?.addEventListener('change', (e) => {
+                const v = e.target.value;
+                if (!v) return;
+                loadPromptKey(v);
+            });
+
+            document.getElementById('template_select')?.addEventListener('change', (e) => {
+                const v = e.target.value;
+                if (!v) return;
+                loadTemplate(v);
+            });
+
+            // Poll /status e atualiza a barra de progresso
+            function pollStatus() {
+                fetch('/status')
+                    .then(r => r.json())
+                    .then(data => {
+                        const p = Math.max(0, Math.min(100, Number(data.progress || 0)));
+                        const bar = document.getElementById('progressBar');
+                        const msg = document.getElementById('progressMessage');
+                        bar.style.width = p + '%';
+                        bar.textContent = p + '%';
+                        msg.textContent = data.message || '';
+
+                        // if finished or canceled, reset button
+                        const genBtn = document.getElementById('generateBtn');
+                        if (p === 0 || p >= 95 || (data.message || '').toLowerCase().includes('cancel')) {
+                            genBtn.textContent = 'Gerar Vídeo';
+                            genBtn.dataset.running = 'false';
+                        }
+                    })
+                    .catch(() => {});
+            }
+
+            setInterval(pollStatus, 2000);
+            pollStatus();
+
+            // Handle generate/stop toggle
+            const genForm = document.getElementById('genForm');
+            const genBtn = document.getElementById('generateBtn');
+            genBtn.dataset.running = 'false';
+
+            genBtn.addEventListener('click', (e) => {
+                const running = genBtn.dataset.running === 'true';
+                if (!running) {
+                    // start generation via fetch
+                    const form = genForm;
+                    const formData = new FormData(form);
+                    fetch('/generate', { method: 'POST', body: formData })
+                        .then(() => {
+                            genBtn.textContent = 'Interromper Geração';
+                            genBtn.dataset.running = 'true';
+                        })
+                        .catch(err => {
+                            console.error(err);
+                            alert('Falha ao iniciar geração');
+                        });
+                } else {
+                    // send stop
+                    fetch('/stop', { method: 'POST' })
+                        .then(r => r.json())
+                        .then(j => {
+                            if (j.stopped) {
+                                genBtn.textContent = 'Gerar Vídeo';
+                                genBtn.dataset.running = 'false';
+                            } else {
+                                alert('Não existe geração ativa');
+                            }
+                        });
+                }
+            });
+
         const themeToggle = document.getElementById('themeToggle');
         const root = document.documentElement;
         function playPreview() {

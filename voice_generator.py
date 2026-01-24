@@ -6,7 +6,7 @@ from tts_wrapper import CoquiTTS
 class VoiceGenerator:
     def __init__(
         self,
-        sample_rate=24000,
+        sample_rate=16000,
         speed=1.05,
         pitch=0.95,
         volume=1.15,
@@ -45,7 +45,7 @@ class VoiceGenerator:
         radio_chain = (
             "highpass=f=180,"
             "lowpass=f=6000,"
-            "acompressor=threshold=-26dB:ratio=8:attack=2:release=120:makeup=8,"
+            "acompressor=threshold=-24dB:ratio=4:attack=5:release=80,"
             "equalizer=f=250:t=q:w=1:g=-4,"
             "equalizer=f=4000:t=q:w=1:g=6,"
             "alimiter=limit=0.95"

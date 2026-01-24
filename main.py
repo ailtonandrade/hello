@@ -14,21 +14,26 @@ from run_video_comfy_generator import ComfySingleFrameVideoGenerator
 from prompts import PROMPTS
 
 # Configurações fixas
-CHANNEL = "parallelcuts"
-THEME = "pregacao"
+CHANNEL = "tomdouniverso"
+THEME = "universe_sleep"
 VOICE_NAME = "pm_alex" # deactivated
-VOICE_SPEED = 1.1
-VOICE_PITCH = 0.90
+VOICE_SPEED = 1
+VOICE_PITCH = 0.9
 VOICE_VOLUME = 1.2
 VOICE_RADIO_EFFECT = True
 SUBTITLE_WORDS_PER_LINE = 3
-SUBTITLE_FONT_SIZE = 45
+SUBTITLE_FONT_SIZE = 55
 SCREEN_ORIENTATION = "MOBILE"
 SUBTITLE_FONT_COLOR = (255, 191, 0, 200)
 SUBTITLE_FONT = "Lilita.ttf"
 FORCE_TEXT = None
-PROMPT_KEY = "pregacao_epica"
+PROMPT_KEY = "universe_sleep"
 GENERATE_NEW_FRAMES = False
+# Progress tracking (0-100)
+PROGRESS = 0
+PROGRESS_MESSAGE = "pronto"
+CANCEL_EVENT = None
+LAST_GENERATED_FILE = None
 
 def load_prompts(prompt_key):
     if prompt_key not in PROMPTS:
@@ -45,16 +50,16 @@ def load_prompts(prompt_key):
 PROMPT_OLLAMA, PROMPT_POSITIVE_COMFY, PROMPT_NEGATIVE_COMFY = load_prompts(PROMPT_KEY)
 # \\ Configurações fixas
 
-def get_text_by_ollama():
+def get_text_by_ollama(self, prompt_ollama):
     print("🧠 Enviando prompt para o Ollama...")
     print(f"⏳ [{datetime.now().strftime('%H:%M:%S')}] Aguardando resposta do modelo (gemma3:4b)...")
 
     try:
         result = subprocess.run(
             [
-                "ollama", "run", "gemma3:1b",
+                "ollama", "run", "qwen2.5:7b-instruct",
             ],
-            input=PROMPT_OLLAMA,
+            input=prompt_ollama,
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -102,91 +107,160 @@ def sanitize_Text(text):
     text = re.sub(r'(?<!\.)\.(?!\.)', ';', text)
     return text
 
-def main(channel="parallelcuts", theme="pregacao", voice_name="pm_alex", voice_speed=0.9, subtitle_words_per_line=3, subtitle_font_size=55, screen_orientation="MOBILE", subtitle_font_color=(255, 191, 0, 200), subtitle_font="Lilita.ttf", force_text=None):
+def main(
+        channel="parallelcuts",
+        theme="pregacao",
+        prompt_key=PROMPT_KEY,
+        prompt_ollama=PROMPT_OLLAMA, 
+        prompt_positive_comfy=PROMPT_POSITIVE_COMFY, 
+        prompt_negative_comfy=PROMPT_NEGATIVE_COMFY,
+        voice_name="pm_alex",
+        voice_speed=1.0,
+        voice_pitch=0.9,
+        voice_volume=1.2,
+        voice_radio_effect=True,
+        subtitle_words_per_line=3,
+        subtitle_font_size=55,
+        subtitle_font_color=(255, 191, 0, 200),
+        subtitle_font="Lilita.ttf",
+        screen_orientation="MOBILE",
+        force_text=None,
+        generate_new_frames=True,
+    ):
     """Gera vídeo completo."""
-    print("🎬 INICIANDO GERAÇÃO DE VÍDEO")
-    
-    FORCE_TEXT = get_text_by_ollama() if force_text is None else force_text
 
+    print("🎬 INICIANDO GERAÇÃO DE VÍDEO")
+
+    global PROGRESS, PROGRESS_MESSAGE
+    PROGRESS = 1
+    PROGRESS_MESSAGE = "iniciando"
+
+    # =========================
+    # TEXTO
+    # =========================
+    FORCE_TEXT = get_text_by_ollama(prompt_ollama) if force_text is None else force_text
     FORCE_TEXT = sanitize_Text(FORCE_TEXT)
+
     print(f"📝 Texto final para geração:\n{FORCE_TEXT}\n")
 
-    # Criar pasta de saída
+    PROGRESS = 5
+    PROGRESS_MESSAGE = "texto pronto"
+
+    # =========================
+    # OUTPUT
+    # =========================
     output_folder = create_output_folder()
 
-    # Gerar áudio
+    # =========================
+    # ÁUDIO
+    # =========================
     voice_gen = VoiceGenerator(
-        speed=VOICE_SPEED,
-        pitch=VOICE_PITCH,
-        volume=VOICE_VOLUME,
-        radio_fx=VOICE_RADIO_EFFECT,
-        voice_file_path="vozes/audio001.wav",
+        speed=voice_speed,
+        pitch=voice_pitch,
+        volume=voice_volume,
+        radio_fx=voice_radio_effect,
+        voice_file_path=f"vozes/{voice_name}.wav",
         language="pt"
     )
 
     audio_path = os.path.join(output_folder, "audio.wav")
-    
-    print("🎤 Gerando áudio...")
+
+    print(f"🎤 Iniciando áudio às {datetime.now().strftime('%H:%M:%S')}...")
     audio_duration = voice_gen.generate_audio(FORCE_TEXT, audio_path)
-    
-    if audio_duration == 0:
+
+    if audio_duration <= 0:
+        PROGRESS = 0
+        PROGRESS_MESSAGE = "falha no áudio"
         print("❌ Falha ao gerar áudio")
         return
-    
+
+    print(f"✅ Áudio gerado ({audio_duration:.2f}s)")
+    PROGRESS = 30
+    PROGRESS_MESSAGE = "áudio gerado"
+
+    if CANCEL_EVENT and CANCEL_EVENT.is_set():
+        PROGRESS = 0
+        PROGRESS_MESSAGE = "cancelado"
+        print("⚠️ Cancelado após áudio")
+        return
 
     # =========================
-    # VISUAL (COMFY – FRAME ÚNICO)
+    # VISUAL (COMFY)
     # =========================
-    if GENERATE_NEW_FRAMES:
+    if generate_new_frames:
         try:
             comfy_gen = ComfySingleFrameVideoGenerator()
-            print("🎨 Gerando visual base (1 frame + overlay)...")
+            print("🎨 Gerando visual base...")
+
             base_video = comfy_gen.generate(
                 theme=theme,
                 audio_duration=audio_duration,
-                prompt_positive=PROMPT_POSITIVE_COMFY,
-                prompt_negative=PROMPT_NEGATIVE_COMFY
+                prompt_positive=prompt_positive_comfy,
+                prompt_negative=prompt_negative_comfy,
             )
 
-            print(f"✅ Vídeo base gerado: {base_video}")
+            print(f"✅ Visual gerado: {base_video}")
+            PROGRESS = 60
+            PROGRESS_MESSAGE = "visual gerado"
+
+            if CANCEL_EVENT and CANCEL_EVENT.is_set():
+                PROGRESS = 0
+                PROGRESS_MESSAGE = "cancelado"
+                print("⚠️ Cancelado após visual")
+                return
 
         except Exception as e:
-            print(f"⚠️ Falha ao gerar visual via ComfyUI: {e}")
+            print(f"❌ Erro no ComfyUI: {e}")
+            PROGRESS = 0
+            PROGRESS_MESSAGE = "erro visual"
             return
     else:
-        print("ℹ️ Pulando geração de frames via ComfyUI (usar vídeos pré-gerados).")
-    
-    # Gerar vídeo
+        print("ℹ️ Usando visual pré-gerado")
+
+    # =========================
+    # VÍDEO FINAL
+    # =========================
     video_gen = VideoGenerator(
-        theme=THEME,
-        channel=CHANNEL,
+        theme=theme,
+        channel=channel,
         zoom_strength=0.025,
         grain_intensity=0.08,
         vignette_intensity=0.9,
-        screen_orientation=SCREEN_ORIENTATION,
-        subtitle_font=SUBTITLE_FONT,
-        subtitle_font_size=SUBTITLE_FONT_SIZE,
-        subtitle_words_per_line=SUBTITLE_WORDS_PER_LINE,
+        screen_orientation=screen_orientation,
+        subtitle_font=subtitle_font,
+        subtitle_font_size=subtitle_font_size,
+        subtitle_words_per_line=subtitle_words_per_line,
     )
-    
-    print(f"🎬 Gerando vídeo ({audio_duration:.1f}s)...")
-    video_path = os.path.join(output_folder, "video.mp4")
-    
-    try:
-        video_gen.generate_video(audio_path, subtitle_font_color, audio_duration, video_path, FORCE_TEXT)
 
-        
-        if os.path.exists(video_path):
-            size_mb = os.path.getsize(video_path) / (1024 * 1024)
-            print(f"\n✅ VÍDEO GERADO COM SUCESSO!")
-            print(f"📍 Local: {video_path}")
-            print(f"⏱️  Duração: {audio_duration:.1f}s")
-            print(f"📦 Tamanho: {size_mb:.1f} MB")
-        else:
-            print("❌ Vídeo não criado")
-            
-    except Exception as e:
-        print(f"❌ Erro: {e}")
+    video_path = os.path.join(output_folder, "video.mp4")
+
+    print(f"🎬 Gerando vídeo ({audio_duration:.1f}s)...")
+    video_gen.generate_video(
+        audio_path,
+        subtitle_font_color,
+        audio_duration,
+        video_path,
+        FORCE_TEXT
+    )
+
+    if os.path.exists(video_path):
+        size_mb = os.path.getsize(video_path) / (1024 * 1024)
+        print("✅ VÍDEO GERADO COM SUCESSO!")
+        print(f"📍 {video_path}")
+        print(f"⏱️ {audio_duration:.1f}s | 📦 {size_mb:.1f} MB")
+
+        try:
+            LAST_GENERATED_FILE = video_path
+        except Exception:
+            pass
+
+        PROGRESS = 100
+        PROGRESS_MESSAGE = "concluído"
+    else:
+        PROGRESS = 0
+        PROGRESS_MESSAGE = "erro final"
+        print("❌ Vídeo não foi criado")
+
 
 
 def cleanup_temp_files():
@@ -274,22 +348,45 @@ def instagram_upload(theme, channel, screen_orientation):
 
 
 if __name__ == "__main__":
-    start_time = time.time()  # ⏱️ início
+    while True:
+        start_time = time.time()  # ⏱️ início
+        try:
+            main(
+                channel=CHANNEL,
+                theme=THEME,
+                prompt_key=PROMPT_KEY,
+                prompt_ollama=PROMPT_OLLAMA,
+                prompt_positive_comfy=PROMPT_POSITIVE_COMFY,
+                prompt_negative_comfy=PROMPT_NEGATIVE_COMFY,
+                voice_name=VOICE_NAME,
+                voice_speed=VOICE_SPEED,
+                voice_pitch=VOICE_PITCH,
+                voice_volume=VOICE_VOLUME,
+                voice_radio_effect=VOICE_RADIO_EFFECT,
+                subtitle_words_per_line=SUBTITLE_WORDS_PER_LINE,
+                subtitle_font_size=SUBTITLE_FONT_SIZE,
+                subtitle_font_color=SUBTITLE_FONT_COLOR,
+                subtitle_font=SUBTITLE_FONT,
+                screen_orientation=SCREEN_ORIENTATION,
+                force_text=FORCE_TEXT,
+                generate_new_frames=GENERATE_NEW_FRAMES,
+            )
+            
+            youtube_upload(THEME, CHANNEL, SCREEN_ORIENTATION)
+            # instagram_upload("pregacao", "parallelcuts", "MOBILE")
 
-    try:
-        main()
-        youtube_upload("pregacao", "parallelcuts", "MOBILE")
-        # instagram_upload("pregacao", "parallelcuts", "MOBILE")
+        except Exception as e:
+            print(f"❌ Erro: {e}")
 
-    except Exception as e:
-        print(f"❌ Erro: {e}")
+        finally:
+            cleanup_temp_files()
 
-    finally:
-        cleanup_temp_files()
+            elapsed = time.time() - start_time
+            minutes = int(elapsed // 60)
+            seconds = int(elapsed % 60)
 
-        elapsed = time.time() - start_time
-        minutes = int(elapsed // 60)
-        seconds = int(elapsed % 60)
+            print("🧹 Limpeza concluída")
+            print(f"⏱️ Tempo total de execução: {minutes}m {seconds}s")
 
-        print("🧹 Limpeza concluída")
-        print(f"⏱️ Tempo total de execução: {minutes}m {seconds}s")
+        #pausar por 30 minutos
+        time.sleep(30*60)
