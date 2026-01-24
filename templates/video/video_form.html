@@ -90,15 +90,9 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="text-slate-300 text-sm font-semibold flex items-center gap-2"><svg class="w-4 h-4 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 1v22M4 7h4v10H4zM16 7h4v10h-4z"/></svg><span>Voz</span></label>
-                            <input id="voice_name" name="voice_name" class="mt-2 w-full bg-slate-800 text-slate-100 rounded-md px-3 py-2 focus-ring" value="Thom" />
-                        </div>
-                        <div>
-                            <!-- Removed duplicate numeric input; single slider used above. Keep placeholder for alignment. -->
-                            <div class="text-slate-400 text-sm mt-2">Ajuste fino com o slider acima.</div>
-                        </div>
-                        <div>
-                            <label class="text-slate-300 text-sm font-semibold flex items-center gap-2"><svg class="w-4 h-4 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11 5L6 9H2v6h4l5 4V5z M19 8a4 4 0 010 8"/></svg><span>Volume (número)</span></label>
-                            <input type="number" step="0.1" class="mt-2 w-full bg-slate-800 text-slate-100 rounded-md px-3 py-2 focus-ring" id="voice_volume" name="voice_volume" value="1.2" required>
+                            <select id="voice_name" name="voice_name" class="mt-2 w-full bg-slate-800 text-slate-100 rounded-md px-3 py-2 focus-ring">
+                                <option value="Thom">Thom</option>
+                            </select>
                         </div>
                     </div>
 
@@ -151,7 +145,8 @@
 
                     <div class="mt-4">
                         <label class="text-slate-300 text-sm font-semibold">Texto Narração</label>
-                        <textarea class="mt-2 w-full bg-slate-800 text-slate-100 rounded-md px-3 py-2" id="force_text" name="force_text" rows="4" placeholder="Se preenchido, será usado como texto da narração"></textarea>
+                        <textarea class="mt-2 w-full bg-slate-800 text-slate-100 rounded-md px-3 py-2" id="force_text" name="force_text" rows="4" maxlength="200" placeholder="Se preenchido, será usado como texto da narração"></textarea>
+                        <div class="mt-2 text-slate-400 text-xs text-right" id="force_text_counter">0/200</div>
                     </div>
 
                     <div class="mt-6 flex flex-col md:flex-row items-center gap-4">
@@ -160,7 +155,9 @@
                                 <div id="progressBar" class="h-3 bg-gradient-to-r from-emerald-400 to-cyan-400" style="width:0%"></div>
                                 <div id="progressPct" class="absolute inset-0 flex items-center justify-center text-xs font-mono text-slate-100">0%</div>
                             </div>
-                            <div class="mt-2 text-slate-300 text-sm" id="progressMessage">Pronto</div>
+                            <div class="mt-2 text-slate-300 text-sm">
+                                <div id="progressMessage"></div>
+                            </div>
                         </div>
                         <div class="w-full md:w-48">
                             <button id="generateBtn" type="button" class="w-full py-3 bg-emerald-400 hover:bg-emerald-500 active:scale-95 transform-gpu text-slate-900 font-semibold rounded-lg shadow-lg flex items-center justify-center gap-2">
@@ -247,20 +244,29 @@
                 if (hidden) hidden.value = v + '.ttf';
             });
 
-            // Poll /status e atualiza a barra de progresso
+            // Poll /status e atualiza a barra de progresso (exibe % e mensagem)
             function pollStatus() {
                 fetch('/status')
                     .then(r => r.json())
                     .then(data => {
                         const p = Math.max(0, Math.min(100, Number(data.progress || 0)));
                         const bar = document.getElementById('progressBar');
+                        const pct = document.getElementById('progressPct');
                         const msg = document.getElementById('progressMessage');
-                        if (bar) { bar.style.width = p + '%'; bar.textContent = p + '%'; }
-                        if (msg) msg.textContent = data.message || '';
+                        if (bar) { bar.style.width = p + '%'; }
+                        if (pct) pct.textContent = p + '%';
+
+                        // mostrar "Pronto" somente quando finalizado
+                        const messageLower = (data.message || '').toLowerCase();
+                        const finished = p >= 100 || messageLower.includes('finished') || messageLower.includes('conclu') || messageLower.includes('pronto') || messageLower.includes('done');
+                        if (msg) msg.textContent = finished ? 'Pronto' : '';
 
                         const genBtn = document.getElementById('generateBtn');
                         if (genBtn) {
-                            if (p === 0 || p >= 95 || (data.message || '').toLowerCase().includes('cancel')) {
+                            if (!finished && (p === 0 || p < 95) && !messageLower.includes('cancel')) {
+                                // still running or idle - keep label state
+                            } else {
+                                // finalize button when finished or cancelled/high progress
                                 genBtn.textContent = 'Gerar Vídeo';
                                 genBtn.dataset.running = 'false';
                             }
@@ -307,11 +313,14 @@
                 }
             });
 
-            // volume range sync
+            // volume range sync (single range) -> update hidden input and display
             const volRange = document.getElementById('voice_volume_range');
             const volHidden = document.getElementById('voice_volume');
             const volDisplay = document.getElementById('voice_volume_display');
             if (volRange) {
+                const initV = Number(volRange.value).toFixed(1);
+                if (volHidden) volHidden.value = initV;
+                if (volDisplay) volDisplay.textContent = initV;
                 volRange.addEventListener('input', (e) => {
                     const v = Number(e.target.value).toFixed(1);
                     if (volHidden) volHidden.value = v;
@@ -333,6 +342,7 @@
                         if(speedHidden) speedHidden.value = v;
                         if(speedDisplay) speedDisplay.textContent = v;
                     });
+                }
 
             // color picker sync -> update hidden RGBA inputs
             function hexToRgb(hex) {
@@ -369,13 +379,21 @@
             // init
             updateColorFromPicker();
 
-            // subtitle font select sync
-            const ssel2 = document.getElementById('subtitle_font_select');
-            ssel2?.addEventListener('change', (e) => {
-                const v = e.target.value || 'Lilita';
-                const hidden = document.getElementById('subtitle_font');
-                if (hidden) hidden.value = v + '.ttf';
-            });
+            // (subtitle font select handler defined earlier)
+
+            // force_text char limit and counter (200 chars)
+            const forceText = document.getElementById('force_text');
+            const forceCounter = document.getElementById('force_text_counter');
+            if (forceText && forceCounter) {
+                const MAX = 200;
+                forceCounter.textContent = (forceText.value || '').length + '/' + MAX;
+                forceText.addEventListener('input', (e) => {
+                    if (forceText.value.length > MAX) {
+                        forceText.value = forceText.value.substring(0, MAX);
+                    }
+                    forceCounter.textContent = forceText.value.length + '/' + MAX;
+                });
+            }
 
         // Dark mode enforced by CSS variables in :root
     </script>

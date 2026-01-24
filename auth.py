@@ -67,10 +67,18 @@ def init_db():
         password TEXT NOT NULL,
         phone TEXT NOT NULL,
         cpf TEXT NOT NULL,
+        is_admin INTEGER DEFAULT 0,
         credits INTEGER DEFAULT 0,
         created_at TEXT
     )
     ''')
+    # ensure older DBs get the is_admin column if it's missing
+    try:
+        cols = [r[1] for r in c.execute("PRAGMA table_info(users)").fetchall()]
+        if 'is_admin' not in cols:
+            c.execute('ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0')
+    except Exception:
+        pass
     # ensure cpf is unique
     c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_cpf ON users(cpf)')
     # ensure phone is unique
@@ -140,8 +148,9 @@ def create_user(name, email, password, phone, cpf):
     hashed = generate_password_hash(password)
     now = datetime.utcnow().isoformat()
     try:
-        c.execute('INSERT INTO users (name,email,password,phone,cpf,credits,created_at) VALUES (?,?,?,?,?,?,?)',
-                  (name, email, hashed, phone, cpf, 0, now))
+        # new users are non-admin by default (is_admin = 0)
+        c.execute('INSERT INTO users (name,email,password,phone,cpf,is_admin,credits,created_at) VALUES (?,?,?,?,?,?,?,?)',
+                  (name, email, hashed, phone, cpf, 0, 0, now))
         conn.commit()
         return c.lastrowid
     except sqlite3.IntegrityError as e:
@@ -191,9 +200,22 @@ def add_credits(user_id, amount, action='purchase'):
 def consume_credits(user_id, amount, action='generation'):
     conn = get_conn()
     c = conn.cursor()
-    c.execute('SELECT credits FROM users WHERE id = ?', (user_id,))
+    c.execute('SELECT credits, is_admin FROM users WHERE id = ?', (user_id,))
     row = c.fetchone()
-    if not row or row['credits'] < amount:
+    if not row:
+        conn.close()
+        return None
+    # admins have effectively infinite credits — allow generation without consuming
+    if row['is_admin']:
+        now = datetime.utcnow().isoformat()
+        c.execute('INSERT INTO history (user_id, action, credits_change, file_path, created_at) VALUES (?,?,?,?,?)',
+                  (user_id, action, 0, None, now))
+        conn.commit()
+        hid = c.lastrowid
+        conn.close()
+        return hid
+    # non-admins must have enough credits
+    if row['credits'] < amount:
         conn.close()
         return None
     c.execute('UPDATE users SET credits = credits - ? WHERE id = ?', (amount, user_id))
@@ -223,10 +245,15 @@ def get_history_for_user(user_id, limit=50):
 def get_credits(user_id):
     conn = get_conn()
     c = conn.cursor()
-    c.execute('SELECT credits FROM users WHERE id = ?', (user_id,))
+    c.execute('SELECT credits, is_admin FROM users WHERE id = ?', (user_id,))
     row = c.fetchone()
     conn.close()
-    return row['credits'] if row else 0
+    if not row:
+        return 0
+    # display a very large number for admins to represent 'infinite' credits
+    if row['is_admin']:
+        return 999999999
+    return row['credits']
 
 
 def create_password_reset_for_email(email, expire_minutes=15):
