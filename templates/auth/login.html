@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Entrar</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* blob animation used by multiple pages */
+    @keyframes blob {
+      0% { transform: translate(0px, 0px) scale(1); }
+      33% { transform: translate(20px, -10px) scale(1.05); }
+      66% { transform: translate(-10px, 20px) scale(0.95); }
+      100% { transform: translate(0px, 0px) scale(1); }
+    }
+    .animate-blob { animation: blob 8s infinite; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-900 flex items-center justify-center">
+  <!-- Decorative background blobs -->
+  <div class="absolute inset-0 -z-10 pointer-events-none">
+    <div class="absolute -left-16 -top-16 w-72 h-72 bg-emerald-500/20 rounded-full filter blur-3xl animate-blob" style="animation-duration:9s"></div>
+    <div class="absolute right-0 -top-8 w-48 h-48 bg-emerald-400/10 rounded-full filter blur-2xl animate-blob" style="animation-duration:11s; animation-delay:2s"></div>
+  </div>
+
+  <div class="w-full sm:max-w-md mx-4 sm:mx-auto bg-slate-800 rounded-lg p-6 sm:p-8 shadow-lg relative z-10">
+    <div class="text-center mb-2">
+      <div class="inline-block bg-emerald-500/5 px-3 py-1 rounded-full text-emerald-300 text-sm font-medium">Novo · Teste grátis</div>
+    </div>
+    <div class="text-center mb-4">
+      <div class="flex items-center justify-center gap-3">
+        <!-- Provisional logo -->
+        <svg class="w-12 h-12 text-emerald-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="3" stroke="currentColor" stroke-width="1.5"/><path d="M4 20v-1a8 8 0 018-8h0a8 8 0 018 8v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="text-left">
+            <div class="text-2xl sm:text-3xl font-bold text-emerald-400">Otom</div>
+            <div class="text-sm text-emerald-300">AI Media Generator — vídeo & voz automatizados</div>
+          </div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3 mb-2">
+      <h1 class="text-xl font-semibold text-emerald-400">Entrar</h1>
+    </div>
+      <p class="text-sm sm:text-base text-slate-400 mb-4">Acesse sua conta para criar, salvar e publicar vídeos automáticos com IA.</p>
+    <form method="POST" action="/login" class="space-y-4">
+      <div>
+        <label class="block text-sm text-slate-300">E-mail</label>
+        <input name="email" type="email" required class="mt-1 w-full rounded bg-slate-700 p-2 text-slate-100" />
+      </div>
+      <div>
+        <label class="block text-sm text-slate-300">Senha</label>
+        <div class="relative mt-1">
+          <input id="login_password" name="password" type="password" required class="w-full rounded bg-slate-700 p-2 pr-10 text-slate-100" />
+          <button type="button" id="toggleLoginPassword" class="absolute inset-y-0 right-2 flex items-center px-2 text-slate-300" aria-label="Mostrar senha"></button>
+        </div>
+        <div class="flex justify-end mt-2">
+          <a href="{{ url_for('forgot_password') }}" class="text-sm text-emerald-300 hover:underline">Esqueci a senha</a>
+        </div>
+      </div>
+      <button class="w-full py-2 rounded bg-emerald-400 text-slate-900 font-semibold">Entrar</button>
+    </form>
+    <div class="mt-4 flex flex-col sm:flex-row items-center justify-between text-sm gap-2">
+      <div class="text-slate-400">Não tem conta? <a href="/register" class="text-emerald-300">Registre-se</a></div>
+      <div>
+        <a href="/generate" class="text-emerald-300 hover:underline">Experimentar</a>
+      </div>
+    </div>
+  </div>
+  {% include 'partials/_modal.html' %}
+  {% if flash_message %}
+    <div id="flash-data" class="hidden">{{ flash_message | tojson }}</div>
+  {% endif %}
+
+  <script>
+    (function(){
+      const eye = '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>';
+      const eyeOff = '<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.995 9.995 0 012.696-4.042M3 3l18 18"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.88 9.88A3 3 0 0114.12 14.12"/></svg>';
+
+      const pwd = document.getElementById('login_password');
+      const btn = document.getElementById('toggleLoginPassword');
+      function setIcon(button, visible){ if(!button) return; button.innerHTML = visible ? eyeOff : eye; }
+      if(btn && pwd){
+        btn.addEventListener('click', ()=>{
+          const show = pwd.type === 'password';
+          pwd.type = show ? 'text' : 'password';
+          setIcon(btn, show);
+        });
+        setIcon(btn, false);
+      }
+    })();
+    // show modal on server-side flash payload (rendered into #flash-data)
+    try{
+      const fm = document.getElementById('flash-data');
+      if(fm){
+        const data = JSON.parse(fm.textContent || '{}');
+        if(data && data.message){
+          showModal(data.title||'Mensagem', data.message, data.icon||'ℹ️');
+        }
+      }
+    }catch(e){/* ignore */}
+  </script>
+</body>
+</html>

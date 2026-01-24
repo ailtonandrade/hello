@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes blob { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(20px,-10px) scale(1.05)} 66%{transform:translate(-10px,20px) scale(0.95)} 100%{transform:translate(0,0) scale(1)} }
+    .animate-blob { animation: blob 9s infinite; }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100">
+  <div class="flex flex-col md:flex-row">
+    <!-- Sidebar -->
+    <aside class="w-full md:w-72 bg-slate-800 p-4 md:min-h-screen">
+      <div class="mb-6">
+        <div class="text-sm text-slate-400">Conectado como</div>
+        <div class="text-lg font-semibold mt-1">{{ user.name }}</div>
+        <div class="mt-2 flex items-center justify-between">
+          <div class="text-sm">Créditos</div>
+          <div class="font-bold text-emerald-400">{{ credits }}</div>
+        </div>
+        {% if credits < 1 %}
+        <div class="mt-3">
+          <a href="/dashboard" class="block bg-emerald-400 text-slate-900 text-center py-2 rounded font-semibold">Comprar Créditos</a>
+        </div>
+        {% endif %}
+      </div>
+
+      <nav class="flex md:flex-col gap-2 md:space-y-2 overflow-x-auto md:overflow-visible">
+        <a href="/generate" class="block px-3 py-2 rounded bg-slate-700 hover:bg-slate-600">Gerar Vídeo</a>
+        <a href="/prompt_keys" class="block px-3 py-2 rounded hover:bg-slate-700">Prompt Keys</a>
+        <a href="/templates" class="block px-3 py-2 rounded hover:bg-slate-700">Templates</a>
+        <a href="/" class="block px-3 py-2 rounded hover:bg-slate-700">Dashboard</a>
+        <a href="/logout" class="block px-3 py-2 rounded text-rose-400 hover:bg-slate-700">Sair</a>
+      </nav>
+    </aside>
+
+    <!-- Main (landing-style dashboard) -->
+    <main class="flex-1 p-8 relative overflow-hidden">
+      <!-- Decorative background blobs -->
+      <div class="absolute -z-10 inset-0 pointer-events-none">
+        <div class="absolute -left-20 -top-20 w-80 h-80 bg-emerald-500/20 rounded-full filter blur-3xl animate-blob" style="animation-duration:8s"></div>
+        <div class="absolute right-0 -top-8 w-64 h-64 bg-emerald-400/10 rounded-full filter blur-2xl animate-blob" style="animation-duration:10s; animation-delay:2s"></div>
+      </div>
+
+      <!-- Hero -->
+      <section class="max-w-6xl mx-auto mb-8">
+        <div class="bg-gradient-to-r from-slate-800/60 via-slate-800 to-slate-900/60 rounded-lg p-8 shadow-lg">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <h1 class="text-3xl md:text-4xl font-extrabold text-emerald-400">Otom — AI Media Generator</h1>
+              <p class="mt-2 text-slate-300 max-w-xl">Crie vídeos curtos com inteligência artificial, legendas dinâmicas e voz sintetizada — tudo automatizado. Rápido para testar, escalável para produção.</p>
+              <div class="mt-4 flex flex-wrap gap-3">
+                <a href="/generate" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-400 text-slate-900 rounded-md font-semibold shadow hover:scale-[1.02] transition">Gerar Vídeo</a>
+                <a href="/dashboard" class="inline-flex items-center gap-2 px-4 py-2 border border-emerald-400 text-emerald-300 rounded-md hover:bg-emerald-500/10 transition">Comprar Créditos</a>
+                <a href="/prompt_keys" class="inline-flex items-center gap-2 px-4 py-2 text-slate-100 bg-slate-700 rounded-md hover:bg-slate-600 transition">Prompt Keys</a>
+              </div>
+            </div>
+            <div class="bg-slate-800 p-4 rounded-md shadow-sm w-full md:w-80">
+              <div class="text-sm text-slate-400">Seu saldo</div>
+              <div class="mt-2 text-3xl font-bold text-emerald-400">{{ credits }}</div>
+              <div class="mt-4">
+                <a href="/generate" class="block text-center py-2 rounded bg-emerald-400 text-slate-900 font-semibold">Usar Créditos</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Features / CTAs -->
+      <section class="max-w-6xl mx-auto mb-8">
+        <h3 class="text-xl font-semibold text-emerald-300 mb-4">Funcionalidades</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div class="p-4 bg-slate-800 rounded-lg shadow hover:scale-[1.02] transition">
+            <div class="flex items-center gap-3">
+              <svg class="w-8 h-8 text-emerald-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 4v16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 12h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div>
+                <div class="font-semibold text-slate-100">Geração automatizada</div>
+                <div class="text-sm text-slate-400">Crie vídeos com prompts predefinidos ou personalizados.</div>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 bg-slate-800 rounded-lg shadow hover:scale-[1.02] transition">
+            <div class="flex items-center gap-3">
+              <svg class="w-8 h-8 text-emerald-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 5v14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div>
+                <div class="font-semibold text-slate-100">Voz e legendas</div>
+                <div class="text-sm text-slate-400">Sintetize vozes e gere legendas sincronizadas automaticamente.</div>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 bg-slate-800 rounded-lg shadow hover:scale-[1.02] transition">
+            <div class="flex items-center gap-3">
+              <svg class="w-8 h-8 text-emerald-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 21V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div>
+                <div class="font-semibold text-slate-100">Integração YouTube</div>
+                <div class="text-sm text-slate-400">Publique automaticamente (configurar credenciais).</div>
+              </div>
+            </div>
+          </div>
+          <div class="p-4 bg-slate-800 rounded-lg shadow hover:scale-[1.02] transition">
+            <div class="flex items-center gap-3">
+              <svg class="w-8 h-8 text-emerald-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7l3-7z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div>
+                <div class="font-semibold text-slate-100">Templates</div>
+                <div class="text-sm text-slate-400">Salve presets e reutilize fluxos de criação.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- History (kept below) -->
+      <section class="max-w-4xl mx-auto">
+        <h2 class="text-2xl font-bold mb-4">Histórico</h2>
+        <div class="bg-slate-800 rounded p-4">
+          {% if history %}
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm text-left">
+              <thead class="text-slate-400 text-xs uppercase">
+                <tr><th class="p-2">#</th><th class="p-2">Ação</th><th class="p-2">Créditos</th><th class="p-2">Arquivo</th><th class="p-2">Data</th></tr>
+              </thead>
+              <tbody>
+                {% for h in history %}
+                <tr class="border-t border-slate-700">
+                  <td class="p-2 align-top">{{ h.id }}</td>
+                  <td class="p-2 align-top">{{ h.action }}</td>
+                  <td class="p-2 align-top">{{ h.credits_change }}</td>
+                  <td class="p-2 align-top">{% if h.file_path %}<a class="text-emerald-300" href="/download/{{ h.id }}">baixar</a>{% else %}-{% endif %}</td>
+                  <td class="p-2 align-top">{{ h.created_at }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+            <div class="text-slate-400">Nenhuma atividade no histórico.</div>
+          {% endif %}
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

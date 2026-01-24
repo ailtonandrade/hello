@@ -1,6 +1,8 @@
 import sqlite3
 import os
 import jwt
+import random
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from datetime import timedelta
 from pathlib import Path
 from datetime import datetime
@@ -19,19 +21,37 @@ JWT_ALGORITHM = 'HS256'
 JWT_EXP_SECONDS = int(os.environ.get('JWT_EXP_SECONDS', 60*60*24))
 
 def create_jwt(user_id):
-    now = datetime.utcnow()
-    payload = {
-        'sub': user_id,
-        'iat': int(now.timestamp()),
-        'exp': int((now + timedelta(seconds=JWT_EXP_SECONDS)).timestamp())
-    }
-    token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
-    return token
+    # Prefer PyJWT when available (provides standard JWT encoding).
+    try:
+        if hasattr(jwt, 'encode'):
+            now = datetime.utcnow()
+            payload = {
+                'sub': user_id,
+                'iat': int(now.timestamp()),
+                'exp': int((now + timedelta(seconds=JWT_EXP_SECONDS)).timestamp())
+            }
+            return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    except Exception:
+        pass
+    # Fallback: use itsdangerous URLSafeTimedSerializer for signed tokens
+    s = URLSafeTimedSerializer(JWT_SECRET)
+    return s.dumps({'sub': user_id})
 
 def verify_jwt(token):
+    # Try PyJWT decode first if available
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        return payload
+        if hasattr(jwt, 'decode'):
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            return payload
+    except Exception:
+        pass
+    # Fallback: itsdangerous (uses max_age)
+    try:
+        s = URLSafeTimedSerializer(JWT_SECRET)
+        data = s.loads(token, max_age=JWT_EXP_SECONDS)
+        return data
+    except (BadSignature, SignatureExpired):
+        return None
     except Exception:
         return None
 
@@ -82,6 +102,16 @@ def init_db():
         user_id INTEGER NOT NULL,
         name TEXT NOT NULL,
         data TEXT,
+        created_at TEXT
+    )
+    ''')
+    c.execute('''
+    CREATE TABLE IF NOT EXISTS password_resets (
+        id INTEGER PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        token TEXT NOT NULL,
+        expires_at TEXT NOT NULL,
+        used INTEGER DEFAULT 0,
         created_at TEXT
     )
     ''')
@@ -197,6 +227,70 @@ def get_credits(user_id):
     row = c.fetchone()
     conn.close()
     return row['credits'] if row else 0
+
+
+def create_password_reset_for_email(email, expire_minutes=15):
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute('SELECT id FROM users WHERE email = ?', (email,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        raise ValueError('Email não encontrado')
+    user_id = row['id']
+    # generate 5-digit token
+    token = f"{random.randint(0,99999):05d}"
+    now = datetime.utcnow()
+    expires_at = (now + timedelta(minutes=expire_minutes)).isoformat()
+    created_at = now.isoformat()
+    c.execute('INSERT INTO password_resets (user_id, token, expires_at, used, created_at) VALUES (?,?,?,?,?)',
+              (user_id, token, expires_at, 0, created_at))
+    conn.commit()
+    conn.close()
+    return token
+
+
+def verify_and_consume_password_reset(email, token):
+    # returns user_id if token valid and marks it used, otherwise None
+    conn = get_conn()
+    c = conn.cursor()
+    c.execute('SELECT id FROM users WHERE email = ?', (email,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return None
+    user_id = row['id']
+    now = datetime.utcnow().isoformat()
+    c.execute('SELECT id, expires_at, used FROM password_resets WHERE user_id = ? AND token = ? ORDER BY id DESC LIMIT 1', (user_id, token))
+    pr = c.fetchone()
+    if not pr:
+        conn.close()
+        return None
+    if pr['used']:
+        conn.close()
+        return None
+    try:
+        exp = pr['expires_at']
+        if datetime.fromisoformat(exp) < datetime.utcnow():
+            conn.close()
+            return None
+    except Exception:
+        conn.close()
+        return None
+    # mark used
+    c.execute('UPDATE password_resets SET used = 1 WHERE id = ?', (pr['id'],))
+    conn.commit()
+    conn.close()
+    return user_id
+
+
+def set_password(user_id, new_password):
+    conn = get_conn()
+    c = conn.cursor()
+    hashed = generate_password_hash(new_password)
+    c.execute('UPDATE users SET password = ? WHERE id = ?', (hashed, user_id))
+    conn.commit()
+    conn.close()
 
 
 import json

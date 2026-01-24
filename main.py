@@ -16,7 +16,7 @@ from prompts import PROMPTS
 # Configurações fixas
 CHANNEL = "tomdouniverso"
 THEME = "universe_sleep"
-VOICE_NAME = "pm_alex" # deactivated
+VOICE_NAME = "Thom" # deactivated
 VOICE_SPEED = 1
 VOICE_PITCH = 0.9
 VOICE_VOLUME = 1.2
@@ -50,7 +50,7 @@ def load_prompts(prompt_key):
 PROMPT_OLLAMA, PROMPT_POSITIVE_COMFY, PROMPT_NEGATIVE_COMFY = load_prompts(PROMPT_KEY)
 # \\ Configurações fixas
 
-def get_text_by_ollama(self, prompt_ollama):
+def get_text_by_ollama(prompt_ollama):
     print("🧠 Enviando prompt para o Ollama...")
     print(f"⏳ [{datetime.now().strftime('%H:%M:%S')}] Aguardando resposta do modelo (gemma3:4b)...")
 
@@ -114,7 +114,7 @@ def main(
         prompt_ollama=PROMPT_OLLAMA, 
         prompt_positive_comfy=PROMPT_POSITIVE_COMFY, 
         prompt_negative_comfy=PROMPT_NEGATIVE_COMFY,
-        voice_name="pm_alex",
+        voice_name="Thom",
         voice_speed=1.0,
         voice_pitch=0.9,
         voice_volume=1.2,

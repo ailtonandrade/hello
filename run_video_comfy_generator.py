@@ -6,13 +6,13 @@ import random
 import shutil
 import subprocess
 from pathlib import Path
+from config import COMFY_URL
 
 
 # =========================
 # CONFIGURAÇÕES
 # =========================
 
-COMFY_URL = "http://127.0.0.1:8188"
 WORKFLOW_TEXT2IMG = Path("../stable-difusion-image/workflow_text2img.json")
 
 COMFY_INPUT = Path("../stable-difusion-image/ComfyUI/input")

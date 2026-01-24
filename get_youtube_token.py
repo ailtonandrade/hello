@@ -10,6 +10,7 @@ import json
 import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import urllib.parse
+from config import YOUTUBE_REDIRECT_URI
 
 # Importar configurações
 try:
@@ -20,7 +21,7 @@ except ImportError:
     print("❌ Configure primeiro o arquivo youtube_config.py")
     exit(1)
 
-REDIRECT_URI = "http://localhost:8080"
+REDIRECT_URI = YOUTUBE_REDIRECT_URI
 
 class OAuthHandler(BaseHTTPRequestHandler):
     def do_GET(self):

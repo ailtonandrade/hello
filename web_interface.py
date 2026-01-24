@@ -4,6 +4,10 @@ import main
 import auth
 import os
 import json
+import smtplib
+from email.message import EmailMessage
+import urllib.parse
+from config import BASE_URL, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, FROM_EMAIL
 
 
 CHANNEL = "parallelcuts"
@@ -22,6 +26,7 @@ SUBTITLE_FONT = "Lilita.ttf"
 
 app = Flask(__name__)
 app.secret_key = "secret_key_for_flask"
+
 
 # controle de execução
 current_generation_thread = None
@@ -43,7 +48,6 @@ def generate():
         prompt_negative = request.form.get('prompt_negative')
         voice_name = request.form.get('voice_name')
         voice_speed = float(request.form.get('voice_speed', 0.9))
-        subtitle_words_per_line = int(request.form.get('subtitle_words_per_line', 3))
         subtitle_font_size = int(request.form.get('subtitle_font_size', 55))
         screen_orientation = request.form.get('screen_orientation')
         subtitle_font_color_r = int(request.form.get('subtitle_font_color_r', 255))
@@ -74,7 +78,8 @@ def generate():
         main.VOICE_PITCH = voice_pitch
         main.VOICE_VOLUME = voice_volume
         main.VOICE_RADIO_EFFECT = voice_radio_effect
-        main.SUBTITLE_WORDS_PER_LINE = subtitle_words_per_line
+        # subtitle_words_per_line must come from main module configuration only
+        subtitle_words_per_line = getattr(main, 'SUBTITLE_WORDS_PER_LINE', 3)
         main.SUBTITLE_FONT_SIZE = subtitle_font_size
         main.SCREEN_ORIENTATION = screen_orientation
         main.SUBTITLE_FONT_COLOR = subtitle_font_color
@@ -168,7 +173,7 @@ def generate():
     # pass user's prompt keys and templates for selects
     keys = auth.get_prompt_keys_for_user(session['user_id']) if 'user_id' in session else []
     templates = auth.get_templates_for_user(session['user_id']) if 'user_id' in session else []
-    return render_template('video_form.html', prompt_keys=keys, templates=templates)
+    return render_template('video/video_form.html', prompt_keys=keys, templates=templates)
 
 
 @app.route('/status')
@@ -189,15 +194,134 @@ def login():
         password = request.form.get('password')
         user = auth.authenticate_user(email, password)
         if not user:
-            flash('Credenciais inválidas', 'danger')
-            return redirect(url_for('login'))
+            # do not reveal whether email or password is incorrect
+            payload = {'title': 'Falha no login', 'message': 'Credenciais inválidas. Verifique e tente novamente.', 'icon': '⚠️'}
+            return render_template('auth/login.html', flash_message=payload)
         # generate JWT and store in session for server-side checks
         token = auth.create_jwt(user['id'])
         session['user_id'] = user['id']
         session['jwt'] = token
         flash('Login realizado', 'success')
         return redirect(url_for('dashboard'))
-    return render_template('login.html')
+    return render_template('auth/login.html')
+
+
+def send_reset_email(to_email, token):
+    """Try to send reset token via SMTP. If SMTP not configured, log token to console."""
+    smtp_host = SMTP_HOST
+    smtp_port = SMTP_PORT
+    smtp_user = SMTP_USER
+    smtp_pass = SMTP_PASS
+    from_addr = FROM_EMAIL
+    subject = 'Redefinição de senha — Código de verificação'
+    # include a link with the email pre-filled so user can click to open reset form
+    reset_link = f"{BASE_URL}/reset-password?email={urllib.parse.quote(to_email)}"
+    body = (
+        f'Seu código para redefinição de senha é: {token}\n\n'
+        f'Você também pode abrir o formulário de redefinição clicando neste link:\n{reset_link}\n\n'
+        'Este código expira em 15 minutos.'
+    )
+    if not smtp_host or not smtp_port:
+        print(f"[DEV] reset token for {to_email}: {token}")
+        return False
+    try:
+        msg = EmailMessage()
+        msg['Subject'] = subject
+        msg['From'] = from_addr
+        msg['To'] = to_email
+        msg.set_content(body)
+        if smtp_port == 465:
+            s = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=10)
+        else:
+            s = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
+            s.starttls()
+        if smtp_user and smtp_pass:
+            s.login(smtp_user, smtp_pass)
+        s.send_message(msg)
+        s.quit()
+        return True
+    except Exception as e:
+        print(f"Failed sending reset email: {e}")
+        print(f"[DEV] reset token for {to_email}: {token}")
+        return False
+
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        if not email:
+            flash('Informe o e-mail', 'danger')
+            return redirect(url_for('forgot_password'))
+        try:
+            token = auth.create_password_reset_for_email(email)
+        except ValueError as e:
+            payload = {'title': 'Erro', 'message': str(e), 'icon': '⚠️'}
+            return render_template('auth/forgot_password.html', flash_message=payload)
+        sent = send_reset_email(email, token)
+        # prepare masked email for UI feedback
+        def mask_email(e):
+            try:
+                local, dom = e.split('@', 1)
+            except Exception:
+                return e
+            local_pref = local[:3] if len(local) > 3 else local[0]
+            tld = dom.split('.')[-1] if '.' in dom else ''
+            dom_main = dom.split('.')[0]
+            dom_pref = dom_main[0] if dom_main else ''
+            masked = f"{local_pref}...@{dom_pref}...{('.' + tld) if tld else ''}"
+            return masked
+
+        masked = mask_email(email)
+        if sent:
+            payload = {
+                'title': 'Código enviado',
+                'message': f'Enviaremos um e-mail para {masked} com instruções para redefinir sua senha.',
+                'icon': '📧',
+                'redirect_on_close': url_for('login')
+            }
+        else:
+            payload = {
+                'title': 'Token gerado',
+                'message': f'Token gerado e registrado no servidor (SMTP não configurado). Verifique os logs para o e-mail {masked}.',
+                'icon': '⚠️',
+                'redirect_on_close': url_for('login')
+            }
+        return render_template('auth/forgot_password.html', flash_message=payload)
+    return render_template('auth/forgot_password.html')
+
+
+@app.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        token = request.form.get('token')
+        password = request.form.get('password')
+        confirm = request.form.get('confirm_password')
+        if not email or not token:
+            flash('E-mail e token são necessários', 'danger')
+            return redirect(url_for('reset_password'))
+        if not password or password != confirm:
+            payload = {'title': 'Erro', 'message': 'Senha e confirmação não conferem', 'icon': '⚠️'}
+            return render_template('auth/reset_password.html', flash_message=payload, email=email)
+        # basic password strength
+        ok_len = len(password) >= 8
+        ok_num = any(c.isdigit() for c in password)
+        ok_spec = any(not c.isalnum() for c in password)
+        if not (ok_len and ok_num and ok_spec):
+            payload = {'title': 'Senha fraca', 'message': 'Senha precisa ter mínimo 8 caracteres, incluir ao menos 1 número e 1 caractere especial', 'icon': '⚠️'}
+            return render_template('auth/reset_password.html', flash_message=payload, email=email)
+        uid = auth.verify_and_consume_password_reset(email, token)
+        if not uid:
+            payload = {'title': 'Erro', 'message': 'Token inválido ou expirado', 'icon': '⚠️'}
+            return render_template('auth/reset_password.html', flash_message=payload, email=email)
+        # set new password
+        auth.set_password(uid, password)
+        flash('Senha redefinida com sucesso. Faça login.', 'success')
+        return redirect(url_for('login'))
+    # GET
+    email = request.args.get('email')
+    return render_template('auth/reset_password.html', email=email)
 
 
 ### Prompt Keys CRUD and API
@@ -206,7 +330,7 @@ def prompt_keys():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     keys = auth.get_prompt_keys_for_user(session['user_id'])
-    return render_template('prompt_keys.html', keys=keys)
+    return render_template('prompt_keys/prompt_keys.html', keys=keys)
 
 
 @app.route('/prompt_keys/new', methods=['GET', 'POST'])
@@ -221,7 +345,7 @@ def prompt_key_new():
         auth.create_prompt_key(session['user_id'], name, p_ollama, p_pos, p_neg)
         flash('Prompt key criado', 'success')
         return redirect(url_for('prompt_keys'))
-    return render_template('prompt_key_form.html', key=None)
+    return render_template('prompt_keys/prompt_key_form.html', key=None)
 
 
 @app.route('/prompt_keys/<int:pk_id>/edit', methods=['GET', 'POST'])
@@ -240,7 +364,7 @@ def prompt_key_edit(pk_id):
         auth.update_prompt_key(pk_id, session['user_id'], name, p_ollama, p_pos, p_neg)
         flash('Prompt key atualizado', 'success')
         return redirect(url_for('prompt_keys'))
-    return render_template('prompt_key_form.html', key=key)
+    return render_template('prompt_keys/prompt_key_form.html', key=key)
 
 
 @app.route('/prompt_keys/<int:pk_id>/delete', methods=['POST'])
@@ -272,7 +396,7 @@ def templates_list():
     if 'user_id' not in session:
         return redirect(url_for('login'))
     temps = auth.get_templates_for_user(session['user_id'])
-    return render_template('templates_list.html', templates=temps)
+    return render_template('user_templates/templates_list.html', templates=temps)
 
 
 @app.route('/templates/new', methods=['GET', 'POST'])
@@ -286,7 +410,7 @@ def template_new():
         auth.create_template(session['user_id'], name, data)
         flash('Template salvo', 'success')
         return redirect(url_for('templates_list'))
-    return render_template('template_form.html', template=None)
+    return render_template('user_templates/template_form.html', template=None)
 
 
 @app.route('/templates/<int:tid>/edit', methods=['GET', 'POST'])
@@ -303,7 +427,7 @@ def template_edit(tid):
         auth.update_template(tid, session['user_id'], name, data)
         flash('Template atualizado', 'success')
         return redirect(url_for('templates_list'))
-    return render_template('template_form.html', template=tpl)
+    return render_template('user_templates/template_form.html', template=tpl)
 
 
 @app.route('/templates/<int:tid>/delete', methods=['POST'])
@@ -340,13 +464,13 @@ def register():
         except ValueError as e:
             # user-friendly modal via template: pass flash payload
             payload = {'title': 'Erro', 'message': str(e), 'icon': '⚠️'}
-            return render_template('register.html', flash_message=payload)
+            return render_template('auth/register.html', flash_message=payload)
         except Exception as e:
             flash(f'Erro ao registrar: {e}', 'danger')
             return redirect(url_for('register'))
         flash('Conta criada, faça login', 'success')
         return redirect(url_for('login'))
-    return render_template('register.html')
+    return render_template('auth/register.html')
 
 
 @app.route('/logout')
@@ -364,7 +488,7 @@ def dashboard():
     user = auth.get_user(session['user_id'])
     credits = auth.get_credits(user['id'])
     history = auth.get_history_for_user(user['id'])
-    return render_template('dashboard.html', user=user, credits=credits, history=history)
+    return render_template('dashboard/dashboard.html', user=user, credits=credits, history=history)
 
 
 @app.route('/download/<int:history_id>')
