@@ -17,5 +17,10 @@ __pycache__/
 .env.*
 .idea/
 .vscode/
+videos/
+output/
+songs/
+overlays/
+images/
 youtube_config.py
 youtube_token.json
