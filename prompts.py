@@ -42,37 +42,34 @@ PROMPTS = {
                 mythological figure, painting
                 """
     },
-"universe_sleep": {
-    "ollama": """
-Write a short scientific discovery text in Brazilian Portuguese.
-The tone must be calm, soft, and reassuring, like a quiet nighttime narration.
-The text should help the listener slow down and relax.
-Speak in an abstract and contemplative way about the universe, time, silence, continuity, or vastness.
-Do not explain scientific concepts.
-Do not use facts, numbers, names, or discoveries.
-Avoid technical or academic language.
-Do not ask questions.
-- Write up to 100 words.
-Do not use lists, emojis, or titles.
-The text should feel gentle, spacious, and comforting.
-End with an open and serene thought, without a conclusion.
-Respond only with the final text.
-""",
+        "universe_sleep": {
+        "ollama": """
+        Write a short scientific real curiousity discovery text in Brazilian Portuguese.
+        The tone must be calm, soft, and reassuring, like a quiet nighttime narration.
+        The text should help the listener slow down and relax.
+        Do use facts, numbers, names, or discoveries.
+        If a number appears, it must always be written in full, even years, quantities, distances, or measurements.
+        - Write up to 180 words.
+        Do not use lists, emojis, or titles.
+        The text should feel gentle, spacious, and comforting.
+        End with an open and serene thought, without a conclusion.
+        Respond only with the final text.
+        """,
 
-    "comfy_positive": """
-cinematic film still, low light atmosphere,
-vast universe inspired scene,
-deep space or quiet night sky,
-soft celestial light, dark blue and black tones,
-subtle stars, distant galaxies, gentle cosmic clouds,
-slow and calm visual mood,
-shot on anamorphic 50mm lens,
-slight softness, shallow depth of field,
-natural film grain, cinematic color grading,
-minimal composition, no visual tension,
-feels like a quiet contemplative moment from a calm science fiction film,
-timeless, peaceful, soothing
-""",
+        "comfy_positive": """
+        cinematic film still, low light atmosphere,
+        vast universe inspired scene,
+        deep space or quiet night sky,
+        soft celestial light, dark blue and black tones,
+        subtle stars, distant galaxies, gentle cosmic clouds,
+        slow and calm visual mood,
+        shot on anamorphic 50mm lens,
+        slight softness, shallow depth of field,
+        natural film grain, cinematic color grading,
+        minimal composition, no visual tension,
+        feels like a quiet contemplative moment from a calm science fiction film,
+        timeless, peaceful, soothing
+        """,
 
     "comfy_negative": """
                 japanese, chinese, woman, girl, man, indian"""

@@ -28,7 +28,7 @@ SUBTITLE_FONT_COLOR = (255, 191, 0, 200)
 SUBTITLE_FONT = "Lilita.ttf"
 FORCE_TEXT = None
 PROMPT_KEY = "universe_sleep"
-GENERATE_NEW_FRAMES = False
+GENERATE_NEW_FRAMES = True
 # Progress tracking (0-100)
 PROGRESS = 0
 PROGRESS_MESSAGE = "pronto"

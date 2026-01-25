@@ -12,7 +12,7 @@ class CoquiTTS:
         self,
         model_name="tts_models/multilingual/multi-dataset/xtts_v2",
         project_path="../coqui-tts",
-        max_chars_per_chunk=300  # seguro para XTTS (~12–15s por chunk)
+        max_chars_per_chunk=500  # aumentado para 500 (reduz número de chunks)
     ):
         self.model_name = model_name
         self.project_path = Path(project_path).resolve()
@@ -137,6 +137,23 @@ class CoquiTTS:
         wavs = []
 
         try:
+            # Warm-up: reduz o impacto do primeiro cold-start quando o TTS
+            # é chamado via subprocess por chunk. Faz uma chamada rápida
+            # antes do loop de geração para que o runner carregue o modelo.
+            try:
+                warm = temp_dir / "_warmup.wav"
+                self._speak_single(
+                    text="Olá",
+                    output=warm,
+                    language=language,
+                    speaker_wav=speaker_wav,
+                )
+                if warm.exists():
+                    warm.unlink()
+            except Exception:
+                # Não impedir o fluxo principal se o warm-up falhar
+                pass
+
             for i, chunk in enumerate(chunks):
                 wav_path = temp_dir / f"part_{i:03d}.wav"
                 print(f"  🔊 Gerando chunk {i+1}/{len(chunks)} ({len(chunk)} chars) às {datetime.now().strftime('%H:%M:%S')}")
