@@ -1,4 +1,5 @@
 import subprocess
+from datetime import datetime
 import re
 import tempfile
 import wave
@@ -138,7 +139,7 @@ class CoquiTTS:
         try:
             for i, chunk in enumerate(chunks):
                 wav_path = temp_dir / f"part_{i:03d}.wav"
-
+                print(f"  🔊 Gerando chunk {i+1}/{len(chunks)} ({len(chunk)} chars) às {datetime.now().strftime('%H:%M:%S')}")
                 self._speak_single(
                     text=chunk,
                     output=wav_path,

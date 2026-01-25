@@ -52,6 +52,7 @@ Do not explain scientific concepts.
 Do not use facts, numbers, names, or discoveries.
 Avoid technical or academic language.
 Do not ask questions.
+- Write up to 100 words.
 Do not use lists, emojis, or titles.
 The text should feel gentle, spacious, and comforting.
 End with an open and serene thought, without a conclusion.

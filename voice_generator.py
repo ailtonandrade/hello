@@ -1,5 +1,6 @@
 import os
 import subprocess
+import wave
 from tts_wrapper import CoquiTTS
 
 
@@ -40,7 +41,16 @@ class VoiceGenerator:
         
         # 🎛️ 2. FFmpeg FX
         temp_file = output_file.replace(".wav", "_fx.wav")
-        rate = int(self.sample_rate * self.pitch)
+
+        # Detect input WAV sample rate to avoid wrong resampling when
+        # Coqui/XTTS outputs at a different rate than `self.sample_rate`.
+        try:
+            with wave.open(output_file, "rb") as wf:
+                input_rate = wf.getframerate()
+        except Exception:
+            input_rate = self.sample_rate
+
+        new_rate = int(input_rate * self.pitch)
 
         radio_chain = (
             "highpass=f=180,"
@@ -51,7 +61,13 @@ class VoiceGenerator:
             "alimiter=limit=0.95"
         )
 
-        filter_chain = f"asetrate={rate},atempo={self.speed}"
+        # Ajuste de pitch: alteramos a taxa de amostragem temporariamente
+        # e em seguida resampleamos de volta para evitar pitch/tempo incorreto.
+        # `asetrate` altera o pitch; `aresample` devolve à taxa original.
+        filter_chain = f"asetrate={new_rate},aresample={input_rate},atempo={self.speed}"
+
+        # DEBUG: mostrar parâmetros do processamento (remover/ajustar conforme desejado)
+        print(f"[VoiceGenerator] input_rate={input_rate} new_rate={new_rate} pitch={self.pitch} speed={self.speed}")
 
         if self.radio_fx:
             filter_chain += f",{radio_chain}"
