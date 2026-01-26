@@ -31,12 +31,17 @@ class VoiceGenerator:
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
         # 🎙️ 1. gera áudio base
-        self.coqui.speak(
-            text=text,
-            output=output_file,
-            language=self.language,
-            speaker_wav=self.voice_file_path,
-        )
+        try:
+            self.coqui.speak(
+                text=text,
+                output=output_file,
+                language=self.language,
+                speaker_wav=self.voice_file_path,
+            )
+        except Exception as e:
+            # Ensure failures are visible and return 0 so caller can handle
+            print(f"[VoiceGenerator] Erro ao gerar TTS: {e}")
+            return 0.0
     
         
         # 🎛️ 2. FFmpeg FX

@@ -286,6 +286,9 @@
 
             // Poll /status e atualiza a barra de progresso (exibe % e mensagem)
             function pollStatus() {
+                const genBtn = document.getElementById('generateBtn');
+                // Only poll while a generation is running to avoid spamming the server logs
+                if (!genBtn || genBtn.dataset.running !== 'true') return;
                 fetch('/status')
                     .then(r => r.json())
                     .then(data => {
@@ -301,7 +304,6 @@
                         const finished = p >= 100 || messageLower.includes('finished') || messageLower.includes('conclu') || messageLower.includes('pronto') || messageLower.includes('done');
                         if (msg) msg.textContent = finished ? 'Pronto' : '';
 
-                        const genBtn = document.getElementById('generateBtn');
                         if (genBtn) {
                             if (!finished && (p === 0 || p < 95) && !messageLower.includes('cancel')) {
                                 // still running or idle - keep label state
@@ -315,6 +317,7 @@
                     .catch(() => {});
             }
 
+            // Poll every 2s, but actual fetch only happens if generation is active
             setInterval(pollStatus, 2000);
             pollStatus();
 

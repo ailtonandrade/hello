@@ -12,10 +12,10 @@
   </style>
   {% block head_extras %}{% endblock %}
 </head>
-<body class="min-h-screen bg-slate-900 text-slate-100">
-  <div class="flex flex-col md:flex-row">
+<body class="min-h-screen flex flex-col bg-slate-900 text-slate-100">
+  <div class="flex-1 flex flex-col md:flex-row">
     {% include 'partials/_sidebar.html' %}
-    <main class="flex-1 p-8">
+    <main class="flex-1 p-8 md:ml-72">
       <!-- Unified content container: keeps the same max width on all pages so the
            sidebar remains the primary frame and pages are its children. Change
            `max-w-3xl` to a different Tailwind max-w-* value if you prefer a

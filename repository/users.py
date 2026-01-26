@@ -189,3 +189,60 @@ def set_password(user_id, new_password):
     c.execute('UPDATE users SET password = ? WHERE id = ?', (hashed, user_id))
     conn.commit()
     conn.close()
+
+
+# Billing / payments helpers
+def get_credit_packages():
+    conn = get_conn()
+    c = conn.cursor()
+    rows = c.execute('SELECT * FROM credit_packages ORDER BY id').fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_credit_package(package_id):
+    conn = get_conn()
+    c = conn.cursor()
+    row = c.execute('SELECT * FROM credit_packages WHERE id = ?', (package_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def create_payment(user_id, package_id, stripe_session_id, amount_cents, credits, status='pending', metadata=None):
+    conn = get_conn()
+    c = conn.cursor()
+    now = datetime.utcnow().isoformat()
+    meta_json = json.dumps(metadata) if metadata is not None else None
+    c.execute('INSERT INTO payments (user_id, package_id, stripe_session_id, amount_cents, credits, status, metadata, created_at) VALUES (?,?,?,?,?,?,?,?)',
+              (user_id, package_id, stripe_session_id, amount_cents, credits, status, meta_json, now))
+    conn.commit()
+    pid = c.lastrowid
+    conn.close()
+    return pid
+
+
+def update_payment_status_by_session(stripe_session_id, new_status, metadata=None):
+    conn = get_conn()
+    c = conn.cursor()
+    now = datetime.utcnow().isoformat()
+    meta_json = json.dumps(metadata) if metadata is not None else None
+    c.execute('SELECT * FROM payments WHERE stripe_session_id = ? ORDER BY id DESC LIMIT 1', (stripe_session_id,))
+    row = c.fetchone()
+    if not row:
+        conn.close()
+        return None
+    c.execute('UPDATE payments SET status = ?, metadata = ?, updated_at = ? WHERE id = ?', (new_status, meta_json, now, row['id']))
+    conn.commit()
+    # return updated record as dict
+    c.execute('SELECT * FROM payments WHERE id = ?', (row['id'],))
+    updated = c.fetchone()
+    conn.close()
+    return dict(updated) if updated else None
+
+
+def get_payments_for_user(user_id):
+    conn = get_conn()
+    c = conn.cursor()
+    rows = c.execute('SELECT * FROM payments WHERE user_id = ? ORDER BY created_at DESC', (user_id,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

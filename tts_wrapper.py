@@ -73,16 +73,27 @@ class CoquiTTS:
         if speaker_wav:
             cmd += ["--speaker_wav", str(speaker_wav)]
 
-        result = subprocess.run(
-            cmd,
-            capture_output=True
-        )
+        try:
+            # add a reasonable timeout so a hung subprocess doesn't block forever
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                timeout=120
+            )
+        except subprocess.TimeoutExpired as e:
+            raise RuntimeError(f"XTTS timeout after {e.timeout}s while running: {' '.join(cmd)}")
 
         stdout = result.stdout.decode("utf-8", errors="replace")
         stderr = result.stderr.decode("utf-8", errors="replace")
 
+        # Emitir logs para facilitar debugging quando algo falhar
+        if stdout:
+            print(f"[XTTS stdout] {stdout}")
+        if stderr:
+            print(f"[XTTS stderr] {stderr}")
+
         if result.returncode != 0:
-            raise RuntimeError(f"XTTS falhou:\n{stderr or stdout}")
+            raise RuntimeError(f"XTTS falhou (rc={result.returncode}):\n{stderr or stdout}")
 
         if not output.exists():
             raise RuntimeError(

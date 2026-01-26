@@ -26,6 +26,12 @@ get_credits = users_repo.get_credits
 create_password_reset_for_email = users_repo.create_password_reset_for_email
 verify_and_consume_password_reset = users_repo.verify_and_consume_password_reset
 set_password = users_repo.set_password
+# Billing / payments
+get_credit_packages = users_repo.get_credit_packages
+get_credit_package = users_repo.get_credit_package
+create_payment = users_repo.create_payment
+update_payment_status_by_session = users_repo.update_payment_status_by_session
+get_payments_for_user = users_repo.get_payments_for_user
 
 # Templates
 create_template = templates_repo.create_template
@@ -48,5 +54,6 @@ __all__ = [
     'verify_and_consume_password_reset','set_password',
     'create_template','get_templates_for_user','get_template','update_template','update_template_admin',
     'delete_template','delete_template_admin',
+    'get_credit_packages','get_credit_package','create_payment','update_payment_status_by_session','get_payments_for_user',
     'update_history_file','get_history_for_user','log_history'
 ]
