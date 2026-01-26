@@ -16,8 +16,9 @@
 
   <nav class="flex md:flex-col gap-2 md:space-y-2 overflow-y-auto">
     <a href="/generate" class="block px-3 py-2 rounded {% if request.path.startswith('/generate') %}bg-slate-700{% else %}hover:bg-slate-700{% endif %} transition-colors duration-150">Gerar Vídeo</a>
-    <a href="/prompt_keys" class="block px-3 py-2 rounded {% if request.path.startswith('/prompt_keys') %}bg-slate-700{% else %}hover:bg-slate-700{% endif %} transition-colors duration-150">Prompt Keys</a>
+    {% if user and user.is_admin %}
     <a href="/templates" class="block px-3 py-2 rounded {% if request.path.startswith('/templates') %}bg-slate-700{% else %}hover:bg-slate-700{% endif %} transition-colors duration-150">Templates</a>
+    {% endif %}
     <a href="/payments" class="block px-3 py-2 rounded {% if request.path.startswith('/payments') %}bg-slate-700{% else %}hover:bg-slate-700{% endif %} transition-colors duration-150">Pagamentos</a>
     <a href="/dashboard" class="block px-3 py-2 rounded {% if request.path == '/' or request.path.startswith('/dashboard') %}bg-slate-700{% else %}hover:bg-slate-700{% endif %} transition-colors duration-150">Dashboard</a>
     <a href="/logout" class="block px-3 py-2 rounded text-rose-400 hover:bg-slate-700 transition-colors duration-150">Sair</a>

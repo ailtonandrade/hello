@@ -9,27 +9,89 @@
       <input name="name" value="{{ template.name if template }}" class="w-full mt-1 p-2 rounded bg-slate-700" />
     </label>
     <div class="text-sm text-slate-300">Campos do formulário (serão salvos tal como)</div>
-    <label class="block">
-      <div class="flex items-center justify-between">
-        <div class="text-sm text-slate-300">Prompt Ollama</div>
-        <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('tpl_prompt_ollama')">Mostrar / Ocultar</button>
-      </div>
-      <textarea id="tpl_prompt_ollama" name="prompt_ollama" rows="4" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ template.data.prompt_ollama if template }}</textarea>
-    </label>
-    <label class="block">
-      <div class="flex items-center justify-between">
-        <div class="text-sm text-slate-300">Prompt Positive (Comfy)</div>
-        <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('tpl_prompt_positive')">Mostrar / Ocultar</button>
-      </div>
-      <textarea id="tpl_prompt_positive" name="prompt_positive" rows="3" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ template.data.prompt_positive if template }}</textarea>
-    </label>
-    <label class="block">
-      <div class="flex items-center justify-between">
-        <div class="text-sm text-slate-300">Prompt Negative (Comfy)</div>
-        <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('tpl_prompt_negative')">Mostrar / Ocultar</button>
-      </div>
-      <textarea id="tpl_prompt_negative" name="prompt_negative" rows="3" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ template.data.prompt_negative if template }}</textarea>
-    </label>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <label class="block">
+        <div class="text-sm text-slate-300">Canal</div>
+        <input name="channel" value="{{ template.data.channel if template and template.data.channel }}" class="w-full mt-1 p-2 rounded bg-slate-700" />
+      </label>
+      <label class="block">
+        <div class="text-sm text-slate-300">Tema</div>
+        <input name="theme" value="{{ template.data.theme if template and template.data.theme }}" class="w-full mt-1 p-2 rounded bg-slate-700" />
+      </label>
+      <label class="block md:col-span-2">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-slate-300">Prompt Narração</div>
+          <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('tpl_prompt_ollama')">Mostrar / Ocultar</button>
+        </div>
+        <textarea id="tpl_prompt_ollama" name="prompt_ollama" rows="4" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ template.data.prompt_ollama if template and template.data.prompt_ollama }}</textarea>
+      </label>
+      <label class="block md:col-span-2">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-slate-300">Prompt Positive (Comfy)</div>
+          <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('tpl_prompt_positive')">Mostrar / Ocultar</button>
+        </div>
+        <textarea id="tpl_prompt_positive" name="prompt_positive" rows="3" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ template.data.prompt_positive if template and template.data.prompt_positive }}</textarea>
+      </label>
+      <label class="block md:col-span-2">
+        <div class="flex items-center justify-between">
+          <div class="text-sm text-slate-300">Prompt Negative (Comfy)</div>
+          <button type="button" class="text-xs text-sky-300" onclick="toggleBlur('tpl_prompt_negative')">Mostrar / Ocultar</button>
+        </div>
+        <textarea id="tpl_prompt_negative" name="prompt_negative" rows="3" class="w-full mt-1 p-2 rounded bg-slate-700 blurred">{{ template.data.prompt_negative if template and template.data.prompt_negative }}</textarea>
+      </label>
+      <label class="block">
+        <div class="text-sm text-slate-300">Voice Name</div>
+        <input name="voice_name" value="{{ template.data.voice_name if template and template.data.voice_name }}" class="w-full mt-1 p-2 rounded bg-slate-700" />
+      </label>
+      <label class="block">
+        <div class="text-sm text-slate-300">Voice Speed</div>
+        <input name="voice_speed" value="{{ template.data.voice_speed if template and template.data.voice_speed else 1.0 }}" class="w-full mt-1 p-2 rounded bg-slate-700" />
+      </label>
+      <label class="block">
+        <div class="text-sm text-slate-300">Voice Pitch</div>
+        <input name="voice_pitch" value="{{ template.data.voice_pitch if template and template.data.voice_pitch else 0.9 }}" class="w-full mt-1 p-2 rounded bg-slate-700" />
+      </label>
+      <label class="block">
+        <div class="text-sm text-slate-300">Voice Volume</div>
+        <input name="voice_volume" value="{{ template.data.voice_volume if template and template.data.voice_volume else 1.2 }}" class="w-full mt-1 p-2 rounded bg-slate-700" />
+      </label>
+      <label class="block">
+        <div class="text-sm text-slate-300">Radio Effect</div>
+        <input type="checkbox" name="voice_radio_effect" value="1" {% if template and template.data.voice_radio_effect %}checked{% endif %} />
+      </label>
+      <label class="block">
+        <div class="text-sm text-slate-300">Subtitle Font Size</div>
+        <input name="subtitle_font_size" value="{{ template.data.subtitle_font_size if template and template.data.subtitle_font_size else 55 }}" class="w-full mt-1 p-2 rounded bg-slate-700" />
+      </label>
+      <label class="block">
+        <div class="text-sm text-slate-300">Screen Orientation</div>
+        <select name="screen_orientation" class="w-full mt-1 p-2 rounded bg-slate-700">
+          <option value="MOBILE" {% if template and template.data.screen_orientation == 'MOBILE' %}selected{% endif %}>MOBILE</option>
+          <option value="LANDSCAPE" {% if template and template.data.screen_orientation == 'LANDSCAPE' %}selected{% endif %}>LANDSCAPE</option>
+        </select>
+      </label>
+      <label class="block">
+        <div class="text-sm text-slate-300">Subtitle Font</div>
+        <input name="subtitle_font" value="{{ template.data.subtitle_font if template and template.data.subtitle_font }}" class="w-full mt-1 p-2 rounded bg-slate-700" />
+      </label>
+      <label class="block">
+        <div class="text-sm text-slate-300">Force Text (opcional)</div>
+        <textarea name="force_text" rows="2" class="w-full mt-1 p-2 rounded bg-slate-700">{{ template.data.force_text if template and template.data.force_text }}</textarea>
+      </label>
+      <label class="block">
+        <div class="text-sm text-slate-300">Generate New Frames</div>
+        <input type="checkbox" name="generate_new_frames" value="1" {% if template and template.data.generate_new_frames %}checked{% endif %} />
+      </label>
+      <label class="block md:col-span-2">
+        <div class="text-sm text-slate-300">Subtitle Font Color (R,G,B,A)</div>
+        <div class="flex gap-2 mt-1">
+          <input name="subtitle_font_color_r" value="{{ template.data.subtitle_font_color[0] if template and template.data.subtitle_font_color else 255 }}" class="p-2 rounded bg-slate-700 w-1/4" />
+          <input name="subtitle_font_color_g" value="{{ template.data.subtitle_font_color[1] if template and template.data.subtitle_font_color else 191 }}" class="p-2 rounded bg-slate-700 w-1/4" />
+          <input name="subtitle_font_color_b" value="{{ template.data.subtitle_font_color[2] if template and template.data.subtitle_font_color else 0 }}" class="p-2 rounded bg-slate-700 w-1/4" />
+          <input name="subtitle_font_color_a" value="{{ template.data.subtitle_font_color[3] if template and template.data.subtitle_font_color else 200 }}" class="p-2 rounded bg-slate-700 w-1/4" />
+        </div>
+      </label>
+    </div>
 
     <div class="flex gap-2">
       <button class="bg-emerald-500 text-slate-900 px-3 py-2 rounded">Salvar Template</button>

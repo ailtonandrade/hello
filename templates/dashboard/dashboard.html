@@ -25,7 +25,6 @@
               <div class="mt-4 flex flex-wrap gap-3">
                 <a href="/generate" class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-400 text-slate-900 rounded-md font-semibold shadow hover:scale-[1.02] transition">Gerar Vídeo</a>
                 <a href="/buy" class="inline-flex items-center gap-2 px-3 py-1 text-sm bg-emerald-500 text-slate-900 rounded-md font-semibold shadow-sm hover:brightness-105 transition">Comprar Créditos</a>
-                <a href="/prompt_keys" class="inline-flex items-center gap-2 px-4 py-2 text-slate-100 bg-slate-700 rounded-md hover:bg-slate-600 transition">Prompt Keys</a>
               </div>
             </div>
             <div class="bg-slate-800 p-4 rounded-md shadow-sm w-full md:w-80">
@@ -61,6 +60,7 @@
               </div>
             </div>
           </div>
+          {% if user and user.is_admin %}
           <div class="p-4 bg-slate-800 rounded-lg shadow hover:scale-[1.02] transition">
             <div class="flex items-center gap-3">
               <svg class="w-8 h-8 text-emerald-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 7h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 21V7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -70,6 +70,7 @@
               </div>
             </div>
           </div>
+          {% endif %}
           <div class="p-4 bg-slate-800 rounded-lg shadow hover:scale-[1.02] transition">
             <div class="flex items-center gap-3">
               <svg class="w-8 h-8 text-emerald-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7l3-7z" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/></svg>

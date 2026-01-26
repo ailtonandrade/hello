@@ -51,6 +51,8 @@ current_cancel_event = None
 def generate():
     # requires login
     if 'user_id' not in session:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'error': 'not_authenticated'}), 401
         return redirect(url_for('login'))
 
     if request.method == 'POST':
@@ -106,15 +108,34 @@ def generate():
         # check credits and consume 1 credit per generation
         user_id = session.get('user_id')
         if user_id is None:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': 'not_authenticated'}), 401
             flash('Usuário não autenticado', 'danger')
             return redirect(url_for('login'))
 
         credits = auth.get_credits(user_id)
         if credits < 1:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': 'insufficient_credits'}), 402
             flash('Créditos insuficientes. Compre créditos no painel.', 'danger')
             return redirect(url_for('dashboard'))
 
         history_id = auth.consume_credits(user_id, 1)
+
+        # determine if current user is admin (only admins may trigger uploads)
+        try:
+            user_row = auth.get_user(user_id)
+            is_admin = bool(user_row.get('is_admin')) if user_row else False
+        except Exception:
+            is_admin = False
+
+        # If admin will trigger upload, create a separate history row to track it
+        upload_history_id = None
+        if is_admin:
+            try:
+                upload_history_id = auth.log_history(user_id, 'upload_initiated', 0, None)
+            except Exception:
+                upload_history_id = None
 
         # Run main in a separate thread to avoid blocking
         cancel_event = threading.Event()
@@ -145,9 +166,12 @@ def generate():
 
                     force_text=force_text,
                     generate_new_frames=generate_new_frames,
+                    perform_upload=is_admin,
                 )
-                # main.youtube_upload(theme, channel, screen_orientation)
-                print("✅ Geração e upload concluídos!")
+                # do not reveal admin-only uploads to non-admin clients
+                print("✅ Geração concluída!")
+                if is_admin:
+                    print("✅ Upload automático iniciado (usuário admin).")
             except Exception as e:
                 print(f"❌ Erro durante geração: {e}")
             finally:
@@ -161,6 +185,9 @@ def generate():
                     gen_file = getattr(main, 'LAST_GENERATED_FILE', None)
                     if gen_file and history_id:
                         auth.update_history_file(history_id, gen_file)
+                    # se criamos um registro de upload, atualize também com o arquivo
+                    if gen_file and upload_history_id:
+                        auth.update_history_file(upload_history_id, gen_file)
                 except Exception:
                     pass
 
@@ -171,6 +198,10 @@ def generate():
         global current_generation_thread, current_cancel_event
         current_generation_thread = thread
         current_cancel_event = cancel_event
+
+        # If request came from AJAX, return JSON indicating start
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify({'started': True}), 202
 
         flash("Geração de vídeo iniciada! Verifique o console para o progresso.", "success")
         return redirect(url_for('generate'))
@@ -328,70 +359,7 @@ def reset_password():
     return render_template('auth/reset_password.html', email=email)
 
 
-### Prompt Keys CRUD and API
-@app.route('/prompt_keys')
-def prompt_keys():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    keys = auth.get_prompt_keys_for_user(session['user_id'])
-    return render_template('prompt_keys/prompt_keys.html', keys=keys)
-
-
-@app.route('/prompt_keys/new', methods=['GET', 'POST'])
-def prompt_key_new():
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    if request.method == 'POST':
-        name = request.form.get('name')
-        p_ollama = request.form.get('prompt_ollama')
-        p_pos = request.form.get('prompt_positive')
-        p_neg = request.form.get('prompt_negative')
-        auth.create_prompt_key(session['user_id'], name, p_ollama, p_pos, p_neg)
-        flash('Prompt key criado', 'success')
-        return redirect(url_for('prompt_keys'))
-    return render_template('prompt_keys/prompt_key_form.html', key=None)
-
-
-@app.route('/prompt_keys/<int:pk_id>/edit', methods=['GET', 'POST'])
-def prompt_key_edit(pk_id):
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    key = auth.get_prompt_key(pk_id, session['user_id'])
-    if not key:
-        flash('Prompt key não encontrado', 'danger')
-        return redirect(url_for('prompt_keys'))
-    if request.method == 'POST':
-        name = request.form.get('name')
-        p_ollama = request.form.get('prompt_ollama')
-        p_pos = request.form.get('prompt_positive')
-        p_neg = request.form.get('prompt_negative')
-        auth.update_prompt_key(pk_id, session['user_id'], name, p_ollama, p_pos, p_neg)
-        flash('Prompt key atualizado', 'success')
-        return redirect(url_for('prompt_keys'))
-    return render_template('prompt_keys/prompt_key_form.html', key=key)
-
-
-@app.route('/prompt_keys/<int:pk_id>/delete', methods=['POST'])
-def prompt_key_delete(pk_id):
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-    auth.delete_prompt_key(pk_id, session['user_id'])
-    flash('Prompt key removido', 'success')
-    return redirect(url_for('prompt_keys'))
-
-
-@app.route('/api/prompt_key/<int:pk_id>')
-def api_prompt_key(pk_id):
-    key = auth.get_prompt_key(pk_id)
-    if not key:
-        return jsonify({'error': 'not found'}), 404
-    return jsonify({
-        'id': key['id'],
-        'name': key['name'],
-        'prompt_ollama': key.get('prompt_ollama'),
-        'prompt_positive': key.get('prompt_positive'),
-        'prompt_negative': key.get('prompt_negative')
-    })
+### Prompt Keys removed: functionality consolidated into Templates
 
 
 ### Templates CRUD and API (store full form data as JSON)
@@ -399,6 +367,10 @@ def api_prompt_key(pk_id):
 def templates_list():
     if 'user_id' not in session:
         return redirect(url_for('login'))
+    user = auth.get_user(session['user_id'])
+    if not user or not user.get('is_admin'):
+        flash('Acesso negado: apenas administradores.', 'danger')
+        return redirect(url_for('dashboard'))
     temps = auth.get_templates_for_user(session['user_id'])
     return render_template('user_templates/templates_list.html', templates=temps)
 
@@ -413,7 +385,8 @@ def template_new():
         data = {k: request.form.get(k) for k in request.form.keys()}
         auth.create_template(session['user_id'], name, data)
         flash('Template salvo', 'success')
-        return redirect(url_for('templates_list'))
+        # If called from AJAX (form on generate page), return OK so client can reload
+        return ('', 200)
     return render_template('user_templates/template_form.html', template=None)
 
 
@@ -421,16 +394,25 @@ def template_new():
 def template_edit(tid):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    tpl = auth.get_template(tid, session['user_id'])
+    user = auth.get_user(session['user_id'])
+    tpl = auth.get_template(tid)
     if not tpl:
         flash('Template não encontrado', 'danger')
         return redirect(url_for('templates_list'))
+    # allow owner or admin
+    if tpl.get('user_id') != session['user_id'] and not (user and user.get('is_admin')):
+        flash('Acesso negado: apenas proprietário ou administrador.', 'danger')
+        return redirect(url_for('dashboard'))
     if request.method == 'POST':
         name = request.form.get('name') or tpl['name']
         data = {k: request.form.get(k) for k in request.form.keys()}
-        auth.update_template(tid, session['user_id'], name, data)
+        # if admin editing another's template, allow admin update
+        if user and user.get('is_admin') and tpl.get('user_id') != session['user_id']:
+            auth.update_template_admin(tid, name, data)
+        else:
+            auth.update_template(tid, session['user_id'], name, data)
         flash('Template atualizado', 'success')
-        return redirect(url_for('templates_list'))
+        return ('', 200)
     return render_template('user_templates/template_form.html', template=tpl)
 
 
@@ -438,9 +420,21 @@ def template_edit(tid):
 def template_delete(tid):
     if 'user_id' not in session:
         return redirect(url_for('login'))
-    auth.delete_template(tid, session['user_id'])
+    user = auth.get_user(session['user_id'])
+    tpl = auth.get_template(tid)
+    if not tpl:
+        flash('Template não encontrado', 'danger')
+        return redirect(url_for('dashboard'))
+    # allow owner or admin
+    if tpl.get('user_id') != session['user_id'] and not (user and user.get('is_admin')):
+        flash('Acesso negado: apenas proprietário ou administrador.', 'danger')
+        return redirect(url_for('dashboard'))
+    if user and user.get('is_admin') and tpl.get('user_id') != session['user_id']:
+        auth.delete_template_admin(tid)
+    else:
+        auth.delete_template(tid, session['user_id'])
     flash('Template removido', 'success')
-    return redirect(url_for('templates_list'))
+    return ('', 200)
 
 
 @app.route('/terms-of-use')
@@ -455,9 +449,16 @@ def terms_of_responsibility():
 
 @app.route('/api/template/<int:tid>')
 def api_template(tid):
+    # API access restricted to admins
+    if 'user_id' not in session:
+        return jsonify({'error': 'not authenticated'}), 401
+    user = auth.get_user(session['user_id'])
     tpl = auth.get_template(tid)
     if not tpl:
         return jsonify({'error': 'not found'}), 404
+    # allow owner or admin to fetch
+    if tpl.get('user_id') != session['user_id'] and not (user and user.get('is_admin')):
+        return jsonify({'error': 'forbidden'}), 403
     return jsonify({'id': tpl['id'], 'name': tpl['name'], 'data': tpl.get('data', {})})
 
 

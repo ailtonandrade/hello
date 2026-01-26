@@ -126,6 +126,7 @@ def main(
         screen_orientation="MOBILE",
         force_text=None,
         generate_new_frames=True,
+        perform_upload=True,
     ):
     """Gera vídeo completo."""
 
@@ -261,6 +262,15 @@ def main(
         PROGRESS_MESSAGE = "erro final"
         print("❌ Vídeo não foi criado")
 
+    # -------------------------
+    # Uploads condicionais
+    # -------------------------
+    if perform_upload:
+        try:
+            youtube_upload(theme, channel, screen_orientation)
+        except Exception as e:
+            print(f"❌ Erro ao iniciar upload para YouTube: {e}")
+
 
 
 def cleanup_temp_files():
@@ -371,8 +381,6 @@ if __name__ == "__main__":
                 force_text=FORCE_TEXT,
                 generate_new_frames=GENERATE_NEW_FRAMES,
             )
-            
-            youtube_upload(THEME, CHANNEL, SCREEN_ORIENTATION)
             # instagram_upload("pregacao", "parallelcuts", "MOBILE")
 
         except Exception as e:

@@ -49,11 +49,12 @@
                         </div>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="text-slate-300 text-sm font-semibold flex items-center gap-2"><svg class="w-4 h-4 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2-2 4 4M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><span>Velocidade da Voz</span></label>
-                            <div class="mt-2 flex items-center gap-3">
-                                <input id="voice_speed_range" type="range" min="0.5" max="2" step="0.05" value="1.1" class="w-full" style="accent-color:#34D399" aria-label="Velocidade da Voz">
-                                <div class="w-16 text-right text-slate-200 font-mono" id="voice_speed_display">1.10</div>
+                        <div class="md:col-span-2">
+                            <label class="text-slate-300 text-sm font-semibold flex items-center gap-2"><svg class="w-4 h-4 text-emerald-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 5v14M5 12h14"/></svg><span>Prompt Narração</span></label>
+                            <textarea id="prompt_ollama" name="prompt_ollama" rows="3" class="mt-2 w-full bg-slate-800 text-slate-100 rounded-md px-3 py-2" placeholder="Prompt (usado para gerar o texto da narração)"></textarea>
+                        </div>
+
+                        <!-- Prompt Positive moved to the dedicated section below (avoids duplication) -->
                                 <input type="hidden" id="voice_speed" name="voice_speed" value="1.1">
                             </div>
                         </div>
@@ -176,12 +177,20 @@
                     if (!res.ok) return;
                     const j = await res.json();
                     const data = j.data || {};
+                    if (data.prompt_ollama) document.getElementById('prompt_ollama').value = data.prompt_ollama;
                     if (data.prompt_positive) document.getElementById('prompt_positive').value = data.prompt_positive;
                     if (data.prompt_negative) document.getElementById('prompt_negative').value = data.prompt_negative;
                     if (data.channel) document.getElementById('channel') && (document.getElementById('channel').value = data.channel);
                     if (data.theme) document.getElementById('theme') && (document.getElementById('theme').value = data.theme);
                     if (data.voice_name) document.getElementById('voice_name') && (document.getElementById('voice_name').value = data.voice_name);
                     if (data.voice_speed) document.getElementById('voice_speed') && (document.getElementById('voice_speed').value = data.voice_speed);
+                    // ensure force_text (Texto Narração) is loaded from template
+                    const ftEl = document.getElementById('force_text');
+                    if (ftEl) {
+                        ftEl.value = data.force_text || '';
+                        const counter = document.getElementById('force_text_counter');
+                        if (counter) counter.textContent = (ftEl.value || '').length + '/200';
+                    }
                 } catch (e) { console.error(e); }
             }
 
@@ -320,10 +329,19 @@
                     // start generation via fetch
                     const form = genForm;
                     const formData = new FormData(form);
-                    fetch('/generate', { method: 'POST', body: formData })
-                        .then(() => {
-                            genBtn.textContent = 'Interromper Geração';
-                            genBtn.dataset.running = 'true';
+                    fetch('/generate', { method: 'POST', body: formData, headers: {'X-Requested-With': 'XMLHttpRequest'} })
+                        .then(async (res) => {
+                            if (res.ok) {
+                                genBtn.textContent = 'Interromper Geração';
+                                genBtn.dataset.running = 'true';
+                            } else {
+                                let msg = 'Falha ao iniciar geração';
+                                try {
+                                    const j = await res.json();
+                                    if (j && j.error) msg = j.error;
+                                } catch (e) {}
+                                alert(msg);
+                            }
                         })
                         .catch(err => {
                             console.error(err);
