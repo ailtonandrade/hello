@@ -12,8 +12,13 @@ class CoquiTTS:
         self,
         model_name="tts_models/multilingual/multi-dataset/xtts_v2",
         project_path="../coqui-tts",
-        max_chars_per_chunk=500  # aumentado para 500 (reduz número de chunks)
+        max_chars_per_chunk=350,  # aumentado para 500 (reduz número de chunks)
+        timeout: int = 600,
     ):
+        # timeout (seconds) for each subprocess.call to Coqui TTS
+        # some models / cold-starts may take longer than 240s on slower machines
+        # make this configurable so callers can increase if necessary
+        self.timeout = timeout
         self.model_name = model_name
         self.project_path = Path(project_path).resolve()
         self.script_path = self.project_path / "run_tts.py"
@@ -78,10 +83,20 @@ class CoquiTTS:
             result = subprocess.run(
                 cmd,
                 capture_output=True,
-                timeout=120
+                timeout=self.timeout
             )
         except subprocess.TimeoutExpired as e:
-            raise RuntimeError(f"XTTS timeout after {e.timeout}s while running: {' '.join(cmd)}")
+            # retry once with a longer timeout (helps with cold-starts)
+            try:
+                retry_timeout = max(self.timeout * 2, 900)
+                print(f"[XTTS] Timeout after {e.timeout}s, retrying with {retry_timeout}s...")
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    timeout=retry_timeout
+                )
+            except subprocess.TimeoutExpired as e2:
+                raise RuntimeError(f"XTTS timeout after {e2.timeout}s while running: {' '.join(cmd)}")
 
         stdout = result.stdout.decode("utf-8", errors="replace")
         stderr = result.stderr.decode("utf-8", errors="replace")
