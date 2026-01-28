@@ -44,11 +44,9 @@ PROMPTS = {
         },
         "universe_sleep": {
                 "ollama": """
-                        Write up to 70 words a short scientific real curiousity discovery text in Brazilian Portuguese.
-                        The tone must be calm, soft, and reassuring, like a quiet nighttime narration.
-                        The text should help the listener slow down and relax.
+                        Write up to 1000 words a short scientific real curiousity discovery about one of these themes: space, nasa, satelite, planets, or comets.
+                        Text in Brazilian Portuguese.
                         Do use facts, numbers, names, or discoveries.
-                        If a number appears, it must always be written in full, even years, quantities, distances, or measurements.
                         Do not use lists, emojis, or titles.
                         The text should feel gentle, spacious, and comforting.
                         End with an open and serene thought, without a conclusion.
@@ -72,6 +70,43 @@ PROMPTS = {
 
                 "comfy_negative": """
                         japanese, chinese, woman, girl, man, indian"""
-                        },
+        },
+        "universe_scriptures": {
+                "ollama": """
+                        Write up to 700 words in Brazilian Portuguese.
+                        The text must sound like ancient astronomical knowledge,
+                        spoken by someone trying to understand the sky without science.
+                        Mix real celestial ideas with doubt, fear and obsession.
+                        Do not explain anything clearly.
+                        Avoid conclusions, lists or certainty.
+                        End mid-thought, as if the writing suddenly stopped.
+                        Respond only with the final text.
+                        """,
+
+                "comfy_positive": """
+                        ancient parchment manuscript,
+                        fictional pre-columbian inspired glyph writing,
+                        unknown symbols repeating with internal logic,
+                        looks like a real ancient language but not identifiable,
+                        astronomical drawings mixed with strange glyph text,
+                        hand drawn stars, planets and celestial paths,
+                        obsessive annotations covering the page,
+                        uneven ink density, handmade imperfections,
+                        ritualistic and obsessive tone,
+                        drawings feel intentional but misunderstood,
+                        as if an ancient mind tried to explain the cosmos,
+                        no modern knowledge, no clear diagrams,
+                        feels like forbidden astronomical notes
+                        """,
+
+                "comfy_negative": """
+                        mandala, concentric circles,
+                        perfect symmetry,
+                        geometric diagram,
+                        astrological chart,
+                        single central object,
+                        balanced composition,
+                        japanese, chinese"""
+        },
     
 }

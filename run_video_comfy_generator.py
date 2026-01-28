@@ -46,7 +46,15 @@ class ComfySingleFrameVideoGenerator:
     # -------------------------
     # 🧠 ComfyUI text2img
     # -------------------------
-    def _run_workflow(self, workflow_path, prompt_positive, prompt_negative):
+    def _run_workflow(self, workflow_path, prompt_positive, prompt_negative, screen_orientation="MOBILE"):
+
+        if screen_orientation.upper() == "DESKTOP":
+            FRAME_HEIGHT = 540
+            FRAME_WIDTH = 920
+            VIDEO_WIDTH = 920
+            VIDEO_HEIGHT = 540  
+
+
         with open(workflow_path, "r", encoding="utf-8") as f:
             wf = json.load(f)
 
@@ -92,8 +100,16 @@ class ComfySingleFrameVideoGenerator:
     # -------------------------
     # 🎥 Frame → vídeo 5s
     # -------------------------
-    def create_video_from_frame(self, frame_path, theme):
+    def create_video_from_frame(self, frame_path, theme, screen_orientation="MOBILE"):
         import random
+
+        if screen_orientation.upper() == "DESKTOP":
+            FRAME_HEIGHT = 540
+            FRAME_WIDTH = 920
+            VIDEO_WIDTH = 920
+            VIDEO_HEIGHT = 540
+
+            
         output_video = VIDEOS_DIR / f"{theme}_{random.randint(0,9999)}.mp4"
 
         # 🎛️ CONTROLES DE ZOOM (AJUSTE AQUI)
@@ -148,7 +164,7 @@ class ComfySingleFrameVideoGenerator:
     # -------------------------
     # 🚀 API pública
     # -------------------------
-    def generate(self, theme, audio_duration, prompt_positive, prompt_negative="", cancel_event=None):
+    def generate(self, theme, audio_duration, prompt_positive, prompt_negative="", cancel_event=None, screen_orientation="MOBILE"):
         total_generated_time = 0
         iteration = 0
 
@@ -163,7 +179,8 @@ class ComfySingleFrameVideoGenerator:
             frame = self._run_workflow(
                 WORKFLOW_TEXT2IMG,
                 prompt_positive,
-                prompt_negative
+                prompt_negative,
+                screen_orientation=screen_orientation
             )
 
             final_frame = FRAMES_DIR / f"frame_{iteration:03d}.png"
@@ -172,7 +189,8 @@ class ComfySingleFrameVideoGenerator:
             print("🎥 Gerando vídeo com overlay...")
             video = self.create_video_from_frame(
                 final_frame,
-                theme
+                theme,
+                screen_orientation=screen_orientation
             )
 
             # checa cancelamento após criação do vídeo

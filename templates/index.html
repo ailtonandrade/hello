@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}YouTube Downloader{% endblock %}
+
+{% block content %}
+  <div class="bg-slate-800/40 p-6 rounded-lg">
+    <h3 class="text-slate-50 font-bold mb-4">YouTube Downloader</h3>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, msg in messages %}
+          <div class="mb-3 p-3 rounded text-sm {{ 'bg-rose-600 text-white' if category=='error' else 'bg-emerald-700 text-white' }}">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" class="mb-4">
+      <div class="flex gap-2">
+        <input type="text" name="url" class="flex-1 bg-slate-900 border border-slate-700 rounded-md px-3 py-2" placeholder="YouTube URL" value="{{ session.url if session.url }}">
+        <button class="px-3 py-2 bg-emerald-400 text-slate-900 rounded-md" name="fetch">Buscar</button>
+        <button class="px-3 py-2 bg-slate-700 text-slate-200 rounded-md" name="clear">Limpar</button>
+      </div>
+    </form>
+
+    {% if streams %}
+      <div class="mb-4 bg-slate-900 p-4 rounded">
+        <h5 class="font-semibold mb-2">Streams de vídeo</h5>
+        <form method="post" action="/download">
+          <div class="space-y-2 mb-3">
+            {% for s in streams %}
+              <label class="flex items-center gap-3 p-2 bg-slate-800 rounded">
+                <input type="radio" name="itag" value="{{ s.itag }}" {% if s.itag == default_itag %}checked{% endif %}>
+                <div class="text-sm">{{ s.resolution or 'unknown' }} — {{ s.filesize_human or 'n/a' }} — {{ s.duration_human or '' }}</div>
+              </label>
+            {% endfor %}
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+            <input type="text" name="download_dir" class="bg-slate-900 border border-slate-700 rounded-md px-3 py-2" value="{{ session.download_dir }}" placeholder="Salvar em">
+            <input type="text" name="filename" class="bg-slate-900 border border-slate-700 rounded-md px-3 py-2" value="{{ session.download_filename }}" placeholder="Nome do arquivo (opcional)">
+          </div>
+          <button class="px-4 py-2 bg-emerald-500 text-slate-900 rounded">Baixar</button>
+        </form>
+      </div>
+    {% endif %}
+
+    {% if audio_streams %}
+      <div class="mb-4 bg-slate-900 p-4 rounded">
+        <h5 class="font-semibold mb-2">Streams de áudio</h5>
+        <form method="post" action="/download">
+          <div class="space-y-2 mb-3">
+            {% for s in audio_streams %}
+              <label class="flex items-center gap-3 p-2 bg-slate-800 rounded">
+                <input type="radio" name="itag" value="{{ s.itag }}">
+                <div class="text-sm">{{ s.quality or 'audio' }} — {{ s.filesize_human or 'n/a' }} — {{ s.duration_human or '' }}</div>
+              </label>
+            {% endfor %}
+          </div>
+          <div class="mb-3">
+            <input type="text" name="download_dir" class="bg-slate-900 border border-slate-700 rounded-md px-3 py-2" value="{{ session.download_dir }}" placeholder="Salvar em">
+          </div>
+          <button class="px-4 py-2 bg-emerald-500 text-slate-900 rounded">Baixar áudio</button>
+        </form>
+      </div>
+    {% endif %}
+
+    <p class="text-slate-400 text-sm">Downloads assíncronos também disponíveis via <code>/download_async</code> (retorna <code>job_id</code>).</p>
+  </div>
+{% endblock %}

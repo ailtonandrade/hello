@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+
+{% block title %}YouTube Downloader{% endblock %}
+
+{% block content %}
+<div class="bg-slate-800/40 p-6 rounded-lg">
+  <div class="flex flex-col md:flex-row gap-6">
+    <div class="w-full md:w-1/3">
+      <label class="text-slate-300 text-sm">YouTube URL</label>
+      <div class="mt-2 flex gap-2">
+        <input id="ytUrl" type="text" class="flex-1 bg-slate-900 border border-slate-700 rounded-md px-3 py-2" placeholder="https://youtube.com/watch?v=...">
+        <button id="fetchBtn" class="px-3 py-2 bg-emerald-400 text-slate-900 rounded-md">Buscar</button>
+      </div>
+
+      <div id="meta" class="mt-4 hidden">
+        <img id="thumb" src="" class="w-full rounded-md border border-slate-700 shadow-sm" alt="thumbnail">
+        <h4 id="videoTitle" class="mt-2 text-slate-100 font-semibold"></h4>
+      </div>
+
+      <div class="mt-4">
+        <label class="text-slate-300 text-sm">Salvar em</label>
+        <div class="mt-2 flex gap-2">
+          <input id="downloadDir" type="text" class="flex-1 bg-slate-900 border border-slate-700 rounded-md px-3 py-2" placeholder="Path local onde salvar (ex: C:\\Users\\TOM\\Videos)">
+          <button id="homeBtn" class="px-2 py-2 bg-slate-700 rounded-md">Home</button>
+        </div>
+        <div class="mt-2 text-slate-400 text-xs">Dica: coloque uma pasta válida no servidor (apenas caminhos do sistema onde o app roda).</div>
+      </div>
+
+      <div class="mt-4">
+        <label class="text-slate-300 text-sm">Tipo</label>
+        <div class="mt-2 flex gap-2">
+          <button id="typeVideo" class="px-3 py-2 bg-slate-700 rounded-md text-slate-200">Vídeo (mp4)</button>
+          <button id="typeAudio" class="px-3 py-2 bg-slate-700 rounded-md text-slate-200">Áudio (mp3)</button>
+        </div>
+      </div>
+
+      <div class="mt-6">
+        <button id="downloadBtn" class="w-full px-4 py-3 bg-cyan-500 text-slate-900 rounded-lg font-semibold">Baixar (assíncrono)</button>
+      </div>
+
+      <div id="jobInfo" class="mt-4 hidden p-3 bg-slate-900 rounded text-sm">
+        <div id="jobMsg"></div>
+        <div id="jobProgress" class="mt-2 font-mono text-xs"></div>
+      </div>
+    </div>
+
+    <div class="w-full md:w-2/3">
+      <div id="streamsArea" class="hidden bg-slate-900 p-4 rounded">
+        <h5 class="text-slate-100 font-semibold mb-3">Streams de Vídeo</h5>
+        <div id="videoStreams" class="grid grid-cols-1 gap-2"></div>
+
+        <h5 class="text-slate-100 font-semibold mt-4 mb-3">Streams de Áudio</h5>
+        <div id="audioStreams" class="grid grid-cols-1 gap-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const fetchBtn = document.getElementById('fetchBtn');
+  const ytUrl = document.getElementById('ytUrl');
+  const meta = document.getElementById('meta');
+  const thumb = document.getElementById('thumb');
+  const videoTitle = document.getElementById('videoTitle');
+  const streamsArea = document.getElementById('streamsArea');
+  const videoStreams = document.getElementById('videoStreams');
+  const audioStreams = document.getElementById('audioStreams');
+  const downloadDir = document.getElementById('downloadDir');
+  const homeBtn = document.getElementById('homeBtn');
+  const typeVideo = document.getElementById('typeVideo');
+  const typeAudio = document.getElementById('typeAudio');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const jobInfo = document.getElementById('jobInfo');
+  const jobMsg = document.getElementById('jobMsg');
+  const jobProgress = document.getElementById('jobProgress');
+
+  let selectedItag = null;
+  let selectedType = 'video';
+
+  homeBtn.addEventListener('click', ()=>{
+    // set a sensible default (user's Videos folder on Windows)
+    downloadDir.value = `${(window.process && process.env && process.env.USERPROFILE) ? process.env.USERPROFILE + '\\Videos' : 'C\\\\Users\\\\<you>\\\\Videos'}`;
+  });
+
+  typeVideo.addEventListener('click', ()=>{ selectedType='video'; typeVideo.classList.add('bg-cyan-500'); typeAudio.classList.remove('bg-cyan-500'); });
+  typeAudio.addEventListener('click', ()=>{ selectedType='audio'; typeAudio.classList.add('bg-cyan-500'); typeVideo.classList.remove('bg-cyan-500'); });
+
+  fetchBtn.addEventListener('click', async ()=>{
+    const url = ytUrl.value.trim();
+    if(!url){ alert('Informe a URL do YouTube'); return; }
+    fetchBtn.disabled = true;
+    fetchBtn.textContent = 'Buscando...';
+    try{
+      const res = await fetch('/api/fetch_streams', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({url})});
+      const j = await res.json();
+      if(!res.ok){ alert(j.error || 'Erro ao buscar streams'); return; }
+      // populate UI
+      thumb.src = j.thumbnail;
+      videoTitle.textContent = j.title;
+      meta.classList.remove('hidden');
+      streamsArea.classList.remove('hidden');
+
+      videoStreams.innerHTML = '';
+      audioStreams.innerHTML = '';
+      selectedItag = null;
+
+      j.streams.forEach(s=>{
+        const id = 'v' + s.itag;
+        const el = document.createElement('label');
+        el.className = 'flex items-center gap-3 p-2 bg-slate-800 rounded';
+        el.innerHTML = `<input type="radio" name="itag" value="${s.itag}" data-itag="${s.itag}"> <div class="text-sm">${s.resolution || 'unknown'} — ${s.filesize_human || 'n/a'} — ${s.duration_human || ''}</div>`;
+        el.querySelector('input').addEventListener('change', ()=>{ selectedItag = s.itag; });
+        videoStreams.appendChild(el);
+      });
+
+      j.audio_streams.forEach(s=>{
+        const el = document.createElement('label');
+        el.className = 'flex items-center gap-3 p-2 bg-slate-800 rounded';
+        el.innerHTML = `<input type="radio" name="itag" value="${s.itag}" data-itag="${s.itag}"> <div class="text-sm">${s.quality || 'audio'} — ${s.filesize_human || 'n/a'} — ${s.duration_human || ''}</div>`;
+        el.querySelector('input').addEventListener('change', ()=>{ selectedItag = s.itag; });
+        audioStreams.appendChild(el);
+      });
+
+    }catch(e){ console.error(e); alert('Erro ao buscar streams'); }
+    finally{ fetchBtn.disabled = false; fetchBtn.textContent = 'Buscar'; }
+  });
+
+  downloadBtn.addEventListener('click', async ()=>{
+    if(!selectedItag){ alert('Selecione um stream para download'); return; }
+    const url = ytUrl.value.trim();
+    const dir = downloadDir.value.trim();
+    if(!dir){ if(!confirm('Nenhuma pasta informada. Deseja salvar na pasta padrão do servidor?')) return; }
+
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = 'Enviando...';
+
+    try{
+      const form = new FormData();
+      form.append('itag', selectedItag);
+      form.append('download_dir', dir);
+      // use async path
+      const res = await fetch('/download_async', { method: 'POST', body: form });
+      const j = await res.json();
+      if(!res.ok){ alert(j.error || 'Erro ao iniciar download'); return; }
+      jobInfo.classList.remove('hidden');
+      jobMsg.textContent = 'Job iniciado: ' + j.job_id;
+      jobProgress.textContent = 'Aguardando progresso...';
+
+      // poll status
+      const poll = setInterval(async ()=>{
+        const sres = await fetch('/download_status?job_id=' + encodeURIComponent(j.job_id));
+        const sj = await sres.json();
+        if(sj.error){ jobProgress.textContent = 'Erro: ' + sj.error; clearInterval(poll); downloadBtn.disabled=false; downloadBtn.textContent='Baixar (assíncrono)'; return; }
+        jobProgress.textContent = `${sj.status} — ${sj.percent || 0}% — ${sj.message || ''}`;
+        if(sj.status === 'done' || sj.status === 'error' || sj.status === 'cancelled'){
+          clearInterval(poll);
+          downloadBtn.disabled = false;
+          downloadBtn.textContent = 'Baixar (assíncrono)';
+        }
+      }, 2000);
+
+    }catch(e){ console.error(e); alert('Erro ao iniciar download'); }
+  });
+</script>
+{% endblock %}

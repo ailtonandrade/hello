@@ -4,6 +4,7 @@ import re
 import random
 import subprocess
 import json
+import requests
 from datetime import datetime
 from voice_generator import VoiceGenerator
 from video_generator import VideoGenerator
@@ -23,7 +24,7 @@ VOICE_VOLUME = 1.2
 VOICE_RADIO_EFFECT = True
 SUBTITLE_WORDS_PER_LINE = 3
 SUBTITLE_FONT_SIZE = 55
-SCREEN_ORIENTATION = "MOBILE"
+SCREEN_ORIENTATION = "DESKTOP"
 SUBTITLE_FONT_COLOR = (255, 191, 0, 200)
 SUBTITLE_FONT = "Lilita.ttf"
 FORCE_TEXT = None
@@ -50,38 +51,25 @@ def load_prompts(prompt_key):
 PROMPT_OLLAMA, PROMPT_POSITIVE_COMFY, PROMPT_NEGATIVE_COMFY = load_prompts(PROMPT_KEY)
 # \\ Configurações fixas
 
-def get_text_by_ollama(prompt_ollama):
-    print("🧠 Enviando prompt para o Ollama...")
-    print(f"⏳ [{datetime.now().strftime('%H:%M:%S')}] Aguardando resposta do modelo (qwen2.5:7b)...")
+def get_text_by_ollama(prompt):
 
-    try:
-        result = subprocess.run(
-            [
-                "ollama", "run", "qwen2.5:7b-instruct",
-            ],
-            input=prompt_ollama,
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            check=True
-        )
+    print(f"🤖 Solicitando texto ao modelo Ollama/Qwen2.5 às {datetime.now().strftime('%H:%M:%S')}...")
+    response = requests.post(
+        "http://localhost:11434/api/generate",
+        json={
+            "model": "qwen2.5:7b-instruct",
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "num_predict": 120,
+                "temperature": 0.6
+            }
+        },
+        timeout=600
+    )
 
-        if result.stdout.strip():
-            print(f"✅ [{datetime.now().strftime('%H:%M:%S')}] Resposta recebida com sucesso.")
-            return result.stdout.strip()
-        else:
-            print(f"⚠️ [{datetime.now().strftime('%H:%M:%S')}] Ollama respondeu, mas o texto veio vazio.")
-            return None
-
-    except subprocess.CalledProcessError as e:
-        print("❌ Erro ao executar o Ollama.")
-        print(f"STDERR: {e.stderr}")
-        return None
-
-    except Exception as e:
-        print("❌ Erro inesperado ao chamar o Ollama.")
-        print(e)
-        return None
+    print(f"✅ Resposta recebida às {datetime.now().strftime('%H:%M:%S')}")
+    return response.json()["response"].strip()
 
 def create_output_folder():
     """Cria pasta de saída."""
@@ -198,6 +186,7 @@ def main(
                 audio_duration=audio_duration,
                 prompt_positive=prompt_positive_comfy,
                 prompt_negative=prompt_negative_comfy,
+                screen_orientation=screen_orientation,
             )
 
             print(f"✅ Visual gerado: {base_video}")

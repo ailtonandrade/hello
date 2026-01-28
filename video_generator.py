@@ -616,19 +616,17 @@ class VideoGenerator:
             print("3/7 Adicionando música de fundo...")
             video = self.add_background_music(video, actual_audio_duration)
 
-            print("4/7 Aplicando efeitos visuais...")
-            
-            video = self.apply_video_effects(video)
-
             print("5/7 Adicionando legendas sincronizadas...")
-            video = self.add_synchronized_subtitles(
-                video,
-                text,
-                audio_path,
-                font_color,
-                x_pos=0.5,
-                y_pos=0.5
-            )
+            if self.screen_orientation == "MOBILE":
+                video = self.add_synchronized_subtitles(
+                    video,
+                    text,
+                    audio_path,
+                    font_color,
+                    x_pos=0.5,
+                    y_pos=0.85
+                )
+                
 
             print("6/7 Adicionando logo...")
             logo_path = f"images/logo-canal-{self.channel}.jpg"

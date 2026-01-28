@@ -136,6 +136,67 @@ def index():
         session['download_dir'] = ensure_download_dir()
     return render_template("index.html", streams=streams, audio_streams=audio_streams, default_itag=default_itag)
 
+
+@app.route('/youtube')
+def youtube_page():
+    # Modern downloader page
+    return render_template('youtube/downloader.html')
+
+@app.route('/api/fetch_streams', methods=['POST'])
+def api_fetch_streams():
+    data = None
+    try:
+        data = request.get_json(force=True)
+    except Exception:
+        data = request.form or {}
+
+    url = data.get('url') if data else None
+    if not url:
+        return jsonify({'error': 'missing url'}), 400
+
+    try:
+        yt = YouTube(url)
+        streams = yt.streams.filter(progressive=False, file_extension="mp4").all()
+        audio_streams = yt.streams.filter(only_audio=True).all()
+
+        seen_resolutions = set()
+        unique_streams = []
+        for stream in streams:
+            if stream.resolution in seen_resolutions:
+                continue
+            size = getattr(stream, 'filesize', None) or getattr(stream, 'filesize_approx', None)
+            duration = getattr(yt, 'length', None) or getattr(stream, 'duration', None)
+            unique_streams.append({
+                'itag': stream.itag,
+                'resolution': stream.resolution,
+                'filesize': size,
+                'filesize_human': _bytes_to_human(size),
+                'duration': duration,
+                'duration_human': _seconds_to_human(duration)
+            })
+            seen_resolutions.add(stream.resolution)
+
+        seen_audio = set()
+        unique_audio = []
+        for stream in audio_streams:
+            q = getattr(stream, 'abr', str(stream.itag))
+            if q in seen_audio:
+                continue
+            size = getattr(stream, 'filesize', None) or getattr(stream, 'filesize_approx', None)
+            duration = getattr(yt, 'length', None) or getattr(stream, 'duration', None)
+            unique_audio.append({
+                'itag': stream.itag,
+                'quality': q,
+                'filesize': size,
+                'filesize_human': _bytes_to_human(size),
+                'duration': duration,
+                'duration_human': _seconds_to_human(duration)
+            })
+            seen_audio.add(q)
+
+        return jsonify({'title': yt.title, 'thumbnail': yt.thumbnail_url, 'streams': unique_streams, 'audio_streams': unique_audio})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 @app.route("/download", methods=["POST"])
 def download():
     itag = request.form.get("itag")
