@@ -17,7 +17,7 @@ from prompts import PROMPTS
 CHANNEL = "tomdouniverso"
 THEME = "universe_sleep"
 VOICE_NAME = "Thom" # deactivated
-VOICE_SPEED = 1
+VOICE_SPEED = 1.1
 VOICE_PITCH = 0.9
 VOICE_VOLUME = 1.2
 VOICE_RADIO_EFFECT = True
@@ -52,7 +52,7 @@ PROMPT_OLLAMA, PROMPT_POSITIVE_COMFY, PROMPT_NEGATIVE_COMFY = load_prompts(PROMP
 
 def get_text_by_ollama(prompt_ollama):
     print("🧠 Enviando prompt para o Ollama...")
-    print(f"⏳ [{datetime.now().strftime('%H:%M:%S')}] Aguardando resposta do modelo (gemma3:4b)...")
+    print(f"⏳ [{datetime.now().strftime('%H:%M:%S')}] Aguardando resposta do modelo (qwen2.5:7b)...")
 
     try:
         result = subprocess.run(

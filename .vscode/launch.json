@@ -8,7 +8,7 @@
             "name": "Run Youtube Downloader",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/app.py",
+            "program": "${workspaceFolder}/youtube_downloader.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "python": "${workspaceFolder}/.venv/Scripts/python.exe",
