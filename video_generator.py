@@ -55,7 +55,7 @@ class VideoGenerator:
         self.whisper_model = None
 
     def get_video_size(self):
-        return (720, 1280) if self.screen_orientation == "MOBILE" else (1280, 720)
+        return (720, 1280) if self.screen_orientation == "MOBILE" else (1920, 1080)
 
     def get_recent_videos(theme, limit=None):
         files = glob.glob(f"videos/{theme}*.mp4")
@@ -646,10 +646,10 @@ class VideoGenerator:
                 video = self.add_image(
                     video,
                     subscribe_path,
-                    x_pos=0.3,
-                    y_pos=0.8,
+                    x_pos=0.2,
+                    y_pos=0.8 if self.screen_orientation == "MOBILE" else 0.2,
                     height=80,
-                    opacity=0.6
+                    opacity=0.5
                 )
 
             output_dir = os.path.dirname(output_path)

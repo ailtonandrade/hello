@@ -1,7 +1,7 @@
 # prompts.py
 
 PROMPTS = {
-        "pregacao_epica": {
+        "pregacao": {
                 "ollama": """
                         Write an inspiring biblical exegesis as a single flowing text in natural spoken Brazilian Portuguese.
                         The tone should be reflective and accessible, not academic.
@@ -42,9 +42,38 @@ PROMPTS = {
                         mythological figure, painting
                         """
         },
-        "universe_sleep": {
+        "universe_sleep_shorts": {
                 "ollama": """
-                        Write up to 1000 words a short scientific real curiousity discovery about one of these themes: space, nasa, satelite, planets, or comets.
+                        Write up to 50 words a short scientific real curiousity discovery about one of these themes: space, nasa, satelite, planets, or comets.
+                        Text in Brazilian Portuguese.
+                        Do use facts, numbers, names, or discoveries.
+                        Do not use lists, emojis, or titles.
+                        The text should feel gentle, spacious, and comforting.
+                        End with an open and serene thought, without a conclusion.
+                        Respond only with the final text.
+                        """,
+
+                "comfy_positive": """
+                        cinematic film still, low light atmosphere,
+                        vast universe inspired scene,
+                        deep space or quiet night sky,
+                        soft celestial light, dark blue and black tones,
+                        subtle stars, distant galaxies, gentle cosmic clouds,
+                        slow and calm visual mood,
+                        shot on anamorphic 50mm lens,
+                        slight softness, shallow depth of field,
+                        natural film grain, cinematic color grading,
+                        minimal composition, no visual tension,
+                        feels like a quiet contemplative moment from a calm science fiction film,
+                        timeless, peaceful, soothing
+                        """,
+
+                "comfy_negative": """
+                        japanese, chinese, woman, girl, man, indian"""
+        },
+        "universe_sleep_long": {
+                "ollama": """
+                        Write a lomg documentary scientific real curiousity discovery about one of these themes: space, nasa, satelite, planets, or comets.
                         Text in Brazilian Portuguese.
                         Do use facts, numbers, names, or discoveries.
                         Do not use lists, emojis, or titles.

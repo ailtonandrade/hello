@@ -1,6 +1,8 @@
 import pyautogui
 import time
 import os
+import requests
+from datetime import datetime
 import pyperclip
 import subprocess
 from youtube_oauth import get_access_token, youtube_upload_video
@@ -74,29 +76,53 @@ class YouTubeManager:
             print(f"Erro ao abrir o programa: {e}")
             return False
 
-    def automate_youtube_posting(self, theme, channel, title_description_generator, video_path=None):
+    def get_text_by_ollama(prompt):
+
+        print(f"🤖 Solicitando texto ao modelo Ollama/Qwen2.5 às {datetime.now().strftime('%H:%M:%S')}...")
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": "qwen2.5:7b-instruct",
+                "prompt": prompt,
+                "stream": False,
+                "options": {
+                    "num_predict": 120,
+                    "temperature": 0.6
+                }
+            },
+            timeout=600
+        )
+
+        print(f"✅ Resposta recebida às {datetime.now().strftime('%H:%M:%S')}")
+        return response.json()["response"].strip()
+
+    def automate_youtube_posting(self, theme, channel, text_narration, video_path=None):
         """
         Primeiro tenta via OAuth.
         Se falhar, cai para modo manual.
         """
 
+        # get title and description by ollama using text_narration
+        print("Gerando título e descrição do vídeo via Ollama... às", datetime.now().strftime('%H:%M:%S'))
+        text_narration_example = text_narration[:100] + "..." if len(text_narration) > 100 else text_narration
+        title = self.get_text_by_ollama(f"Generate a catchy YouTube video title based on this narration: {text_narration_example}")
+        description = self.get_text_by_ollama(f"Generate a detailed YouTube video description based on this narration: {text_narration_example}")
         video_info = {
             "filepath": video_path,
-            "generated_info": title_description_generator.generate(theme)
+            "generated_info": {
+                            "title": title,
+                            "description": description
+                        }
         }
 
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Título gerado: {title}")
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] Descrição gerada: {description}")
+        
         # 1️⃣ tenta modo moderno
         if self.upload_youtube_oauth(video_info):
             return
 
-        # 2️⃣ fallback manual
-        self.upload_youtube_manual(
-            theme,
-            channel,
-            title_description_generator,
-            video_path
-        )
-        
+
     def upload_youtube_manual(self, theme, channel, title_description_generator, video_path=None):
         """
         Automate the YouTube posting process.
