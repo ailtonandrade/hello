@@ -105,8 +105,8 @@ class YouTubeManager:
         # get title and description by ollama using text_narration
         print("Gerando título e descrição do vídeo via Ollama... às", datetime.now().strftime('%H:%M:%S'))
         text_narration_example = text_narration[:100] + "..." if len(text_narration) > 100 else text_narration
-        title = self.get_text_by_ollama(f"Generate a catchy YouTube video title based on this narration: {text_narration_example}")
-        description = self.get_text_by_ollama(f"Generate a detailed YouTube video description based on this narration: {text_narration_example}")
+        title = self.get_text_by_ollama(f"Generate in Brazilian Portuguese a catchy YouTube video title based on this narration: {text_narration_example}")
+        description = self.get_text_by_ollama(f"Generate in Brazilian Portuguese a detailed YouTube video description based on this narration: {text_narration_example}")
         video_info = {
             "filepath": video_path,
             "generated_info": {

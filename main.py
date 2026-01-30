@@ -16,9 +16,9 @@ from prompts import PROMPTS
 
 # Configurações fixas
 CHANNEL = "tomdouniverso"
-THEME = "universe_sleep_long"
+THEME = "universe_sleep_shorts"
 VOICE_NAME = "Thom" # deactivated
-SCREEN_ORIENTATION = "DESKTOP"
+SCREEN_ORIENTATION = "MOBILE"  # "MOBILE" ou "DESKTOP"
 VOICE_SPEED = 1.1
 VOICE_PITCH = 0.9
 VOICE_VOLUME = 1.2
@@ -29,7 +29,7 @@ SUBTITLE_FONT_SIZE = 55 if SCREEN_ORIENTATION == "MOBILE" else 40
 SUBTITLE_FONT_COLOR = (255, 191, 0, 200)
 SUBTITLE_FONT = "Lilita.ttf"
 FORCE_TEXT = None
-PROMPT_KEY = "universe_sleep_long"
+PROMPT_KEY = "universe_sleep_shorts"
 GENERATE_NEW_FRAMES = True
 # Progress tracking (0-100)
 PROGRESS = 0
