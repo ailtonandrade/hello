@@ -22,11 +22,11 @@ FRAMES_DIR = Path("./frames")
 OVERLAYS_DIR = Path("./overlays")
 VIDEOS_DIR = Path("./videos")
 
-FRAME_WIDTH = 540
-FRAME_HEIGHT = 920
+FRAME_WIDTH = 720
+FRAME_HEIGHT = 1280
 
-VIDEO_WIDTH = 540
-VIDEO_HEIGHT = 920
+VIDEO_WIDTH = 720
+VIDEO_HEIGHT = 1280
 FINAL_FPS = 12
 FINAL_TIME = 5 if VIDEO_HEIGHT > VIDEO_WIDTH else 10
 FADE_TIME = 0.3
@@ -55,10 +55,10 @@ class ComfySingleFrameVideoGenerator:
         video_height = VIDEO_HEIGHT
 
         if screen_orientation.upper() == "DESKTOP":
-            frame_height = 540
-            frame_width = 920
-            video_width = 920
-            video_height = 540
+            frame_height = 720
+            frame_width = 1280
+            video_width = 1280
+            video_height = 720
 
         with open(workflow_path, "r", encoding="utf-8") as f:
             wf = json.load(f)
@@ -114,10 +114,10 @@ class ComfySingleFrameVideoGenerator:
         video_height = VIDEO_HEIGHT
 
         if screen_orientation.upper() == "DESKTOP":
-            frame_height = 540
-            frame_width = 920
-            video_width = 920
-            video_height = 540
+            frame_height = 720
+            frame_width = 1280
+            video_width = 1280
+            video_height = 720
 
         output_video = VIDEOS_DIR / f"{theme}_{random.randint(0,9999)}.mp4"
 

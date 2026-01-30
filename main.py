@@ -5,7 +5,7 @@ import random
 import subprocess
 import json
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 from voice_generator import VoiceGenerator
 from video_generator import VideoGenerator
 from youtube_manager import YouTubeManager
@@ -532,4 +532,7 @@ if __name__ == "__main__":
             print(f"⏱️ Tempo total de execução: {hours}h {minutes}m {seconds}s")
 
         #pausar por 3 horas
-        time.sleep(3*60*60)
+        time_wait = 3*60*60
+        next_post = datetime.now() +  timedelta(seconds=time_wait)
+        print("Próximo vídeo será postado às ", next_post.strftime("%Y-%m-%d %H:%M:%S"))
+        time.sleep(time_wait)
