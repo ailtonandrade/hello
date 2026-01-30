@@ -48,12 +48,17 @@ class ComfySingleFrameVideoGenerator:
     # -------------------------
     def _run_workflow(self, workflow_path, prompt_positive, prompt_negative, screen_orientation="MOBILE"):
 
-        if screen_orientation.upper() == "DESKTOP":
-            FRAME_HEIGHT = 540
-            FRAME_WIDTH = 920
-            VIDEO_WIDTH = 920
-            VIDEO_HEIGHT = 540  
+        # start from module-level defaults and override for DESKTOP if needed
+        frame_width = FRAME_WIDTH
+        frame_height = FRAME_HEIGHT
+        video_width = VIDEO_WIDTH
+        video_height = VIDEO_HEIGHT
 
+        if screen_orientation.upper() == "DESKTOP":
+            frame_height = 540
+            frame_width = 920
+            video_width = 920
+            video_height = 540
 
         with open(workflow_path, "r", encoding="utf-8") as f:
             wf = json.load(f)
@@ -61,8 +66,8 @@ class ComfySingleFrameVideoGenerator:
         for node in wf["prompt"].values():
 
             if node["class_type"] == "EmptyLatentImage":
-                node["inputs"]["width"] = FRAME_WIDTH
-                node["inputs"]["height"] = FRAME_HEIGHT
+                node["inputs"]["width"] = frame_width
+                node["inputs"]["height"] = frame_height
 
             if node["class_type"] == "CLIPTextEncode":
                 text = node["inputs"].get("text", "")
@@ -102,14 +107,18 @@ class ComfySingleFrameVideoGenerator:
     # -------------------------
     def create_video_from_frame(self, frame_path, theme, screen_orientation="MOBILE"):
         import random
+        # start from module-level defaults and override for DESKTOP if needed
+        frame_width = FRAME_WIDTH
+        frame_height = FRAME_HEIGHT
+        video_width = VIDEO_WIDTH
+        video_height = VIDEO_HEIGHT
 
         if screen_orientation.upper() == "DESKTOP":
-            FRAME_HEIGHT = 540
-            FRAME_WIDTH = 920
-            VIDEO_WIDTH = 920
-            VIDEO_HEIGHT = 540
+            frame_height = 540
+            frame_width = 920
+            video_width = 920
+            video_height = 540
 
-            
         output_video = VIDEOS_DIR / f"{theme}_{random.randint(0,9999)}.mp4"
 
         # 🎛️ CONTROLES DE ZOOM (AJUSTE AQUI)
@@ -131,14 +140,14 @@ class ComfySingleFrameVideoGenerator:
         
         filter_complex = (
             f"[0:v]"
-            f"scale={VIDEO_WIDTH}:{VIDEO_HEIGHT}:force_original_aspect_ratio=decrease,"
-            f"pad={VIDEO_WIDTH}:{VIDEO_HEIGHT}:(ow-iw)/2:(oh-ih)/2,"
+            f"scale={video_width}:{video_height}:force_original_aspect_ratio=decrease,"
+            f"pad={video_width}:{video_height}:(ow-iw)/2:(oh-ih)/2,"
             f"zoompan="
                 f"z='{zoom_start}+({zoom_end}-{zoom_start})*on/({FINAL_TIME*FINAL_FPS}-1)':"
                 f"x='iw/2-(iw/zoom/2)':"
                 f"y='ih/2-(ih/zoom/2)':"
                 f"d=1,"
-            f"scale={VIDEO_WIDTH}:{VIDEO_HEIGHT},"
+            f"scale={video_width}:{video_height},"
             f"format=gbrp,"
             f"fade=t=in:st=0:d={FADE_TIME},"
             f"fade=t=out:st={FINAL_TIME-FADE_TIME}:d={FADE_TIME}"
