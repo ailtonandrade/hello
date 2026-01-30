@@ -255,8 +255,6 @@ def sanitize_Text(text):
     text = text.strip()
     # Remove retissos desnecessários
     text = re.sub(r'\.{3,}', '...', text)
-    # Troca pontos por vírgulas
-    text = re.sub(r'(?<!\.)\.(?!\.)', ';', text)
     return text
 
 def main(
