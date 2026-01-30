@@ -76,7 +76,7 @@ class YouTubeManager:
             print(f"Erro ao abrir o programa: {e}")
             return False
 
-    def get_text_by_ollama(prompt):
+    def get_text_by_ollama(self, prompt):
 
         print(f"🤖 Solicitando texto ao modelo Ollama/Qwen2.5 às {datetime.now().strftime('%H:%M:%S')}...")
         response = requests.post(

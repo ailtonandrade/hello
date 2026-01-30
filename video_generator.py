@@ -634,8 +634,8 @@ class VideoGenerator:
                 video = self.add_image(
                     video,
                     logo_path,
-                    x_pos=0.45,
-                    y_pos=0.02,
+                    x_pos=0.45 if self.screen_orientation == "MOBILE" else 0.2,
+                    y_pos=0.2 if self.screen_orientation == "MOBILE" else 0.2,
                     height=100,
                     opacity=0.7
                 )
@@ -647,9 +647,9 @@ class VideoGenerator:
                     video,
                     subscribe_path,
                     x_pos=0.2,
-                    y_pos=0.8 if self.screen_orientation == "MOBILE" else 0.2,
-                    height=80,
-                    opacity=0.5
+                    y_pos=0.8 if self.screen_orientation == "MOBILE" else 0.9,
+                    height=50,
+                    opacity=0.4
                 )
 
             output_dir = os.path.dirname(output_path)
