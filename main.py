@@ -98,7 +98,7 @@ def get_text_by_ollama(prompt, theme=None):
     # finishes the reasoning (heuristic: ends with sentence-final punctuation)
     if theme and "long" in theme.lower():
         print("ℹ️ Tema 'long' detectado — tentando gerar texto longo por continuação automática.")
-
+    
         def _is_finished(t: str):
             if not t:
                 return False
@@ -109,12 +109,12 @@ def get_text_by_ollama(prompt, theme=None):
             return bool(re.search(r"\w$", t)) and not bool(re.search(r"[\.\!\?\—…\"]\s*$", t))
 
         max_rounds = 12
+        min_rounds = 5
         rounds = 0
         accumulated = text
 
-        # If initial chunk already looks finished, return it
-        if _is_finished(accumulated) and not _has_cutoff(accumulated):
-            return accumulated
+        # Ensure we attempt at least `min_rounds` continuations for 'long' themes.
+        # Do not return immediately even if the initial chunk looks finished.
 
         while rounds < max_rounds:
             rounds += 1
@@ -147,14 +147,15 @@ def get_text_by_ollama(prompt, theme=None):
 
             # join cleanly
             if accumulated and not accumulated.endswith("\n") and not appended.startswith("\n"):
-                accumulated = accumulated + "\n\n" + appended
+                accumulated = accumulated + appended
             else:
                 accumulated = accumulated + appended
 
             print(f"ℹ️ Round {rounds} aplicado — tamanho atual: {len(accumulated)} chars")
 
-            # if finished (sentence end) and not cut off mid-word, stop
-            if _is_finished(accumulated) and not _has_cutoff(accumulated):
+            # if finished (sentence end) and not cut off mid-word, stop only
+            # after we've reached the minimum number of rounds
+            if _is_finished(accumulated) and not _has_cutoff(accumulated) and rounds >= min_rounds:
                 print("✅ Texto finalizado pelo modelo (detecção heurística).")
                 break
 
