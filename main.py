@@ -261,7 +261,7 @@ def sanitize_Text(text):
 
 def main(
         channel="parallelcuts",
-        theme=THENE,
+        theme=THEME,
         prompt_key=PROMPT_KEY,
         prompt_ollama=PROMPT_OLLAMA, 
         prompt_positive_comfy=PROMPT_POSITIVE_COMFY, 
