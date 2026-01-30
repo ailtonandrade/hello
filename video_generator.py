@@ -624,7 +624,7 @@ class VideoGenerator:
                     audio_path,
                     font_color,
                     x_pos=0.5,
-                    y_pos=0.85
+                    y_pos=0.65 if self.screen_orientation == "MOBILE" else 0.85
                 )
                 
 
