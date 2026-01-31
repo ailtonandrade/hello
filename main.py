@@ -65,7 +65,7 @@ def get_text_by_ollama(prompt, theme=None):
                 "model": "qwen2.5:7b-instruct",
                 "prompt": p,
                 "stream": False,
-                "options": {"num_predict": 100, "temperature": 0.6}
+                "options": {"num_predict": 400, "temperature": 0.6}
             }
             resp = requests.post("http://localhost:11434/api/generate", json=payload, timeout=timeout)
             resp.raise_for_status()
@@ -251,6 +251,8 @@ def sanitize_Text(text):
     text = re.sub(r'\n\s*\n', '\n', text)
     # Remover os \n
     text = text.replace('\n', ' ')
+    # Remover os . que não vem apos um numero
+    text = re.sub(r'(?<!\d)\.(?!\d)', '', text)
     # Remove espaços no início e fim do texto
     text = text.strip()
     # Remove retissos desnecessários

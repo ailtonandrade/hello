@@ -42,7 +42,7 @@ PROMPTS = {
                         mythological figure, painting
                         """
         },
-        "universe_sleep_shorts": {
+        "bkp_1_universe_sleep_shorts": {
                 "ollama": """
                         Write up to 100 words a short scientific real curiousity discovery about one of these themes choiced randomly: space, nasa, satelite, planets, or comets.
                         Text in Brazilian Portuguese.
@@ -50,7 +50,7 @@ PROMPTS = {
                         Do not use lists, emojis, or titles.
                         The text should feel gentle, spacious, and comforting.
                         End with an open and serene thought, without a conclusion.
-                        Respond only with the final text.
+                        Respond only with the final text.Don’t interrupt the text abruptly.
                         """,
 
                 "comfy_positive": """
@@ -70,6 +70,48 @@ PROMPTS = {
 
                 "comfy_negative": """
                         japanese, chinese, woman, girl, man, indian"""
+        },
+        "universe_sleep_shorts": {
+                "ollama": """
+                        Write up to 100 words a short scientific real curiousity discovery about one of these themes choiced randomly: space, nasa, satelite, planets, or comets.
+                        Text in Brazilian Portuguese.
+                        Do use facts, numbers, names, or discoveries.
+                        Do not use lists, emojis, or titles.
+                        The text should feel gentle, spacious, and comforting.
+                        End with an open and serene thought, without a conclusion.
+                        Respond only with the final text.Don’t interrupt the text abruptly.
+                        """,
+
+                "comfy_positive": """
+                        cinematic science fiction planet landscape,
+                        alien planet atmosphere inspired by no man's sky and starfield,
+                        vast planetary horizon, distant mountains or hills,
+                        thick atmospheric haze and soft fog layers,
+                        vibrant blue and deep purple atmospheric tones,
+                        colorful alien sky with subtle clouds and light scattering,
+                        bioluminescent atmospheric glow,
+                        gentle celestial light filtering through the atmosphere,
+                        calm and silent alien world,
+                        rich yet harmonious color palette,
+                        vibrant but soft cosmic colors, not neon,
+                        sense of scale and solitude,
+                        shot on anamorphic 50mm lens,
+                        slight softness, shallow depth of field,
+                        natural film grain, cinematic color grading,
+                        minimal composition, no characters, no buildings,
+                        peaceful, contemplative, otherworldly
+                        """,
+
+                "comfy_negative": """
+                        people, human, woman, man, child,
+                        faces, portraits, characters,
+                        cities, buildings, roads,
+                        spaceships, satellites, space stations,
+                        anime, manga, cartoon, illustration,
+                        japanese, chinese, indian,
+                        text, symbols, logos,
+                        overly sharp, high contrast, vibrant neon, neon, oversaturated, cyberpunk, harsh contrast
+                        """
         },
         "universe_sleep_long": {
                 "ollama": """
@@ -79,7 +121,7 @@ PROMPTS = {
                         Do not use lists, emojis, or titles.
                         The text should feel gentle, spacious, and comforting.
                         End with an open and serene thought, without a conclusion.
-                        Respond only with the final text.
+                        Respond only with the final text. Don’t interrupt the text abruptly.
                         """,
 
                 "comfy_positive": """
@@ -96,46 +138,7 @@ PROMPTS = {
                         feels like a quiet contemplative moment from a calm science fiction film,
                         timeless, peaceful, soothing
                         """,
-
                 "comfy_negative": """
                         japanese, chinese, woman, girl, man, indian"""
         },
-        "universe_scriptures": {
-                "ollama": """
-                        Write up to 700 words in Brazilian Portuguese.
-                        The text must sound like ancient astronomical knowledge,
-                        spoken by someone trying to understand the sky without science.
-                        Mix real celestial ideas with doubt, fear and obsession.
-                        Do not explain anything clearly.
-                        Avoid conclusions, lists or certainty.
-                        End mid-thought, as if the writing suddenly stopped.
-                        Respond only with the final text.
-                        """,
-
-                "comfy_positive": """
-                        ancient parchment manuscript,
-                        fictional pre-columbian inspired glyph writing,
-                        unknown symbols repeating with internal logic,
-                        looks like a real ancient language but not identifiable,
-                        astronomical drawings mixed with strange glyph text,
-                        hand drawn stars, planets and celestial paths,
-                        obsessive annotations covering the page,
-                        uneven ink density, handmade imperfections,
-                        ritualistic and obsessive tone,
-                        drawings feel intentional but misunderstood,
-                        as if an ancient mind tried to explain the cosmos,
-                        no modern knowledge, no clear diagrams,
-                        feels like forbidden astronomical notes
-                        """,
-
-                "comfy_negative": """
-                        mandala, concentric circles,
-                        perfect symmetry,
-                        geometric diagram,
-                        astrological chart,
-                        single central object,
-                        balanced composition,
-                        japanese, chinese"""
-        },
-    
 }
