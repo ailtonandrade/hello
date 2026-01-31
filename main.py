@@ -535,8 +535,8 @@ if __name__ == "__main__":
             print("🧹 Limpeza concluída")
             print(f"⏱️ Tempo total de execução: {hours}h {minutes}m {seconds}s")
 
-        #pausar por 3 horas
-        time_wait = 3*60*60
+        #pausar por 4 horas
+        time_wait = 4*60*60
         next_post = datetime.now() +  timedelta(seconds=time_wait)
         print("Próximo vídeo será postado às ", next_post.strftime("%Y-%m-%d %H:%M:%S"))
         time.sleep(time_wait)
