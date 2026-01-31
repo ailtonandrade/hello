@@ -280,6 +280,12 @@ def main(
     ):
     """Gera vídeo completo."""
 
+    # se hora tiver entre 00 e 0600 nao fFazer nada
+    current_hour = datetime.now().hour
+    if 0 <= current_hour < 6:
+        print("⏰ Horário entre 00:00 e 06:00, não gerando vídeo.")
+        return
+
     print("🎬 INICIANDO GERAÇÃO DE VÍDEO")
 
     global PROGRESS, PROGRESS_MESSAGE
