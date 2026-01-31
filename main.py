@@ -243,20 +243,16 @@ def create_output_folder():
     print(f"📁 Pasta de saída criada: {output_folder}")
     return output_folder
 
-def sanitize_Text(text):
-    """Sanitiza o texto removendo espaços extras e linhas em branco."""
-    # Remove espaços extras
-    text = re.sub(r'[ \t]+', ' ', text)
-    # Remove linhas em branco
-    text = re.sub(r'\n\s*\n', '\n', text)
-    # Remover os \n
-    text = text.replace('\n', ' ')
-    # Remover os . que não vem apos um numero
-    text = re.sub(r'(?<!\d)\.(?!\d)', '', text)
-    # Remove espaços no início e fim do texto
-    text = text.strip()
-    # Remove retissos desnecessários
-    text = re.sub(r'\.{3,}', '...', text)
+def sanitize_text_for_tts(text: str) -> str:
+    # normaliza espaços
+    text = re.sub(r'\s+', ' ', text.strip())
+
+    # protege números decimais (16.5 → 16⸱5)
+    text = re.sub(r'(\d)\.(\d)', r'\1⸱\2', text)
+
+    # ponto final vira PAUSA INVISÍVEL
+    text = re.sub(r'(?<!\d)\.', '; ', text)
+
     return text
 
 def main(
@@ -298,7 +294,7 @@ def main(
     # TEXTO
     # =========================
     FORCE_TEXT = get_text_by_ollama(prompt_ollama, THEME) if force_text is None else force_text
-    FORCE_TEXT = sanitize_Text(FORCE_TEXT)
+    FORCE_TEXT = sanitize_text_for_tts(FORCE_TEXT)
 
     print(f"📝 Texto final para geração:\n{FORCE_TEXT}\n")
 

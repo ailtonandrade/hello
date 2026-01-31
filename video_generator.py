@@ -28,7 +28,7 @@ from PIL import Image, ImageDraw, ImageFont
 class VideoGenerator:
     def __init__(
         self,
-        theme="pregacao",
+        theme="universe_sleep_shorts",
         channel="parallelcuts",
         zoom_strength=0.015,
         grain_intensity=0.08,

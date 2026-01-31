@@ -73,7 +73,7 @@ PROMPTS = {
         },
         "universe_sleep_shorts": {
                 "ollama": """
-                        Write up to 120 words a short scientific real curiousity discovery about one of these themes choiced randomly: space, nasa, satelite, planets, or comets.
+                        Write up to 120 words a short scientific real curiosity about one of these themes choiced randomly: space, nasa, satelite, planets, or comets.
                         Text in Brazilian Portuguese.
                         Do use facts, numbers, names, or discoveries.
                         Do not use lists, emojis, or titles.
