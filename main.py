@@ -65,7 +65,7 @@ def get_text_by_ollama(prompt, theme=None):
                 "model": "qwen2.5:7b-instruct",
                 "prompt": p,
                 "stream": False,
-                "options": {"num_predict": 400, "temperature": 0.6}
+                "options": {"num_predict": 300, "temperature": 0.6}
             }
             resp = requests.post("http://localhost:11434/api/generate", json=payload, timeout=timeout)
             resp.raise_for_status()
@@ -381,7 +381,7 @@ def main(
     # VÍDEO FINAL
     # =========================
     video_gen = VideoGenerator(
-        theme=theme,
+        theme=THEME,
         channel=channel,
         zoom_strength=0.025,
         grain_intensity=0.08,

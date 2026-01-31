@@ -44,7 +44,7 @@ PROMPTS = {
         },
         "bkp_1_universe_sleep_shorts": {
                 "ollama": """
-                        Write up to 100 words a short scientific real curiousity discovery about one of these themes choiced randomly: space, nasa, satelite, planets, or comets.
+                        Write up to 120 words a short scientific real curiousity discovery about one of these themes choiced randomly: space, nasa, satelite, planets, or comets.
                         Text in Brazilian Portuguese.
                         Do use facts, numbers, names, or discoveries.
                         Do not use lists, emojis, or titles.
@@ -57,7 +57,7 @@ PROMPTS = {
                         cinematic film still, low light atmosphere,
                         vast universe inspired scene,
                         deep space or quiet night sky,
-                        soft celestial light, dark blue and black tones,
+                        soft celestial light, dark purple and black tones,
                         subtle stars, distant galaxies, gentle cosmic clouds,
                         slow and calm visual mood,
                         shot on anamorphic 50mm lens,
@@ -73,7 +73,7 @@ PROMPTS = {
         },
         "universe_sleep_shorts": {
                 "ollama": """
-                        Write up to 100 words a short scientific real curiousity discovery about one of these themes choiced randomly: space, nasa, satelite, planets, or comets.
+                        Write up to 120 words a short scientific real curiousity discovery about one of these themes choiced randomly: space, nasa, satelite, planets, or comets.
                         Text in Brazilian Portuguese.
                         Do use facts, numbers, names, or discoveries.
                         Do not use lists, emojis, or titles.
@@ -90,7 +90,7 @@ PROMPTS = {
                         rocky and mineral-rich soil with fine dust and subtle surface patterns,
                         eroded terrain with natural formations,
                         soft ground fog and low atmospheric haze,
-                        deep night atmosphere with dark blue and deep purple tones,
+                        deep night atmosphere with dark purple and deep blue tones,
                         completely sunless sky, no sunrise, no sunset, no daylight,
                         illuminated only by starlight and planetary glow,
                         massive planet visible in the sky,
