@@ -77,8 +77,8 @@ PROMPTS = {
                         Text in Brazilian Portuguese.
                         Do use facts, numbers, names, or discoveries.
                         Do not use lists, emojis, or titles.
-                        The text should feel gentle, spacious, and comforting.
-                        End with an open and serene thought, without a conclusion.
+                        The text should feel gentle.
+                        End with an open and serene conclusion.
                         Respond only with the final text.Don’t interrupt the text abruptly.
                         """,
 
