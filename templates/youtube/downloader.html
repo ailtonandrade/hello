@@ -153,8 +153,14 @@
         const sres = await fetch('/download_status?job_id=' + encodeURIComponent(j.job_id));
         const sj = await sres.json();
         if(sj.error){ jobProgress.textContent = 'Erro: ' + sj.error; clearInterval(poll); downloadBtn.disabled=false; downloadBtn.textContent='Baixar (assíncrono)'; return; }
-        jobProgress.textContent = `${sj.status} — ${sj.percent || 0}% — ${sj.message || ''}`;
-        if(sj.status === 'done' || sj.status === 'error' || sj.status === 'cancelled'){
+        jobProgress.textContent = `${sj.status} — ${sj.message || ''}`;
+        if(sj.status === 'done'){
+          clearInterval(poll);
+          downloadBtn.disabled = false;
+          downloadBtn.textContent = 'Baixar (assíncrono)';
+          // Trigger download from server
+          window.location.href = '/download_file/' + encodeURIComponent(j.job_id);
+        } else if(sj.status === 'error' || sj.status === 'cancelled'){
           clearInterval(poll);
           downloadBtn.disabled = false;
           downloadBtn.textContent = 'Baixar (assíncrono)';

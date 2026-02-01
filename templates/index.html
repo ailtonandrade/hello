@@ -14,18 +14,20 @@
       {% endif %}
     {% endwith %}
 
-    <form method="post" class="mb-4">
-      <div class="flex gap-2">
-        <input type="text" name="url" class="flex-1 bg-slate-900 border border-slate-700 rounded-md px-3 py-2" placeholder="YouTube URL" value="{{ session.url if session.url }}">
-        <button class="px-3 py-2 bg-emerald-400 text-slate-900 rounded-md" name="fetch">Buscar</button>
-        <button class="px-3 py-2 bg-slate-700 text-slate-200 rounded-md" name="clear">Limpar</button>
+    <form method="post" class="mb-6">
+      <div class="flex flex-col sm:flex-row gap-2">
+        <button id="pasteBtn" type="button" class="w-full sm:w-auto px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-medium transition-colors">Colar</button>
+        <input type="text" name="url" id="urlInput" class="w-full bg-slate-900 border border-slate-700 rounded-md px-3 py-2 text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Cole ou digite a URL do YouTube aqui" value="{{ session.url if session.url }}">
+        <button class="w-full sm:w-auto px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-md font-medium transition-colors" name="fetch">Buscar</button>
+        <button class="w-full sm:w-auto px-4 py-2 bg-slate-600 hover:bg-slate-700 text-slate-200 rounded-md font-medium transition-colors" name="clear">Limpar</button>
       </div>
     </form>
 
     {% if streams %}
       <div class="mb-4 bg-slate-900 p-4 rounded">
         <h5 class="font-semibold mb-2">Streams de vídeo</h5>
-        <form method="post" action="/download">
+        <form method="post">
+          <input type="hidden" name="url" value="{{ session.url }}">
           <div class="space-y-2 mb-3">
             {% for s in streams %}
               <label class="flex items-center gap-3 p-2 bg-slate-800 rounded">
@@ -38,7 +40,7 @@
             <input type="text" name="download_dir" class="bg-slate-900 border border-slate-700 rounded-md px-3 py-2" value="{{ session.download_dir }}" placeholder="Salvar em">
             <input type="text" name="filename" class="bg-slate-900 border border-slate-700 rounded-md px-3 py-2" value="{{ session.download_filename }}" placeholder="Nome do arquivo (opcional)">
           </div>
-          <button class="px-4 py-2 bg-emerald-500 text-slate-900 rounded">Baixar</button>
+          <button type="submit" class="px-4 py-2 bg-emerald-500 text-slate-900 rounded">Baixar</button>
         </form>
       </div>
     {% endif %}
@@ -46,7 +48,8 @@
     {% if audio_streams %}
       <div class="mb-4 bg-slate-900 p-4 rounded">
         <h5 class="font-semibold mb-2">Streams de áudio</h5>
-        <form method="post" action="/download">
+        <form method="post">
+          <input type="hidden" name="url" value="{{ session.url }}">
           <div class="space-y-2 mb-3">
             {% for s in audio_streams %}
               <label class="flex items-center gap-3 p-2 bg-slate-800 rounded">
@@ -58,11 +61,24 @@
           <div class="mb-3">
             <input type="text" name="download_dir" class="bg-slate-900 border border-slate-700 rounded-md px-3 py-2" value="{{ session.download_dir }}" placeholder="Salvar em">
           </div>
-          <button class="px-4 py-2 bg-emerald-500 text-slate-900 rounded">Baixar áudio</button>
+          <button type="submit" class="px-4 py-2 bg-emerald-500 text-slate-900 rounded">Baixar áudio</button>
         </form>
       </div>
     {% endif %}
 
     <p class="text-slate-400 text-sm">Downloads assíncronos também disponíveis via <code>/download_async</code> (retorna <code>job_id</code>).</p>
   </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('pasteBtn').addEventListener('click', async () => {
+  try {
+    const text = await navigator.clipboard.readText();
+    document.getElementById('urlInput').value = text;
+  } catch (err) {
+    alert('Erro ao acessar a área de transferência: ' + err.message);
+  }
+});
+</script>
 {% endblock %}

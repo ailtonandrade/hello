@@ -73,52 +73,33 @@ PROMPTS = {
         },
         "universe_sleep_shorts": {
                 "ollama": """
-                        Write up to 120 words a short scientific real curiosity about one of these themes choiced randomly: space, nasa, satelite, planets, or comets.
-                        Text in Brazilian Portuguese.
-                        Do use facts, numbers, names, or discoveries.
+                        Write up to 120 words a short scientific curiosity with an exaggerated conspiracy-theory tone, designed to feel intriguing and slightly unsettling without being aggressive.
+                        Randomly choose one of these themes: space, NASA, satellites, planets, or comets.
+                        The text must be written in Brazilian Portuguese.
+                        Use facts, numbers, names, or real discoveries, but reinterpret them through speculative or conspiratorial ideas.
                         Do not use lists, emojis, or titles.
-                        The text should feel gentle.
-                        End with an open and serene conclusion.
-                        Respond only with the final text.Don’t interrupt the text abruptly.
+                        The tone should be calm, mysterious, and gently dramatic, as if revealing a hidden truth.
+                        End with an open, serene, and suggestive thought, without conclusions.
+                        Respond only with the final text and do not interrupt it abruptly.
                         """,
 
                 "comfy_positive": """
-                        cinematic science fiction planet landscape at deep night,
-                        alien planet atmosphere inspired by no man's sky and starfield,
-                        vast planetary horizon, distant mountains or hills,
-                        highly detailed alien ground textures,
-                        rocky and mineral-rich soil with fine dust and subtle surface patterns,
-                        eroded terrain with natural formations,
-                        soft ground fog and low atmospheric haze,
-                        deep night atmosphere with dark purple and deep blue tones,
-                        completely sunless sky, no sunrise, no sunset, no daylight,
-                        illuminated only by starlight and planetary glow,
-                        massive planet visible in the sky,
-                        large celestial body dominating the horizon,
-                        richly detailed night sky filled with stars,
-                        visible milky way, distant galaxies and faint nebulae,
-                        soft bioluminescent atmospheric glow,
-                        calm and silent alien world,
-                        cool and harmonious color palette,
-                        vibrant but restrained cosmic colors, not neon,
-                        strong sense of scale, solitude and awe,
+                        cinematic film still, low light atmosphere,
+                        vast universe inspired scene,
+                        deep space or quiet night sky,
+                        soft celestial light, dark purple and black tones,
+                        subtle stars, distant galaxies, gentle cosmic clouds,
+                        slow and calm visual mood,
                         shot on anamorphic 50mm lens,
                         slight softness, shallow depth of field,
                         natural film grain, cinematic color grading,
-                        minimal composition, no characters, no buildings,
-                        peaceful, contemplative, otherworldly
+                        minimal composition, no visual tension,
+                        feels like a quiet contemplative moment from a calm science fiction film,
+                        timeless, peaceful, soothing
                         """,
 
                 "comfy_negative": """
-                        sun, sunlight, solar glow, daylight, dawn, dusk, sunset, sunrise,
-                        golden hour, warm light, orange light, yellow light,
-                        lens flare, bright highlights,
-                        neon, cyberpunk,
-                        people, characters, animals,
-                        cities, buildings, vehicles,
-                        cartoon, illustration, anime,
-                        text, symbols, logos
-                        """
+                        japanese, chinese, woman, girl, man, indian"""
         },
         "universe_sleep_long": {
                 "ollama": """
