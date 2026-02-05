@@ -84,22 +84,12 @@ PROMPTS = {
                         """,
 
                 "comfy_positive": """
-                        cinematic film still, low light atmosphere,
-                        vast universe inspired scene,
-                        deep space or quiet night sky,
-                        soft celestial light, dark purple and black tones,
-                        subtle stars, distant galaxies, gentle cosmic clouds,
-                        slow and calm visual mood,
-                        shot on anamorphic 50mm lens,
-                        slight softness, shallow depth of field,
-                        natural film grain, cinematic color grading,
-                        minimal composition, no visual tension,
-                        feels like a quiet contemplative moment from a calm science fiction film,
-                        timeless, peaceful, soothing
+                        realistic night orbit atmosphere, bloom, International Space Station, dark blue and emerald tones, cosmic cloud
                         """,
 
                 "comfy_negative": """
-                        japanese, chinese, woman, girl, man, indian"""
+                        text, watermark, woman, girl, abstract
+                        """
         },
         "universe_sleep_long": {
                 "ollama": """
