@@ -76,6 +76,7 @@ PROMPTS = {
                         Write up to 120 words a short scientific curiosity with an exaggerated conspiracy-theory tone, designed to feel intriguing and slightly unsettling without being aggressive.
                         Randomly choose one of these themes: space, NASA, satellites, planets, or comets.
                         The text must be written in Brazilian Portuguese.
+                        Do NOT mention NASA, or institutions by name.
                         Use facts, numbers, names, or real discoveries, but reinterpret them through speculative or conspiratorial ideas.
                         Do not use lists, emojis, or titles.
                         The tone should be calm, mysterious, and gently dramatic, as if revealing a hidden truth.
