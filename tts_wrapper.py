@@ -49,6 +49,9 @@ class CoquiTTS:
         output = Path(output)
         output.parent.mkdir(parents=True, exist_ok=True)
 
+        if not text or not text.strip():
+            raise ValueError("XTTS recebeu texto vazio")
+
         cmd = [
             "uv", "run",
             "--project", str(self.project_path),
@@ -62,43 +65,44 @@ class CoquiTTS:
         if speaker_wav:
             cmd += ["--speaker_wav", str(speaker_wav)]
 
+        print("[XTTS CMD]", " ".join(cmd), flush=True)
+        print("[XTTS TEXT LEN]", len(text), flush=True)
+
         try:
-            # add a reasonable timeout so a hung subprocess doesn't block forever
             result = subprocess.run(
                 cmd,
-                capture_output=True,
-                timeout=self.timeout
+                timeout=self.timeout,
+                text=True
             )
+
         except subprocess.TimeoutExpired as e:
-            # retry once with a longer timeout (helps with cold-starts)
             try:
                 retry_timeout = max(self.timeout * 2, 900)
-                print(f"[XTTS] Timeout after {e.timeout}s, retrying with {retry_timeout}s...")
+                print(f"[XTTS] Timeout após {e.timeout}s, tentando novamente ({retry_timeout}s)...", flush=True)
+
                 result = subprocess.run(
                     cmd,
-                    capture_output=True,
-                    timeout=retry_timeout
+                    timeout=retry_timeout,
+                    text=True
                 )
+
             except subprocess.TimeoutExpired as e2:
-                raise RuntimeError(f"XTTS timeout after {e2.timeout}s while running: {' '.join(cmd)}")
+                raise RuntimeError(
+                    f"XTTS timeout após {e2.timeout}s executando:\n{' '.join(cmd)}"
+                )
 
-        stdout = result.stdout.decode("utf-8", errors="replace")
-        stderr = result.stderr.decode("utf-8", errors="replace")
-
-        # Emitir logs para facilitar debugging quando algo falhar
-        if stdout:
-            print(f"[XTTS stdout] {stdout}")
-        if stderr:
-            print(f"[XTTS stderr] {stderr}")
+        print("[XTTS RETURN CODE]", result.returncode, flush=True)
 
         if result.returncode != 0:
-            raise RuntimeError(f"XTTS falhou (rc={result.returncode}):\n{stderr or stdout}")
+            raise RuntimeError(
+                f"XTTS falhou (rc={result.returncode})"
+            )
 
         if not output.exists():
             raise RuntimeError(
-                f"XTTS NÃO GEROU O WAV:\n{output}\n\n{stderr or stdout}"
+                f"XTTS NÃO GEROU O WAV:\n{output}"
             )
-
+        
     # ---------------------------
     # 🔗 Concatena WAVs
     # ---------------------------
