@@ -1,3 +1,4 @@
+from pydoc import text
 import subprocess
 from datetime import datetime
 import re
@@ -37,26 +38,9 @@ class CoquiTTS:
         Divide o texto em chunks naturais, respeitando frases,
         evitando passar do limite seguro do XTTS.
         """
-        sentences = re.split(r'(?<=[.!?;])\s+', text.strip())
-        chunks = []
-        current = ""
-
-        for s in sentences:
-            if not s:
-                continue
-
-            candidate = (current + " " + s).strip()
-            if len(candidate) <= self.max_chars_per_chunk:
-                current = candidate
-            else:
-                if current:
-                    chunks.append(current)
-                current = s
-
-        if current:
-            chunks.append(current)
-
-        return chunks
+        sentences = re.split(r'(?<=[.!?;,:-])\s+', text.strip())
+        
+        return sentences
 
     # ---------------------------
     # 🔊 Gera WAV único por chunk
@@ -163,23 +147,6 @@ class CoquiTTS:
         wavs = []
 
         try:
-            # Warm-up: reduz o impacto do primeiro cold-start quando o TTS
-            # é chamado via subprocess por chunk. Faz uma chamada rápida
-            # antes do loop de geração para que o runner carregue o modelo.
-            try:
-                warm = temp_dir / "_warmup.wav"
-                self._speak_single(
-                    text="Olá",
-                    output=warm,
-                    language=language,
-                    speaker_wav=speaker_wav,
-                )
-                if warm.exists():
-                    warm.unlink()
-            except Exception:
-                # Não impedir o fluxo principal se o warm-up falhar
-                pass
-
             for i, chunk in enumerate(chunks):
                 wav_path = temp_dir / f"part_{i:03d}.wav"
                 print(f"  🔊 Gerando chunk {i+1}/{len(chunks)} ({len(chunk)} chars) às {datetime.now().strftime('%H:%M:%S')}")
